@@ -1,5 +1,39 @@
 # Flask Launchpad — Codebase Guide
 
+## Rules at a glance
+
+Règles non-négociables à garder en tête à chaque session. La référence complète est dans les sections ci-dessous.
+
+**Commandes** — tout passe par `./launch.sh`. Jamais `python app.py` ou `flask` directement.
+
+**Chaque nouvelle feature** doit couvrir les 9 blocs : structure · modèle · accès · CRUD · logs · jobs · tests · docs · sécurité. Voir checklist complète plus bas.
+
+**Modèle** — tout modèle a : `id`, `uuid` (auto, exposé dans les URLs), `title`, `description`, `is_public` (False), `created_at`, `updated_at`, `created_by`, `is_active`, `deleted_at`, `deleted_by`, `meta`.
+
+**Routes** — jamais de DB dans une route. Toujours : `form_to_dict()` → `*_core()` → flash/redirect.
+
+**Core** — toujours retourner `(objet, "message")`. Logs dans le core, jamais dans les routes.
+
+**Accès** — `@login_required` + `@admin_required` + `@feature_required('key')` sur chaque route. Aucune route sans décorateur explicite.
+
+**Suppression** — jamais physique depuis une action user. `is_active=False` + corbeille admin. Hard delete uniquement depuis `/admin/<feature>/trash`.
+
+**URLs** — UUID dans les liens publics, jamais l'id entier. Les routes acceptent les deux via `get_by_id_or_uuid()`.
+
+**JS** — Composition API, ES modules, `[[...]]`, `TOAST.*` + `apiFetch()` de `constants.js`, jamais `console.log`.
+
+**CSS** — `var(--bg-body)` / `var(--text-main)` — jamais de couleur en dur. Un fichier par feature dans `static/css/<feature>/`.
+
+**Tableaux** — toujours `<data-table>` avec sort/filter/bulk/pagination/expand. Jamais de table from scratch.
+
+**Graphiques** — toujours Apache ECharts encapsulé dans un composant `chart-<type>.js`. Référence : https://echarts.apache.org/examples/en/index.html
+
+**Sécurité** — `bandit -r app/` + `safety check` avant livraison. Tester XSS, injection, champ vide, oversized sur chaque champ user. Jamais `{{ var | safe }}` sur données utilisateur.
+
+**Docs** — mettre à jour `CLAUDE.md` + `README.md` à chaque feature.
+
+---
+
 ## What this project is
 
 A Flask boilerplate/starter kit (named "P'tit Crolle" in the UI). It provides a ready-to-use foundation with user authentication, role management, and a REST API. The goal is to clone this and build a new app on top of it.
