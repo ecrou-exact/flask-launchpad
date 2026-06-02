@@ -1,4 +1,4 @@
-from ..db_class.db import User, Role, db
+from ..db_class.user import User, Role, db
 from .utils import generate_api_key
 
 def create_admin_role():

@@ -2,7 +2,7 @@ from functools import wraps
 
 from flask import abort, request
 from flask_login import current_user
-from .utils.utils import get_user_api, verif_api_key
+from .utils import get_user_api, verif_api_key
 
 
 def permission_required(perm):

@@ -33,7 +33,7 @@ api = Api(api_blueprint,
     authorizations=authorizations
 )
 
-from .account.account_api import account_ns
+from .account_api import account_ns
 
 api.add_namespace(account_ns, path="/account")
 

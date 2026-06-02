@@ -10,7 +10,7 @@ from wtforms.fields import (
     EmailField
 )
 from wtforms.validators import Email, InputRequired, Length, Regexp, Optional
-from ..db_class.db import User
+from ...core.db_class.user import User
 
 
 class LoginForm(FlaskForm):

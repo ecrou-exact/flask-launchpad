@@ -1,7 +1,7 @@
-from app.utils.utils import generate_api_key
+from app.core.utils.utils import generate_api_key
 
-from .. import db
-from ..db_class.db import User, Role
+from ... import db
+from ...core.db_class.user import User, Role
 
 def get_all_roles():
     """Return all roles"""

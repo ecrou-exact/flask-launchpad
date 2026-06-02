@@ -32,11 +32,11 @@ def create_app():
     sess.init_app(app)
 
     from .home import home_blueprint
-    from .account.account import account_blueprint
+    from .features.account.account import account_blueprint
     app.register_blueprint(home_blueprint, url_prefix="/")
     app.register_blueprint(account_blueprint, url_prefix="/account")
 
-    from .api import api_blueprint
+    from .api.api import api_blueprint
     csrf.exempt(api_blueprint)
     app.register_blueprint(api_blueprint)
 

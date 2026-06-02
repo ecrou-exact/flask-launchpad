@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html>
-
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -39,7 +38,7 @@
     <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='css/jquery-ui.css') }}">
 
     <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='css/core.css') }}">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='css/base_1/sidebar.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='css/base/sidebar.css') }}">
     <!-- Change the theme -->
     <script>
         function toggleDarkMode() {
@@ -76,7 +75,6 @@
 <body class="d-flex flex-column min-vh-100">
     <div class="container-fluid">
         <div class="row flex-nowrap">
-            {% include 'navbars/sidebar.html' %}
             <!--Main layout-->
             <main class="col ps-md-4 pt-2" id="main-container">
                 {% include 'macros/_flashes.html' %}
@@ -104,7 +102,6 @@
                 <a href="#" data-bs-target="#sidebar" data-bs-toggle="collapse"
                     class="border rounded-3 p-1 text-decoration-none"><i class="fa-solid fa-bars-staggered"></i>
                     Menu</a>
-                {# When extended, the content block contains all the html of the webpage #}
                 {% block content %}
                 {% endblock %}
             </main>
@@ -116,25 +113,7 @@
             {% endif %}
         </div>
     </div>
-    <footer class="footer mt-auto py-3"
-        style="background-color: var(--bg-floating); border-top: 1px solid rgba(0,0,0,0.1);">
-        <div class="container-fluid ps-md-4">
-            <div class="row align-items-center">
-                <div class="col-md-6 text-center text-md-start">
-                    <span class="text-muted small">© 2026 <strong>P'tit Crolle</strong>. All rights reserved.</span>
-                </div>
-                <div class="col-md-6 text-center text-md-end">
-                    <span class="text-muted small">
-                        <i class="fa-solid fa-code-branch me-1"></i>v1.0.0 |
-                        <a href="https://github.com/DavidCruciani/ptit-crolle"
-                            class="text-decoration-none text-muted mx-2">
-                            <i class="fa-brands fa-github"></i>
-                        </a>
-                    </span>
-                </div>
-            </div>
-        </div>
-    </footer>
+   
     {% block script %}
     <script type="module">
         // Empty vue used for toast to declar vue is used in the rest of the project

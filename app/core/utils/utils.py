@@ -4,7 +4,7 @@ import random
 import string
 
 from flask import redirect, session, url_for
-from ..db_class.db import User
+from ..db_class.user import User
 
 def isUUID(uid):
     try:
@@ -43,12 +43,3 @@ def create_specific_dir(specific_dir):
     if not os.path.isdir(specific_dir):
         os.mkdir(specific_dir)
 
-def redirect_to_home():
-    version = session.get('ui_version', 1)
-    if version == 2:
-        return redirect(url_for('home.home_2'))
-    elif version == 3:
-        return redirect(url_for('home.home_3'))
-    # elif version == 4:
-    #     return redirect(url_for('home.home_4'))......
-    return redirect(url_for('home.home'))

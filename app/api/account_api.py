@@ -1,10 +1,10 @@
 from flask import request
-from . import verification_api as VerifApi
-from . import account_core as AccountCore
+from .import verification_api as VerifApi
+from ..features.account import account_core as AccountCore
 
 from flask_restx import Namespace, Resource, fields
-from ..decorators import api_required
-from ..utils.utils import get_user_api
+from ..core.utils.decorators import api_required
+from ..core.utils.utils import get_user_api
 
 
 account_ns = Namespace("account", description="Endpoints to manage account actions")

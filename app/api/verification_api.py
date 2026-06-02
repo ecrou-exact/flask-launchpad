@@ -1,4 +1,4 @@
-from ..db_class.db import User
+from ..core.db_class.user import User
 
 def verif_add_user(data_dict):
     if "first_name" not in data_dict or not data_dict["first_name"]:

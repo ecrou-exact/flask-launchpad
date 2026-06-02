@@ -3,7 +3,7 @@ import argparse
 from flask import render_template, request, Response, session
 import json
 import os
-from app.utils.init_db import create_admin
+from app.core.utils.init_db import create_admin
 
 
 parser = argparse.ArgumentParser()

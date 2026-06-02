@@ -1,4 +1,4 @@
-from ..db_class.db import User
+from ...core.db_class.user import User
 from flask import Blueprint, render_template, redirect, url_for, request, flash
 from .form import AddNewUserForm, LoginForm, EditUserFrom
 from flask_login import (
@@ -7,8 +7,8 @@ from flask_login import (
     login_user,
     logout_user,
 )
-from . import account_core as AccountModel
-from ..utils.utils import form_to_dict, redirect_to_home
+from ..account import account_core as AccountModel
+from ...core.utils.utils import form_to_dict
 
 account_blueprint = Blueprint(
     'account',
@@ -72,7 +72,7 @@ def login():
                 user.verify_password(form.password.data):
             login_user(user, form.remember_me.data)
             flash('You are now logged in. Welcome back!', 'success')
-            return redirect_to_home()
+            return redirect(url_for('home.home'))
         else:
             flash('Invalid email or password.', 'error')
     return render_template('account/login.html', form=form)
@@ -82,5 +82,5 @@ def login():
 def logout():
     logout_user()
     flash('You have been logged out.', 'info')
-    return redirect_to_home()
+    return redirect(url_for('home.home'))
 
