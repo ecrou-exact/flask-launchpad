@@ -29,16 +29,19 @@ def edit_user_core(form_dict, id) -> tuple[User, str]:
         return None, f"Error updating user"
 
 
-def create_user_core(form_dict):
+def create_user_core(form_dict) -> tuple:
     """Create the user to the DB"""
-    user = User(
-        first_name=form_dict["first_name"],
-        last_name=form_dict["last_name"],
-        email=form_dict["email"],
-        password=form_dict["password"],
-        role_id=form_dict["role_id"],
-        api_key = generate_api_key()
-    )
-    db.session.add(user)
-    db.session.commit()
-    return user
+    try:
+        user = User(
+            first_name=form_dict["first_name"],
+            last_name=form_dict["last_name"],
+            email=form_dict["email"],
+            password=form_dict["password"],
+            role_id=form_dict["role_id"],
+            api_key=generate_api_key()
+        )
+        db.session.add(user)
+        db.session.commit()
+        return user, "User created successfully"
+    except Exception:
+        return None, "Error creating user"

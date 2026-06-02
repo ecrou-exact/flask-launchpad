@@ -21,6 +21,19 @@ def error_page_not_found(e):
     if request.path.startswith('/api/'):
         return Response(json.dumps({"status": "error", "reason": "404 Not Found"}, indent=2, sort_keys=True), mimetype='application/json'), 404
     return render_template('/utils/404.html'), 404
+
+
+@app.errorhandler(500)
+def error_page_internal_server_error(e):
+    if request.path.startswith('/api/'):
+        return Response(json.dumps({"status": "error", "reason": "500 Internal Server Error"}, indent=2, sort_keys=True), mimetype='application/json'), 500
+    return render_template('/utils/500.html'), 500
+
+@app.errorhandler(403)
+def error_page_forbidden(e):
+    if request.path.startswith('/api/'):
+        return Response(json.dumps({"status": "error", "reason": "403 Forbidden"}, indent=2, sort_keys=True), mimetype='application/json'), 403
+    return render_template('/utils/403.html'), 403
     
 
 if args.init_db:

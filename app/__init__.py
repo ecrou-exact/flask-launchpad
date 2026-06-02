@@ -31,7 +31,7 @@ def create_app():
     app.config["SESSION_SQLALCHEMY"] = db
     sess.init_app(app)
 
-    from .home import home_blueprint
+    from .features.home.home import home_blueprint
     from .features.account.account import account_blueprint
     app.register_blueprint(home_blueprint, url_prefix="/")
     app.register_blueprint(account_blueprint, url_prefix="/account")
@@ -40,16 +40,6 @@ def create_app():
     csrf.exempt(api_blueprint)
     app.register_blueprint(api_blueprint)
 
-    @app.context_processor
-    def inject_layout():
-        from flask import session
-        if session.get('ui_version') == 2:
-            layout = 'base_2.html'
-        elif session.get('ui_version') == 3:
-            layout = 'base_3.html'
-        else:
-            layout = 'base.html'
-        return dict(base_layout=layout)
 
     return app
     

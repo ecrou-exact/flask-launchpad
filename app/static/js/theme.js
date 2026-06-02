@@ -1,3 +1,9 @@
+(function () {
+    const theme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-bs-theme', theme);
+    document.documentElement.style.backgroundColor = theme === 'dark' ? '#212529' : '#fbfbfb';
+})();
+
 function toggleDarkMode() {
     const html = document.documentElement;
     const icon = document.getElementById('theme-icon');

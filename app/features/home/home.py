@@ -1,5 +1,4 @@
 from flask import Blueprint, render_template
-from flask import session
 
 home_blueprint = Blueprint(
     'home',
@@ -11,4 +10,3 @@ home_blueprint = Blueprint(
 @home_blueprint.route("/")
 def home():
     return render_template("home.html")
-

@@ -1,5 +1,6 @@
 from ..core.db_class.user import User
 
+
 def verif_add_user(data_dict):
     if "first_name" not in data_dict or not data_dict["first_name"]:
         return {"message": "Please give a first name for the user"}
@@ -14,16 +15,17 @@ def verif_add_user(data_dict):
 
     if "password" not in data_dict or not data_dict["password"]:
         return {"message": "Please give a password for the user"}
-    
-    data_dict["role_id"] = 2 # default role is user
+
+    data_dict["role_id"] = 2
 
     return data_dict
+
 
 def verif_edit_user(data_dict, user_id):
     user = User.query.get(user_id)
     if not user:
         return {"message": "User not found"}
-    
+
     if "first_name" not in data_dict or not data_dict["first_name"]:
         data_dict["first_name"] = user.first_name
 
@@ -36,4 +38,3 @@ def verif_edit_user(data_dict, user_id):
         return {"message": "Email already exists"}
 
     return data_dict
-
