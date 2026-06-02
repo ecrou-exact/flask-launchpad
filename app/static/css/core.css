@@ -39,12 +39,6 @@ span#goTop, span#project-version {
 }
 
 
-[data-bs-theme="dark"] .select2-selection {
-  background-color: #2b3035 !important;
-  color: white !important;
-  border-color: #495057 !important;
-}
-
 
 /*------------------------------------------BOOSTRAP_BG_COLOR------------------------------------------*/
 
