@@ -2,35 +2,37 @@
 
 ## Rules at a glance
 
-Règles non-négociables à garder en tête à chaque session. La référence complète est dans les sections ci-dessous.
+Non-negotiable rules to keep in mind every session. Full reference in the sections below.
 
-**Commandes** — tout passe par `./launch.sh`. Jamais `python app.py` ou `flask` directement.
+**Commands** — everything goes through `./launch.sh`. Never call `python app.py` or `flask` directly.
 
-**Chaque nouvelle feature** doit couvrir les 9 blocs : structure · modèle · accès · CRUD · logs · jobs · tests · docs · sécurité. Voir checklist complète plus bas.
+**Every new feature** must cover all 9 blocks: structure · model · access · CRUD · logs · jobs · tests · docs · security. See full checklist below.
 
-**Modèle** — tout modèle a : `id`, `uuid` (auto, exposé dans les URLs), `title`, `description`, `is_public` (False), `created_at`, `updated_at`, `created_by`, `is_active`, `deleted_at`, `deleted_by`, `meta`.
+**Model** — every model has: `id`, `uuid` (auto, used in public URLs), `title`, `description`, `is_public` (False by default), `created_at`, `updated_at`, `created_by`, `is_active`, `deleted_at`, `deleted_by`, `meta`.
 
-**Routes** — jamais de DB dans une route. Toujours : `form_to_dict()` → `*_core()` → flash/redirect.
+**Routes** — never touch the DB in a route. Always: `form_to_dict()` → `*_core()` → flash/redirect.
 
-**Core** — toujours retourner `(objet, "message")`. Logs dans le core, jamais dans les routes.
+**Core** — always return `(object, "message")` tuple. Logs go in the core, never in routes.
 
-**Accès** — `@login_required` + `@admin_required` + `@feature_required('key')` sur chaque route. Aucune route sans décorateur explicite.
+**Access** — `@login_required` + `@admin_required` + `@feature_required('key')` on every route. No route without an explicit decorator.
 
-**Suppression** — jamais physique depuis une action user. `is_active=False` + corbeille admin. Hard delete uniquement depuis `/admin/<feature>/trash`.
+**Deletion** — never physically delete from a user action. `is_active=False` + admin trash. Hard delete only from `/admin/<feature>/trash`.
 
-**URLs** — UUID dans les liens publics, jamais l'id entier. Les routes acceptent les deux via `get_by_id_or_uuid()`.
+**URLs** — UUID in all public-facing links, never the integer id. Routes accept both via `get_by_id_or_uuid()`.
 
-**JS** — Composition API, ES modules, `[[...]]`, `TOAST.*` + `apiFetch()` de `constants.js`, jamais `console.log`.
+**JS** — Composition API, ES modules, `[[...]]` delimiters, `TOAST.*` + `apiFetch()` from `constants.js`, never `console.log`.
 
-**CSS** — `var(--bg-body)` / `var(--text-main)` — jamais de couleur en dur. Un fichier par feature dans `static/css/<feature>/`.
+**CSS** — `var(--bg-body)` / `var(--text-main)` — never hardcode colors. One file per feature in `static/css/<feature>/`.
 
-**Tableaux** — toujours `<data-table>` avec sort/filter/bulk/pagination/expand. Jamais de table from scratch.
+**Tables** — always use `<data-table>` with sort/filter/bulk/pagination/expand. Never build a table from scratch.
 
-**Graphiques** — toujours Apache ECharts encapsulé dans un composant `chart-<type>.js`. Référence : https://echarts.apache.org/examples/en/index.html
+**Charts** — always Apache ECharts wrapped in a `chart-<type>.js` component. Reference: https://echarts.apache.org/examples/en/index.html
 
-**Sécurité** — `bandit -r app/` + `safety check` avant livraison. Tester XSS, injection, champ vide, oversized sur chaque champ user. Jamais `{{ var | safe }}` sur données utilisateur.
+**Security** — run `bandit -r app/` + `safety check` before delivery. Test XSS, injection, empty fields, oversized input on every user-facing field. Never use `{{ var | safe }}` on user data.
 
-**Docs** — mettre à jour `CLAUDE.md` + `README.md` à chaque feature.
+**Docs** — update `CLAUDE.md` + `README.md` with every feature.
+
+**Domain** — no business-domain terms hardcoded in generic components, models, or utils. Every visible label comes from a central config or constants file. Changing domain = changing one file. See full section below.
 
 ---
 
@@ -1149,6 +1151,117 @@ Lancer `bandit -r app/` et `safety check` avant chaque livraison. Aucune erreur 
 | XSS | Jinja2 auto-escape — ne jamais utiliser `{{ var \| safe }}` sur des données utilisateur |
 | Mots de passe | bcrypt via le modèle `User` |
 | Sessions | Flask-Session côté serveur |
+
+---
+
+## Domain abstraction
+
+This boilerplate has no built-in domain. Tomorrow it could be a Lego catalog, a ticketing system, or a medical app. Every feature must be built so that **swapping the domain requires changing one file**, not hunting through templates, components, and models.
+
+### The rule
+
+> If someone reads your code and can tell what the app is about from a variable name, a label, or a column name in a generic component — it is too domain-specific.
+
+### Central domain config — `app/core/utils/domain.py`
+
+All domain-specific labels, names, and terminology live here and nowhere else:
+
+```python
+# app/core/utils/domain.py
+
+APP_NAME        = "P'tit Crolle"
+APP_DESCRIPTION = "Your app description here."
+
+# Feature labels — change these to rename a feature across the entire UI
+FEATURES = {
+    "items": {
+        "singular": "Item",
+        "plural":   "Items",
+        "icon":     "fa-box",
+    },
+    # Tomorrow, switching to Lego:
+    # "items": {
+    #     "singular": "Lego Set",
+    #     "plural":   "Lego Sets",
+    #     "icon":     "fa-cubes",
+    # },
+}
+```
+
+Injected into every Jinja template via a context processor in `create_app()`:
+
+```python
+@app.context_processor
+def inject_domain():
+    from app.core.utils.domain import APP_NAME, FEATURES
+    return dict(app_name=APP_NAME, features=FEATURES)
+```
+
+Used in templates:
+
+```jinja
+{# ✓ — label from config #}
+<h1>{{ features.items.plural }}</h1>
+
+{# ✗ — hardcoded domain term #}
+<h1>Lego Sets</h1>
+```
+
+### Generic model columns
+
+Column names in models are generic. Domain meaning is assigned in `domain.py`, not in the schema:
+
+```python
+# ✓ — generic, reusable for any domain
+class Item(db.Model):
+    title       = db.Column(db.String(255))   # "Lego Set Name" or "Ticket Title" or anything
+    description = db.Column(db.Text)
+    category    = db.Column(db.String(64))
+    meta        = db.Column(db.JSON)          # domain-specific extra fields go here
+
+# ✗ — domain locked in the schema
+class Item(db.Model):
+    lego_set_name   = db.Column(db.String(255))
+    brick_count     = db.Column(db.Integer)
+```
+
+For fields that are truly domain-specific (e.g., `piece_count` for Lego), add them to the `meta` JSON column until the domain is confirmed stable, then migrate them as proper columns.
+
+### Generic components receive labels as props
+
+Components never contain domain-specific text. Labels are always passed as props from the parent page:
+
+```html
+{# ✓ — parent page passes the label from domain config #}
+<data-table
+    :columns="columns"
+    :empty-label="'No ' + features.items.plural + ' found'">
+</data-table>
+
+{# ✗ — label hardcoded inside the component #}
+<!-- inside data-table.js template -->
+<td>No Lego Sets found</td>
+```
+
+### API responses
+
+API responses use generic keys. Domain meaning lives in the frontend config:
+
+```python
+# ✓
+return {"id": item.id, "uuid": item.uuid, "title": item.title}, 200
+
+# ✗
+return {"lego_set_id": item.id, "set_name": item.title}, 200
+```
+
+### Checklist — domain hygiene per feature
+
+When building any feature, ask before finishing:
+- [ ] Could I rename this feature to something else by only editing `domain.py`?
+- [ ] Are all visible labels coming from `domain.py` or passed as props?
+- [ ] Are model column names generic enough to survive a domain change?
+- [ ] Do components contain zero hardcoded domain text?
 
 ---
 
