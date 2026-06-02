@@ -1,4 +1,36 @@
-env/*
+# Python
 *.pyc
-*.sqlite
+*.pyo
+__pycache__/
+*.egg-info/
+dist/
+build/
+
+# Virtual environment
+env/
+venv/
+.venv/
+
+# Flask / app
 config.py
+instance/
+*.sqlite
+
+# Backups
+backups/
+
+# Tests
+.pytest_cache/
+.coverage
+htmlcov/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
