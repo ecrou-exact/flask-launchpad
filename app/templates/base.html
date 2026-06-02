@@ -4,81 +4,54 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>P'tit Crolle</title>
-    <link rel="icon" href="{{ url_for('static',filename='image/crolle.png') }}">
-    <script src="{{ url_for('static',filename='js/popper.min.js') }}"></script>
-    <script src="{{ url_for('static',filename='bootstrap-5.3.0/js/bootstrap.min.js') }}"></script>
-    <script src="{{ url_for('static',filename='js/jquery.min.js') }}"></script>
-    <script src="{{ url_for('static',filename='js/jquery-ui.js') }}"></script>
-    <script src="{{ url_for('static',filename='js/select2.min.js') }}"></script>
-    <script src="{{ url_for('static',filename='js/vue.global.js') }}"></script>
-    <script src="{{ url_for('static',filename='js/dayjs/dayjs.min.js') }}"></script>
-    <script src="{{ url_for('static',filename='js/dayjs/dayjs-utc.js') }}"></script>
-    <script src="{{ url_for('static',filename='js/dayjs/dayjs-relativeTime.js') }}"></script>
-    <!--Load the theme mode -->
-    <script>
-        (function () {
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            document.documentElement.setAttribute('data-bs-theme', savedTheme);
-            document.documentElement.style.backgroundColor = savedTheme === 'dark' ? '#212529' : '#fbfbfb';
-        })();
-    </script>
+    <link rel="icon" href="{{ url_for('static', filename='image/crolle.png') }}">
+
+    <!-- JS libraries -->
+    <script src="{{ url_for('static', filename='js/popper.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='bootstrap-5.3.0/js/bootstrap.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/jquery.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/jquery-ui.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/select2.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/vue.global.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/dayjs/dayjs.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/dayjs/dayjs-utc.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/dayjs/dayjs-relativeTime.js') }}"></script>
     <script>dayjs.extend(window.dayjs_plugin_utc)</script>
     <script>dayjs.extend(window.dayjs_plugin_relativeTime)</script>
-    <script src="{{ url_for('static',filename='js/zxcvbn.js') }}"></script>
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='css/select2.min.css') }}">
-    <link rel="stylesheet" type="text/css"
-        href="{{ url_for('static',filename='css/select2-bootstrap-5-theme.min.css') }}">
+    <script src="{{ url_for('static', filename='js/zxcvbn.js') }}"></script>
 
-    <link rel="stylesheet" type="text/css"
-        href="{{ url_for('static',filename='bootstrap-5.3.0/css/bootstrap.min.css') }}">
-    <link rel="stylesheet" type="text/css"
-        href="{{ url_for('static',filename='fontawesome-6.3.0/css/fontawesome.css') }}">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='fontawesome-6.3.0/css/solid.css') }}">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='fontawesome-6.3.0/css/brands.css') }}">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='css/jquery-ui.css') }}">
-
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='css/core.css') }}">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='css/base/sidebar.css') }}">
-    <!-- Change the theme -->
+    <!-- Apply saved theme before CSS loads to avoid flash -->
     <script>
-        function toggleDarkMode() {
-            const html = document.documentElement;
-            const icon = document.getElementById('theme-icon');
-            const currentTheme = html.getAttribute('data-bs-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-
-            html.setAttribute('data-bs-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-
-            html.style.backgroundColor = newTheme === 'dark' ? '#212529' : '#fbfbfb';
-
-            if (icon) {
-                if (newTheme === 'dark') {
-                    icon.classList.replace('fa-moon', 'fa-sun');
-                } else {
-                    icon.classList.replace('fa-sun', 'fa-moon');
-                }
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            const icon = document.getElementById('theme-icon');
-            if (icon && savedTheme === 'dark') {
-                icon.classList.replace('fa-moon', 'fa-sun');
-            }
-        });
+        (function () {
+            const theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-bs-theme', theme);
+            document.documentElement.style.backgroundColor = theme === 'dark' ? '#212529' : '#fbfbfb';
+        })();
     </script>
-    <script src="{{ url_for('static',filename='js/blur.js')}}"></script>
+
+    <!-- CSS -->
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/select2.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/select2-bootstrap-5-theme.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='bootstrap-5.3.0/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='fontawesome-6.3.0/css/fontawesome.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='fontawesome-6.3.0/css/solid.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='fontawesome-6.3.0/css/brands.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/jquery-ui.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/core.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/base/sidebar.css') }}">
+
+    <!-- App scripts -->
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/blur.js') }}"></script>
 </head>
 
 <body class="d-flex flex-column min-vh-100">
     <div class="container-fluid">
         <div class="row flex-nowrap">
-            <!--Main layout-->
             <main class="col ps-md-4 pt-2" id="main-container">
                 {% include 'macros/_flashes.html' %}
-                <div aria-live="polite" aria-atomic="true" class="">
+
+                <div aria-live="polite" aria-atomic="true">
                     <div class="toast-container start-50 translate-middle-x top-0 p-3" style="position: fixed;">
                         <template v-if="message_list">
                             <template v-for="message in message_list" v-key="message.id">
@@ -99,13 +72,16 @@
                         </template>
                     </div>
                 </div>
+
                 <a href="#" data-bs-target="#sidebar" data-bs-toggle="collapse"
-                    class="border rounded-3 p-1 text-decoration-none"><i class="fa-solid fa-bars-staggered"></i>
-                    Menu</a>
-                {% block content %}
-                {% endblock %}
+                    class="border rounded-3 p-1 text-decoration-none">
+                    <i class="fa-solid fa-bars-staggered"></i> Menu
+                </a>
+
+                {% block content %}{% endblock %}
             </main>
-            {# Implement CSRF protection for site #}
+
+            {# CSRF token for JS requests #}
             {% if csrf_token()|safe %}
             <div style="visibility: hidden; display: none">
                 <input type="hidden" id="csrf_token" name="csrf_token" value="{{ csrf_token()|safe }}">
@@ -113,17 +89,17 @@
             {% endif %}
         </div>
     </div>
-   
+
     {% block script %}
     <script type="module">
-        // Empty vue used for toast to declar vue is used in the rest of the project
         const { createApp } = Vue
         createApp({
             delimiters: ['[[', ']]'],
-            setup() { }
+            setup() {}
         }).mount('#main-container')
     </script>
     {% endblock %}
+
     <script>
         $(document).ready(function () {
             $('.message').each((i, el) => {
@@ -136,7 +112,7 @@
                 $xx.one('click', triggerRemove);
                 if (sec) $el.T = setTimeout(triggerRemove, sec * 1000);
             });
-        })
+        });
     </script>
 </body>
 
