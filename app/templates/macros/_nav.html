@@ -11,10 +11,9 @@
 <header class="app-topbar app-topbar--nav">
     <div class="topbar-left">
         <div class="topbar-brand">
-            <div class="sidebar-logo-icon flex-shrink-0" style="width:26px;height:26px;font-size:.68rem;">
-                <i class="fas fa-rocket"></i>
-            </div>
-            <span class="topbar-app-name d-none d-md-block">Flask Launchpad</span>
+            <a href="{{ url_for('home.home') }}" class="topbar-brand-link">
+                <img src="{{ url_for('static', filename='image/logo.png') }}" alt="Logo" style="height:50px;">
+            </a>
         </div>
         <nav class="topbar-links">
             <a href="{{ url_for('home.home') }}"
@@ -58,14 +57,11 @@
 {# HIDDEN MODE — sidebar opens as overlay  #}
 {# ═══════════════════════════════════════ #}
 <aside class="app-sidebar" id="appSidebar">
-    <div class="sidebar-header">
-        <div class="sidebar-logo-icon flex-shrink-0">
-            <i class="fas fa-rocket"></i>
-        </div>
-        <span class="sidebar-app-name">Flask Launchpad</span>
-        <button class="btn-sidebar-toggle d-inline-flex" onclick="closeSidebar()" title="Close">
-            <i class="fas fa-xmark"></i>
-        </button>
+    <div class="topbar-brand">
+        <a href="{{ url_for('home.home') }}" class="topbar-brand-link">
+            <img src="{{ url_for('static', filename='image/logo.png') }}" alt="Logo" style="height:50px;">
+            <span class="topbar-app-name">Flask Launchpad</span>
+        </a>
     </div>
     <nav class="sidebar-nav">
         <p class="nav-section-label">Navigation</p>
@@ -122,8 +118,8 @@
 <aside class="app-sidebar" id="appSidebar">
 
     <div class="sidebar-header">
-        <div class="sidebar-logo-icon flex-shrink-0">
-            <i class="fas fa-rocket"></i>
+        <div class="">
+            <img src="{{ url_for('static', filename='image/logo.png') }}" alt="Logo" style="height:30px;">
         </div>
         <span class="sidebar-app-name">Flask Launchpad</span>
         <button class="btn-sidebar-toggle d-none d-lg-inline-flex"
