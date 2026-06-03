@@ -36,12 +36,16 @@ class User(UserMixin, db.Model):
     social_linkedin = db.Column(db.String(200), nullable=True)
 
     # ── Role helpers ─────────────────────────────────────────
+    @property
+    def role(self):
+        return Role.query.get(self.role_id) if self.role_id else None
+
     def is_admin(self):
-        r = Role.query.get(self.role_id)
+        r = self.role
         return bool(r and r.admin)
 
     def read_only(self):
-        r = Role.query.get(self.role_id)
+        r = self.role
         return bool(r and r.read_only)
 
     def full_name(self):
