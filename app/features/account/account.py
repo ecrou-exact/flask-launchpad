@@ -6,6 +6,7 @@ from ...core.db_class.user import User
 from .form import AddNewUserForm, LoginForm, EditUserForm
 from ..account import account_core as AccountCore
 from ...core.utils.utils import form_to_dict
+from ...core.utils.logger import log_action
 
 account_blueprint = Blueprint('account', __name__)
 
@@ -100,6 +101,16 @@ def create_user():
         user, message = AccountCore.create_user_core(form_dict)
         flash(message, 'success' if user else 'danger')
         if user:
+            log_action(
+                "User registered",
+                "register",
+                category="user",
+                level="success",
+                object_type="user",
+                object_id=user.id,
+                is_public=False,
+                meta={"user_id": user.id},
+            )
             return redirect(url_for('account.index'))
     return render_template('account/create.html', form=form)
 
@@ -115,16 +126,49 @@ def login():
         if user and user.password_hash and user.verify_password(form.password.data):
             if not user.is_verified:
                 flash('Your account is pending verification. Please wait for admin approval.', 'warning')
+                log_action(
+                    "Login blocked — account not verified",
+                    "login_blocked",
+                    category="security",
+                    level="warning",
+                    object_type="user",
+                    object_id=user.id,
+                    actor_id=user.id,
+                    is_public=False,
+                    meta={"user_id": user.id},
+                )
             elif not user.is_admin():
                 from ...core.db_class.site_config import get_site_bool
                 if not get_site_bool('allow_login', True):
                     flash('Login is currently restricted to administrators only.', 'warning')
+                    log_action(
+                        "Login blocked — login disabled",
+                        "login_blocked",
+                        category="security",
+                        level="warning",
+                        object_type="user",
+                        object_id=user.id,
+                        actor_id=user.id,
+                        is_public=False,
+                        meta={"user_id": user.id},
+                    )
                 else:
                     if user.force_logout:
                         from ... import db as _db
                         user.force_logout = False
                         _db.session.commit()
                     login_user(user, form.remember_me.data)
+                    log_action(
+                        "User logged in",
+                        "login",
+                        category="user",
+                        level="success",
+                        object_type="user",
+                        object_id=user.id,
+                        actor_id=user.id,
+                        is_public=False,
+                        meta={"user_id": user.id},
+                    )
                     return redirect(request.args.get('next') or url_for('home.home'))
             else:
                 # Admin always allowed
@@ -133,14 +177,47 @@ def login():
                     user.force_logout = False
                     _db.session.commit()
                 login_user(user, form.remember_me.data)
+                log_action(
+                    "User logged in",
+                    "login",
+                    category="user",
+                    level="success",
+                    object_type="user",
+                    object_id=user.id,
+                    actor_id=user.id,
+                    is_public=False,
+                    meta={"user_id": user.id},
+                )
                 return redirect(request.args.get('next') or url_for('home.home'))
         else:
             flash('Invalid email or password.', 'danger')
+            log_action(
+                "Login failed — invalid credentials",
+                "login_failed",
+                category="security",
+                level="warning",
+                object_type="user",
+                object_id=None,
+                actor_id=None,
+                is_public=False,
+                meta={"email": form.email.data},
+            )
     return render_template('account/login.html', form=form)
 
 
 @account_blueprint.route('/logout')
 @login_required
 def logout():
+    log_action(
+        "User logged out",
+        "logout",
+        category="user",
+        level="info",
+        object_type="user",
+        object_id=current_user.id,
+        actor_id=current_user.id,
+        is_public=False,
+        meta={"user_id": current_user.id},
+    )
     logout_user()
     return redirect(url_for('account.login'))

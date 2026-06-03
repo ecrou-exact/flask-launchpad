@@ -1,11 +1,15 @@
+from datetime import datetime, timedelta
+
 from flask import request
 from flask_restx import Namespace, Resource, fields
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 
 from .. import db
 from ..core.db_class.user import User, Role
+from ..core.db_class.log import Log
 from ..core.utils.decorators import api_required, admin_required
 from ..core.utils.utils import get_user_api
+from ..core.utils.logger import log_action
 from ..features.account import account_core as AccountCore
 from . import verification_api as VerifApi
 
@@ -220,6 +224,16 @@ class ToggleVerified(Resource):
             return {'message': 'User not found'}, 404
         user.is_verified = not user.is_verified
         db.session.commit()
+        log_action(
+            f"User verification toggled to {user.is_verified}",
+            "toggle_verified",
+            category="admin",
+            level="info",
+            object_type="user",
+            object_id=uid,
+            is_public=False,
+            meta={"user_id": uid, "is_verified": user.is_verified},
+        )
         return {'is_verified': user.is_verified, 'message': 'Updated'}, 200
 
 
@@ -233,6 +247,16 @@ class DisconnectUser(Resource):
             return {'message': 'User not found'}, 404
         user.force_logout = True
         db.session.commit()
+        log_action(
+            "User force-disconnected by admin",
+            "force_disconnect",
+            category="admin",
+            level="warning",
+            object_type="user",
+            object_id=uid,
+            is_public=False,
+            meta={"user_id": uid},
+        )
         return {'message': 'User disconnected'}, 200
 
 
@@ -267,3 +291,179 @@ class BulkDisconnect(Resource):
         )
         db.session.commit()
         return {'message': f'Disconnected {len(ids)} user(s)'}, 200
+
+
+@account_ns.route('/roles')
+class ListRoles(Resource):
+    """List all roles — admin required."""
+    method_decorators = [admin_required]
+
+    def get(self):
+        roles = AccountCore.get_all_roles()
+        return [r.to_json() for r in roles], 200
+
+
+@account_ns.route('/admin/user/<int:uid>')
+class AdminEditUser(Resource):
+    """Admin endpoint to edit any user's fields."""
+    method_decorators = [admin_required]
+
+    def put(self, uid):
+        user = AccountCore.get_user(uid)
+        if not user:
+            return {'message': 'User not found'}, 404
+
+        data = request.get_json(silent=True) or {}
+        if not data:
+            return {'message': 'No data provided'}, 400
+
+        import re
+        _EMAIL_RE  = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+        _HANDLE_RE = re.compile(r'^[a-zA-Z0-9_\-\.]{1,50}$')
+
+        # first_name
+        if 'first_name' in data:
+            v = str(data['first_name']).strip()[:64] if data['first_name'] else None
+            if not v:
+                return {'message': 'first_name cannot be empty'}, 400
+            user.first_name = v
+
+        # last_name
+        if 'last_name' in data:
+            v = str(data['last_name']).strip()[:64] if data['last_name'] else None
+            if not v:
+                return {'message': 'last_name cannot be empty'}, 400
+            user.last_name = v
+
+        # email
+        if 'email' in data:
+            email = str(data['email']).strip()[:128] if data['email'] else None
+            if not email:
+                return {'message': 'email cannot be empty'}, 400
+            if not _EMAIL_RE.match(email):
+                return {'message': 'Invalid email format'}, 400
+            conflict = User.query.filter_by(email=email).first()
+            if conflict and conflict.id != uid:
+                return {'message': 'Email already in use'}, 400
+            user.email = email
+
+        # username
+        if 'username' in data:
+            raw = data['username']
+            if raw:
+                handle = str(raw).strip().lstrip('@')[:50]
+                if not _HANDLE_RE.match(handle):
+                    return {'message': 'Invalid username format'}, 400
+                conflict = User.query.filter_by(username=handle).first()
+                if conflict and conflict.id != uid:
+                    return {'message': 'Username already taken'}, 400
+                user.username = handle
+            else:
+                user.username = None
+
+        # role_id
+        if 'role_id' in data:
+            rid = data['role_id']
+            if rid is not None:
+                role = Role.query.get(int(rid))
+                if not role:
+                    return {'message': 'Role not found'}, 400
+                user.role_id = role.id
+
+        # is_verified
+        if 'is_verified' in data:
+            user.is_verified = bool(data['is_verified'])
+
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            return {'message': 'Database error'}, 500
+
+        log_action(
+            "Admin edited user",
+            "admin_edit_user",
+            category="admin",
+            level="info",
+            object_type="user",
+            object_id=uid,
+            is_public=False,
+            meta={
+                'user_id': uid,
+                'role_id': user.role_id,
+                'is_verified': user.is_verified,
+            },
+        )
+
+        # Build an enriched response (consistent with ListUsers format)
+        role_obj = Role.query.get(user.role_id) if user.role_id else None
+        return {
+            'id':              user.id,
+            'first_name':      user.first_name,
+            'last_name':       user.last_name,
+            'email':           user.email,
+            'username':        user.username,
+            'role_id':         user.role_id,
+            'role_name':       role_obj.name if role_obj else None,
+            'is_admin':        role_obj.admin if role_obj else False,
+            'is_verified':     user.is_verified,
+            'avatar_filename': user.avatar_filename,
+            'bio':             user.bio,
+            'job_title':       user.job_title,
+            'company':         user.company,
+            'location':        user.location,
+            'created_at':      user.created_at.isoformat() if user.created_at else None,
+            'last_seen_at':    user.last_seen_at.isoformat() if user.last_seen_at else None,
+        }, 200
+
+
+@account_ns.route('/user-activity/<int:uid>')
+class UserActivity(Resource):
+    """30-day activity chart data for a user — admin only."""
+    method_decorators = [admin_required]
+
+    def get(self, uid):
+        user = AccountCore.get_user(uid)
+        if not user:
+            return {'message': 'User not found'}, 404
+
+        today     = datetime.utcnow().date()
+        since     = datetime(today.year, today.month, today.day) - timedelta(days=29)
+
+        # Group log entries by day for this actor
+        rows = (
+            db.session.query(
+                func.strftime('%Y-%m-%d', Log.created_at).label('day'),
+                func.count(Log.id).label('cnt'),
+            )
+            .filter(Log.actor_id == uid, Log.created_at >= since)
+            .group_by('day')
+            .all()
+        )
+        counts_by_day = {r.day: r.cnt for r in rows}
+
+        # Build complete 30-day series (zero-fill missing days)
+        daily = []
+        for i in range(30):
+            day_str = (since.date() + timedelta(days=i)).isoformat()
+            daily.append({'date': day_str, 'count': counts_by_day.get(day_str, 0)})
+
+        # Total events & logins
+        total_events = sum(r.cnt for r in rows)
+
+        login_count = (
+            db.session.query(func.count(Log.id))
+            .filter(
+                Log.actor_id == uid,
+                Log.created_at >= since,
+                Log.action.in_(['login', 'user_login']),
+            )
+            .scalar() or 0
+        )
+
+        return {
+            'daily':        daily,
+            'total_events': total_events,
+            'total_logins': login_count,
+            'last_seen':    user.last_seen_at.isoformat() if user.last_seen_at else None,
+        }, 200

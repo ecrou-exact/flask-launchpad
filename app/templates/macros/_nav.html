@@ -28,8 +28,12 @@
             {% endif %}
             {% if current_user.is_authenticated and current_user.is_admin() %}
             <a href="{{ url_for('admin.users') }}"
-               class="topbar-nav-link {% if request.blueprint == 'admin' %}active{% endif %}">
+               class="topbar-nav-link {% if request.endpoint == 'admin.users' %}active{% endif %}">
                 <i class="fas fa-users"></i>Users
+            </a>
+            <a href="{{ url_for('admin.logs') }}"
+               class="topbar-nav-link {% if request.endpoint == 'admin.logs' %}active{% endif %}">
+                <i class="fas fa-scroll"></i>Logs
             </a>
             <a href="/api/" class="topbar-nav-link" target="_blank">
                 <i class="fas fa-code"></i>API
@@ -79,8 +83,11 @@
         {% endif %}
         {% if current_user.is_authenticated and current_user.is_admin() %}
         <p class="nav-section-label">Admin</p>
-        <a href="{{ url_for('admin.users') }}" class="nav-link-item {% if request.blueprint == 'admin' %}active{% endif %}">
+        <a href="{{ url_for('admin.users') }}" class="nav-link-item {% if request.endpoint == 'admin.users' %}active{% endif %}">
             <i class="fas fa-users nav-icon"></i><span class="nav-label">Users</span>
+        </a>
+        <a href="{{ url_for('admin.logs') }}" class="nav-link-item {% if request.endpoint == 'admin.logs' %}active{% endif %}">
+            <i class="fas fa-scroll nav-icon"></i><span class="nav-label">Logs</span>
         </a>
         <a href="/api/" class="nav-link-item" target="_blank">
             <i class="fas fa-code nav-icon"></i><span class="nav-label">API Docs</span>
@@ -156,10 +163,16 @@
         {% if current_user.is_authenticated and current_user.is_admin() %}
         <p class="nav-section-label">Admin</p>
         <a href="{{ url_for('admin.users') }}"
-           class="nav-link-item {% if request.blueprint == 'admin' %}active{% endif %}"
+           class="nav-link-item {% if request.endpoint == 'admin.users' %}active{% endif %}"
            data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Users">
             <i class="fas fa-users nav-icon"></i>
             <span class="nav-label">Users</span>
+        </a>
+        <a href="{{ url_for('admin.logs') }}"
+           class="nav-link-item {% if request.endpoint == 'admin.logs' %}active{% endif %}"
+           data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Logs">
+            <i class="fas fa-scroll nav-icon"></i>
+            <span class="nav-label">Logs</span>
         </a>
         <a href="/api/" class="nav-link-item" target="_blank"
            data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="API Docs">

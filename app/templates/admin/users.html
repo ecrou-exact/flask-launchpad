@@ -126,9 +126,14 @@
 
                 {# ── Role ── #}
                 <template #cell-role="{ item }">
-                    <span class="user-role-badge" :class="item.is_admin ? 'user-role-badge--admin' : ''">
-                        [[ item.role_name || 'No role' ]]
-                    </span>
+                    <select class="user-role-select"
+                            :class="item.is_admin ? 'user-role-select--admin' : ''"
+                            :value="item.role_id"
+                            @change.stop="changeRole(item, $event.target.value)"
+                            @click.stop>
+                        <option v-for="r in roles_list" :key="r.id" :value="r.id">[[ r.name ]]</option>
+                        <option v-if="!item.role_id" :value="null">No role</option>
+                    </select>
                 </template>
 
                 {# ── Joined ── #}
@@ -226,6 +231,27 @@
 
         </div>
     </div>
+
+    {# ── Modals ── #}
+    <modal-edit-user
+        :visible="show_edit_modal"
+        :user="selected_user"
+        :roles="roles_list"
+        @close="show_edit_modal = false"
+        @saved="onSaved">
+    </modal-edit-user>
+
+    <modal-confirm
+        :visible="show_delete_modal"
+        title="Delete user"
+        :message="'Delete ' + (selected_user ? selected_user.first_name + ' ' + selected_user.last_name : '') + '? This cannot be undone.'"
+        confirm-label="Delete"
+        variant="danger"
+        :loading="delete_loading"
+        @confirm="onDeleteConfirm"
+        @cancel="show_delete_modal = false">
+    </modal-confirm>
+
 </div>
 {% endblock %}
 
@@ -234,23 +260,43 @@
     const { createApp, ref, onMounted } = Vue
     import { message_list, create_message, display_toast } from '/static/js/toaster.js'
     import { TOAST, apiFetch } from '/static/js/constants.js'
-    import LoadingBar from '/static/js/components/loading-bar.js'
-    import UserAvatar from '/static/js/components/user-avatar.js'
-    import DataTable  from '/static/js/components/table/data-table.js'
+    import LoadingBar    from '/static/js/components/loading-bar.js'
+    import UserAvatar    from '/static/js/components/user-avatar.js'
+    import DataTable     from '/static/js/components/table/data-table.js'
+    import ModalEditUser from '/static/js/components/modals/modal-edit-user.js'
+    import ModalConfirm  from '/static/js/components/modals/modal-confirm.js'
+    import BaseModal     from '/static/js/components/modals/base-modal.js'
 
     createApp({
         delimiters: ['[[', ']]'],
-        components: { LoadingBar, UserAvatar, DataTable },
+        components: { LoadingBar, UserAvatar, DataTable, ModalEditUser, ModalConfirm, BaseModal },
 
         setup() {
-            const page_is_loading   = ref(false)
-            const table_ref         = ref(null)
+            const page_is_loading    = ref(false)
+            const table_ref          = ref(null)
             const allow_registration = ref({{ 'true' if allow_registration else 'false' }})
             const allow_login        = ref({{ 'true' if allow_login else 'false' }})
             const settings_saved     = ref(false)
             let   saved_timer        = null
 
-            onMounted(() => { page_is_loading.value = true })
+            // ── Modal state ───────────────────────────────────────────────
+            const show_edit_modal   = ref(false)
+            const show_delete_modal = ref(false)
+            const selected_user     = ref(null)
+            const roles_list        = ref([])
+            const delete_loading    = ref(false)
+
+            onMounted(async () => {
+                await fetchRoles()
+                page_is_loading.value = true
+            })
+
+            async function fetchRoles() {
+                try {
+                    const res = await apiFetch('/api/account/roles')
+                    if (res.ok) roles_list.value = await res.json()
+                } catch { /* silent */ }
+            }
 
             // ── Columns ──────────────────────────────────────────────────
             const columns = [
@@ -358,20 +404,67 @@
                 table_ref.value?.fetchData()
             }
 
-            // ── Row actions ───────────────────────────────────────────────
-            function handleCreate() { window.location.href = '/account/register' }
-            function handleEdit(item) { window.location.href = `/account/admin/${item.id}/edit` }
-            function handleView(item) { window.location.href = `/account/admin/${item.id}` }
-
-            async function handleDelete(item) {
-                const name = `${item.first_name} ${item.last_name}`.trim()
-                if (!confirm(`Delete user "${name}"? This cannot be undone.`)) return
-                const res = await apiFetch(`/api/account/delete_user/${item.id}`, 'DELETE')
+            // ── Inline role change ────────────────────────────────────────
+            async function changeRole(item, new_role_id) {
+                const rid = parseInt(new_role_id, 10)
+                const res = await apiFetch(`/api/account/admin/user/${item.id}`, 'PUT', { role_id: rid })
                 if (res.ok) {
-                    await create_message('User deleted', TOAST.SUCCESS, false)
-                    table_ref.value?.fetchData()
+                    const updated = await res.json()
+                    item.role_id   = updated.role_id
+                    item.role_name = updated.role_name
+                    item.is_admin  = updated.is_admin
+                    await create_message('Role updated', TOAST.SUCCESS, false)
                 } else {
                     await display_toast(res)
+                }
+            }
+
+            // ── Row actions ───────────────────────────────────────────────
+            function handleCreate() { window.location.href = '/account/register' }
+
+            function handleEdit(item) {
+                selected_user.value = { ...item }
+                show_edit_modal.value = true
+            }
+
+            function handleView(item) {
+                window.location.href = `/admin/users/${item.id}`
+            }
+
+            function handleDelete(item) {
+                selected_user.value = { ...item }
+                show_delete_modal.value = true
+            }
+
+            // ── Modal callbacks ───────────────────────────────────────────
+            function onSaved(updated) {
+                // Update the row in the table without a full refetch
+                if (table_ref.value) {
+                    const items = table_ref.value.items ?? []
+                    const idx   = items.findIndex(i => i.id === updated.id)
+                    if (idx !== -1) {
+                        items[idx] = { ...items[idx], ...updated }
+                    }
+                }
+                show_edit_modal.value = false
+                create_message('User updated', TOAST.SUCCESS, false)
+            }
+
+            async function onDeleteConfirm() {
+                if (!selected_user.value) return
+                delete_loading.value = true
+                try {
+                    const res = await apiFetch(`/api/account/delete_user/${selected_user.value.id}`, 'DELETE')
+                    if (res.ok) {
+                        await create_message('User deleted', TOAST.SUCCESS, false)
+                        show_delete_modal.value = false
+                        selected_user.value = null
+                        table_ref.value?.fetchData()
+                    } else {
+                        await display_toast(res)
+                    }
+                } finally {
+                    delete_loading.value = false
                 }
             }
 
@@ -389,8 +482,10 @@
                 message_list, page_is_loading, table_ref,
                 allow_registration, allow_login, settings_saved, toggleSetting,
                 columns, bulk_actions,
-                toggleVerified, disconnectUser,
-                handleCreate, handleEdit, handleView, handleDelete, handleBulkAction,
+                toggleVerified, disconnectUser, handleBulkAction, changeRole,
+                handleCreate, handleEdit, handleView, handleDelete,
+                show_edit_modal, show_delete_modal, selected_user, roles_list, delete_loading,
+                onSaved, onDeleteConfirm,
                 formatDate,
             }
         },

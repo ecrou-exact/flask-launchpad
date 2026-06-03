@@ -191,6 +191,36 @@
 }
 
 
+/*---ROLE_SELECT---*/
+
+.user-role-select {
+    display: inline-block;
+    padding: .2rem .5rem;
+    border-radius: var(--radius-sm);
+    font-size: .72rem;
+    font-weight: 600;
+    white-space: nowrap;
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: border-color var(--transition);
+    max-width: 120px;
+}
+
+.user-role-select:hover,
+.user-role-select:focus {
+    outline: none;
+    border-color: var(--brand-glow);
+}
+
+.user-role-select--admin {
+    background: var(--brand-dim);
+    color: var(--brand);
+    border-color: var(--brand-glow);
+}
+
+
 /*---CARD_BODY---*/
 
 .user-card-body {

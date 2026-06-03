@@ -48,6 +48,7 @@ def create_app():
     # Ensure these tables are known to Alembic
     from .core.db_class.config import UserConfig       # noqa: F401
     from .core.db_class.site_config import SiteConfig  # noqa: F401
+    from .core.db_class.log import Log                 # noqa: F401
 
     @app.context_processor
     def inject_site_config():

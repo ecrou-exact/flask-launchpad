@@ -3,6 +3,7 @@ from flask_restx import Namespace, Resource
 
 from ..core.utils.decorators import admin_required
 from ..core.db_class.site_config import SiteConfig, get_site_bool, set_site_value
+from ..core.utils.logger import log_action
 from flask_login import current_user
 
 admin_ns = Namespace('admin', description='Admin-only site configuration')
@@ -30,4 +31,14 @@ class SiteConfigList(Resource):
 
         uid = current_user.id if current_user.is_authenticated else None
         set_site_value(key, '1' if value else '0', user_id=uid)
+        log_action(
+            f"Site config updated: {key}",
+            "site_config_update",
+            category="system",
+            level="info",
+            object_type="site_config",
+            object_id=key,
+            is_public=False,
+            meta={"key": key, "value": str(value)},
+        )
         return {'key': key, 'value': str(value), 'message': 'Updated'}, 200

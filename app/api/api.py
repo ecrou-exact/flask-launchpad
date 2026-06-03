@@ -21,10 +21,10 @@ def version():
 
 
 api = Api(api_blueprint,
-    title='ptit-crolle API', 
-    description="<a href='https://github.com/DavidCruciani/ptit-crolle' rel='noreferrer' target='_blank'>"
-    "<img src='/static/image/crolle.png' width='200px' /></a><br />"
-    'API to query ptit-crolle.',
+    title='flask-launchpad API', 
+    description="<a href='https://github.com/ecrou-exact/flask-launchpad' rel='noreferrer' target='_blank'>"
+    "<img src='/static/image/logo.png'  /></a><br />"
+    'API to query flask-launchpad.',
     version=version(), 
     # license="GNU Affero General Public License version 3",
     # license_url="https://www.gnu.org/licenses/agpl-3.0.html",
@@ -36,10 +36,12 @@ api = Api(api_blueprint,
 from .account_api import account_ns
 from .config_api import config_ns
 from .admin_api import admin_ns
+from .log_api import log_ns
 
 api.add_namespace(account_ns, path="/account")
 api.add_namespace(config_ns, path="/config")
 api.add_namespace(admin_ns, path="/admin")
+api.add_namespace(log_ns, path="/log")
 
 
 
