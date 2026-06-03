@@ -22,6 +22,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='fontawesome-6.3.0/css/solid.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='fontawesome-6.3.0/css/brands.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/core.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/toast/toast.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/nav/nav.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/footer/footer.css') }}">
 
@@ -73,29 +74,54 @@
 
         {# Page content #}
         <main id="main-container">
-            {% include 'macros/_flashes.html' %}
 
-            {# Vue toast container #}
-            <div aria-live="polite" aria-atomic="true">
-                <div class="toast-container">
-                    <template v-if="message_list">
-                        <template v-for="msg in message_list" :key="msg.id">
-                            <div :id="'liveToast-' + msg.id"
-                                 :class="'toast align-items-center border-0 bg-' + msg.toast_class"
-                                 role="alert" data-bs-delay="5000"
-                                 aria-live="assertive" aria-atomic="true">
-                                <div class="d-flex">
-                                    <div class="toast-body d-flex align-items-center gap-2">
-                                        <i :class="msg.icon"></i>
-                                        <span>[[ msg.message ]]</span>
-                                    </div>
-                                    <button type="button" class="btn-close me-2 m-auto"
-                                            data-bs-dismiss="toast" aria-label="Close"></button>
-                                </div>
-                            </div>
-                        </template>
-                    </template>
+            {# ── Unified toast container (flash + Vue toasts) ── #}
+            {% set _tdur = (user_config.toast_duration * 1000) if user_config and user_config.toast_duration else 5000 %}
+            <div class="app-toast-container"
+                 id="appToastContainer"
+                 data-position="{{ user_config.toast_position if user_config and user_config.toast_position else 'top-right' }}"
+                 data-style="{{ user_config.toast_style if user_config and user_config.toast_style else 'card' }}"
+                 data-duration="{{ _tdur }}"
+                 aria-live="polite" aria-atomic="true">
+
+                {# Static flash messages from Flask #}
+                {% for category, message in get_flashed_messages(with_categories=True) %}
+                {% set ftype = 'danger' if category in ('error', 'danger') else ('success' if category == 'success' else ('warning' if category == 'warning' else 'info')) %}
+                {% set ficon = 'fa-circle-check' if ftype == 'success' else ('fa-triangle-exclamation' if ftype == 'warning' else ('fa-circle-xmark' if ftype == 'danger' else 'fa-circle-info')) %}
+                <div class="app-toast app-toast--{{ ftype }} app-toast--visible is-flash"
+                     style="--toast-dur: {{ _tdur }}ms">
+                    <div class="app-toast-stripe"></div>
+                    <div class="app-toast-icon-wrap"><i class="fas {{ ficon }}"></i></div>
+                    <div class="app-toast-body">
+                        <p class="app-toast-message">{{ message }}</p>
+                    </div>
+                    <button class="app-toast-close-btn" onclick="closeFlashToast(this)" aria-label="Close">
+                        <i class="fas fa-xmark"></i>
+                    </button>
+                    <div class="app-toast-progress"></div>
                 </div>
+                {% endfor %}
+
+                {# Dynamic Vue toasts #}
+                <template v-if="message_list">
+                    <div v-for="msg in message_list"
+                         :key="msg.id"
+                         :class="['app-toast', 'app-toast--' + msg.type, 'app-toast--visible', { 'app-toast--persistent': msg.not_hide }]"
+                         :style="{ '--toast-dur': msg.duration + 'ms' }"
+                         role="alert">
+                        <div class="app-toast-stripe"></div>
+                        <div class="app-toast-icon-wrap"><i :class="'fas ' + msg.icon"></i></div>
+                        <div class="app-toast-body">
+                            <p class="app-toast-message">[[ msg.message ]]</p>
+                        </div>
+                        <button class="app-toast-close-btn"
+                                :data-dismiss-id="msg.id"
+                                aria-label="Close">
+                            <i class="fas fa-xmark"></i>
+                        </button>
+                        <div class="app-toast-progress"></div>
+                    </div>
+                </template>
             </div>
 
             {% block content %}{% endblock %}
@@ -113,6 +139,22 @@
 <div style="display:none;">
     <input type="hidden" id="csrf_token" name="csrf_token" value="{{ csrf_token()|safe }}">
 </div>
+
+{# ── Flash toast helpers ── #}
+<script>
+function closeFlashToast(btn) {
+    const toast = btn.closest('.app-toast')
+    if (!toast) return
+    toast.classList.add('is-hiding')
+    setTimeout(() => toast.remove(), 260)
+}
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.app-toast.is-flash').forEach(function (t) {
+        var dur = parseInt(t.style.getPropertyValue('--toast-dur')) || 5000
+        setTimeout(function () { closeFlashToast(t.querySelector('.app-toast-close-btn')) }, dur)
+    })
+})
+</script>
 
 {# ── Scripts ── #}
 {% block script %}

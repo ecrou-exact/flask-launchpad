@@ -25,16 +25,14 @@
         <div class="page-body">
             <div class="row g-3">
 
-                {# ── Left column ─────────────────────────────────── #}
+                {# ── Left column — sections ──────────────────────── #}
                 <div class="col-12 col-lg-8">
 
                     {# Theme ─────────────────────────────────────── #}
-                    <div class="card mb-3">
+                    <div id="section-theme" class="card mb-3">
                         <div class="card-body">
                             <div class="settings-card-header mb-3">
-                                <div class="settings-card-icon">
-                                    <i class="fas fa-palette"></i>
-                                </div>
+                                <div class="settings-card-icon"><i class="fas fa-palette"></i></div>
                                 <div>
                                     <h6 class="settings-section-title mb-0">Theme</h6>
                                     <p class="text-muted small mb-0">Choose the color scheme for the interface.</p>
@@ -42,14 +40,10 @@
                             </div>
 
                             <div class="settings-theme-group">
-                                <div
-                                    v-for="option in theme_options"
-                                    :key="option.value"
-                                    class="settings-theme-card"
-                                    :class="{ active: theme === option.value }"
-                                    @click="setTheme(option.value)">
-
-                                    {# Mini UI preview #}
+                                <div v-for="option in theme_options" :key="option.value"
+                                     class="settings-theme-card"
+                                     :class="{ active: theme === option.value }"
+                                     @click="setTheme(option.value)">
                                     <div class="theme-preview" :class="'theme-preview--' + option.value">
                                         <div class="tp-sidebar">
                                             <div class="tp-logo"></div>
@@ -68,7 +62,6 @@
                                             </div>
                                         </div>
                                     </div>
-
                                     <div class="settings-theme-label">
                                         <i :class="'fas ' + option.icon"></i>
                                         <span>[[ option.label ]]</span>
@@ -80,12 +73,10 @@
                     </div>
 
                     {# Navigation layout ─────────────────────────── #}
-                    <div class="card mb-3">
+                    <div id="section-nav" class="card mb-3">
                         <div class="card-body">
                             <div class="settings-card-header mb-3">
-                                <div class="settings-card-icon">
-                                    <i class="fas fa-table-columns"></i>
-                                </div>
+                                <div class="settings-card-icon"><i class="fas fa-table-columns"></i></div>
                                 <div>
                                     <h6 class="settings-section-title mb-0">Navigation layout</h6>
                                     <p class="text-muted small mb-0">Choose how navigation is displayed. Takes effect on the next page load.</p>
@@ -93,14 +84,10 @@
                             </div>
 
                             <div class="settings-nav-group">
-                                <div
-                                    v-for="option in nav_options"
-                                    :key="option.value"
-                                    class="settings-nav-card"
-                                    :class="{ active: nav_position === option.value }"
-                                    @click="setNavPosition(option.value)">
-
-                                    {# Mini layout preview #}
+                                <div v-for="option in nav_options" :key="option.value"
+                                     class="settings-nav-card"
+                                     :class="{ active: nav_position === option.value }"
+                                     @click="setNavPosition(option.value)">
                                     <div class="nav-preview" :class="'nav-preview--' + option.value">
                                         <template v-if="option.value === 'sidebar'">
                                             <div class="np-sidebar">
@@ -155,7 +142,6 @@
                                             </div>
                                         </template>
                                     </div>
-
                                     <div class="settings-nav-label">
                                         <i :class="'fas ' + option.icon"></i>
                                         <div>
@@ -169,28 +155,116 @@
                         </div>
                     </div>
 
+                    {# Notifications ──────────────────────────────── #}
+                    <div id="section-notifications" class="card mb-3">
+                        <div class="card-body">
+                            <div class="settings-card-header mb-3">
+                                <div class="settings-card-icon"><i class="fas fa-bell"></i></div>
+                                <div>
+                                    <h6 class="settings-section-title mb-0">Notifications</h6>
+                                    <p class="text-muted small mb-0">Where and how toasts appear.</p>
+                                </div>
+                            </div>
+
+                            <p class="settings-sub-label">Position</p>
+                            <div class="settings-toast-position-group mb-4">
+                                <button v-for="opt in toast_position_options" :key="opt.value"
+                                        class="settings-toast-pos-btn"
+                                        :class="{ active: toast_position === opt.value }"
+                                        @click="setToastPosition(opt.value)"
+                                        :title="opt.label">
+                                    <div class="tpos-preview" :class="'tpos-preview--' + opt.value">
+                                        <span class="tpos-dot"></span>
+                                    </div>
+                                    <span class="tpos-label">[[ opt.label ]]</span>
+                                </button>
+                            </div>
+
+                            <p class="settings-sub-label">Duration</p>
+                            <div class="d-flex align-items-center gap-3 mb-4">
+                                <span class="text-muted small flex-shrink-0">2s</span>
+                                <input type="range" class="form-range flex-1" min="2" max="10" step="1"
+                                       v-model.number="toast_duration"
+                                       @change="setToastDuration(toast_duration)">
+                                <span class="text-muted small flex-shrink-0">10s</span>
+                                <span class="badge bg-primary-subtle text-primary-emphasis rounded-pill"
+                                      style="min-width:2.5rem;text-align:center;">
+                                    [[ toast_duration ]]s
+                                </span>
+                            </div>
+
+                            <p class="settings-sub-label">Style</p>
+                            <div class="settings-toast-style-group mb-4">
+                                <div v-for="opt in toast_style_options" :key="opt.value"
+                                     class="settings-toast-style-card"
+                                     :class="{ active: toast_style === opt.value }"
+                                     @click="setToastStyle(opt.value)">
+                                    <div class="toast-style-preview" :class="'tsp--' + opt.value">
+                                        <div class="tsp-stripe"></div>
+                                        <div class="tsp-icon"></div>
+                                        <div class="tsp-lines">
+                                            <div class="tsp-line tsp-line--title"></div>
+                                            <div class="tsp-line"></div>
+                                        </div>
+                                    </div>
+                                    <span class="tsp-label">
+                                        [[ opt.label ]]
+                                        <i v-if="toast_style === opt.value" class="fas fa-circle-check ms-1 text-primary" style="font-size:.65rem;"></i>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="pt-3 border-top d-flex justify-content-end">
+                                <button class="btn btn-sm btn-outline-primary"
+                                        @click="previewToast()"
+                                        :disabled="preview_disabled">
+                                    <i :class="preview_disabled ? 'fas fa-hourglass-half' : 'fas fa-bell'" class="me-1"></i>
+                                    [[ preview_disabled ? 'Wait…' : 'Send test notification' ]]
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
 
-                {# ── Right column — quick toggles ─────────────────── #}
+                {# ── Right column ─────────────────────────────────── #}
                 <div class="col-12 col-lg-4">
+                <div style="position:sticky;top:calc(var(--topbar-height, 56px) + 1rem);">
 
+                    {# Anchor nav #}
+                    <div class="card mb-3">
+                        <div class="card-body p-2">
+                            <p class="settings-sub-label px-2 pt-1 mb-1">On this page</p>
+                            <nav>
+                                <a v-for="sec in sections" :key="sec.id"
+                                   class="settings-anchor-link"
+                                   :class="{ active: active_section === sec.id }"
+                                   href="javascript:void(0)"
+                                   @click="scrollToSection(sec.id)">
+                                    <span class="settings-anchor-indicator"></span>
+                                    <i :class="'fas ' + sec.icon"></i>
+                                    [[ sec.label ]]
+                                </a>
+                            </nav>
+                        </div>
+                    </div>
+
+                    {# Quick settings #}
                     <div class="card">
                         <div class="card-body">
                             <h6 class="settings-section-title mb-3">
                                 <i class="fas fa-sliders me-2 text-primary"></i>Quick settings
                             </h6>
 
-                            {# Sidebar collapsed toggle #}
                             <div class="settings-toggle-row">
                                 <div class="settings-toggle-info">
                                     <span class="settings-toggle-label">Collapsed sidebar</span>
                                     <span class="text-muted small d-block">Start with icons-only sidebar</span>
                                 </div>
-                                <button
-                                    class="settings-toggle-btn"
-                                    :class="{ active: sidebar_collapsed }"
-                                    @click="toggleSidebarCollapsed()"
-                                    :title="sidebar_collapsed ? 'Sidebar is collapsed' : 'Sidebar is expanded'">
+                                <button class="settings-toggle-btn"
+                                        :class="{ active: sidebar_collapsed }"
+                                        @click="toggleSidebarCollapsed()"
+                                        :title="sidebar_collapsed ? 'Sidebar is collapsed' : 'Sidebar is expanded'">
                                     <span class="toggle-track">
                                         <span class="toggle-thumb"></span>
                                     </span>
@@ -199,22 +273,16 @@
 
                             <hr class="divider my-3">
 
-                            {# Current config summary #}
                             <div class="settings-summary">
-                                <p class="text-muted small fw-semibold text-uppercase mb-2" style="letter-spacing:.05em; font-size:.65rem;">
-                                    Current settings
-                                </p>
+                                <p class="text-muted small fw-semibold text-uppercase mb-2"
+                                   style="letter-spacing:.05em;font-size:.65rem;">Current settings</p>
                                 <div class="settings-summary-row">
                                     <span class="text-muted small">Theme</span>
-                                    <span class="badge bg-primary-subtle text-primary-emphasis rounded-pill small">
-                                        [[ theme ]]
-                                    </span>
+                                    <span class="badge bg-primary-subtle text-primary-emphasis rounded-pill small">[[ theme ]]</span>
                                 </div>
                                 <div class="settings-summary-row">
                                     <span class="text-muted small">Navigation</span>
-                                    <span class="badge bg-primary-subtle text-primary-emphasis rounded-pill small">
-                                        [[ nav_position ]]
-                                    </span>
+                                    <span class="badge bg-primary-subtle text-primary-emphasis rounded-pill small">[[ nav_position ]]</span>
                                 </div>
                                 <div class="settings-summary-row">
                                     <span class="text-muted small">Sidebar</span>
@@ -224,15 +292,13 @@
                                     </span>
                                 </div>
                             </div>
-
                         </div>
                     </div>
 
-                    {# Save status indicator #}
+                    {# Save status #}
                     <div class="settings-save-status mt-2" :class="save_status">
                         <template v-if="save_status === 'saving'">
-                            <div class="spinner-border spinner-border-sm me-2" role="status"></div>
-                            Saving…
+                            <div class="spinner-border spinner-border-sm me-2" role="status"></div>Saving…
                         </template>
                         <template v-else-if="save_status === 'saved'">
                             <i class="fas fa-circle-check me-2"></i>Saved
@@ -242,7 +308,8 @@
                         </template>
                     </div>
 
-                </div>
+                </div>{# end sticky wrapper #}
+                </div>{# end col #}
             </div>
         </div>
     </div>
@@ -251,7 +318,7 @@
 
 {% block script %}
 <script type="module">
-    const { createApp, ref, onMounted } = Vue
+    const { createApp, ref, onMounted, onUnmounted, nextTick } = Vue
     import { message_list, create_message } from '/static/js/toaster.js'
     import { TOAST, apiFetch } from '/static/js/constants.js'
     import LoadingBar from '/static/js/components/loading-bar.js'
@@ -264,27 +331,56 @@
             const theme             = ref('{{ config.theme if config else "system" }}')
             const nav_position      = ref('{{ config.nav_position if config else "sidebar" }}')
             const sidebar_collapsed = ref({{ 'true' if config and config.sidebar_collapsed else 'false' }})
-            const save_status       = ref('')  // '' | 'saving' | 'saved' | 'error'
+            const toast_position    = ref('{{ config.toast_position if config else "top-right" }}')
+            const toast_style       = ref('{{ config.toast_style if config else "card" }}')
+            const toast_duration    = ref({{ config.toast_duration if config and config.toast_duration else 5 }})
+            const save_status       = ref('')
+            const preview_disabled  = ref(false)
+            const active_section    = ref('section-theme')
 
-            let save_timer = null
+            let save_timer  = null
+            let observer    = null
+
+            // ── Section definitions (anchor nav) ────────────────
+            const sections = [
+                { id: 'section-theme',         label: 'Theme',         icon: 'fa-palette'       },
+                { id: 'section-nav',           label: 'Navigation',    icon: 'fa-table-columns' },
+                { id: 'section-notifications', label: 'Notifications', icon: 'fa-bell'          },
+            ]
 
             const theme_options = [
                 { value: 'system',   label: 'System',   icon: 'fa-circle-half-stroke' },
-                { value: 'light',    label: 'Light',    icon: 'fa-sun' },
-                { value: 'dark',     label: 'Dark',     icon: 'fa-moon' },
-                { value: 'ocean',    label: 'Ocean',    icon: 'fa-water' },
-                { value: 'slate',    label: 'Slate',    icon: 'fa-layer-group' },
-                { value: 'forest',   label: 'Forest',   icon: 'fa-tree' },
-                { value: 'midnight', label: 'Midnight', icon: 'fa-star' },
+                { value: 'light',    label: 'Light',    icon: 'fa-sun'                },
+                { value: 'dark',     label: 'Dark',     icon: 'fa-moon'               },
+                { value: 'ocean',    label: 'Ocean',    icon: 'fa-water'              },
+                { value: 'slate',    label: 'Slate',    icon: 'fa-layer-group'        },
+                { value: 'forest',   label: 'Forest',   icon: 'fa-tree'               },
+                { value: 'midnight', label: 'Midnight', icon: 'fa-star'               },
             ]
 
             const nav_options = [
                 { value: 'sidebar', label: 'Sidebar', icon: 'fa-table-columns', description: 'Left panel with labels' },
                 { value: 'topbar',  label: 'Top bar', icon: 'fa-bars',          description: 'Horizontal navigation' },
-                { value: 'rail',    label: 'Rail',    icon: 'fa-grip-vertical',  description: 'Icons + mini labels' },
-                { value: 'hidden',  label: 'Hidden',  icon: 'fa-eye-slash',      description: 'Open on demand' },
+                { value: 'rail',    label: 'Rail',    icon: 'fa-grip-vertical',  description: 'Icons + mini labels'  },
+                { value: 'hidden',  label: 'Hidden',  icon: 'fa-eye-slash',      description: 'Open on demand'       },
             ]
 
+            const toast_position_options = [
+                { value: 'top-right',     label: 'Top right'     },
+                { value: 'top-left',      label: 'Top left'      },
+                { value: 'top-center',    label: 'Top center'    },
+                { value: 'bottom-right',  label: 'Bottom right'  },
+                { value: 'bottom-left',   label: 'Bottom left'   },
+                { value: 'bottom-center', label: 'Bottom center' },
+            ]
+
+            const toast_style_options = [
+                { value: 'card',    label: 'Card'    },
+                { value: 'pill',    label: 'Pill'    },
+                { value: 'minimal', label: 'Minimal' },
+            ]
+
+            // ── Save helper ─────────────────────────────────────
             async function savePreference(payload) {
                 save_status.value = 'saving'
                 clearTimeout(save_timer)
@@ -298,6 +394,7 @@
                 }
             }
 
+            // ── Settings actions ────────────────────────────────
             async function setTheme(value) {
                 theme.value = value
                 applyTheme(value)
@@ -312,33 +409,93 @@
                 window.location.reload()
             }
 
+            async function setToastPosition(value) {
+                toast_position.value = value
+                const c = document.getElementById('appToastContainer')
+                if (c) c.dataset.position = value
+                await savePreference({ toast_position: value })
+                await create_message('Position updated', TOAST.INFO, false)
+            }
+
+            async function setToastStyle(value) {
+                toast_style.value = value
+                const c = document.getElementById('appToastContainer')
+                if (c) c.dataset.style = value
+                await savePreference({ toast_style: value })
+                await create_message('Style updated', TOAST.INFO, false)
+            }
+
+            async function setToastDuration(value) {
+                const c = document.getElementById('appToastContainer')
+                if (c) c.dataset.duration = value * 1000
+                await savePreference({ toast_duration: value })
+            }
+
             async function toggleSidebarCollapsed() {
                 sidebar_collapsed.value = !sidebar_collapsed.value
-                // Also update the live sidebar immediately
                 const wrapper = document.getElementById('appWrapper')
                 if (wrapper) wrapper.classList.toggle('sidebar-collapsed', sidebar_collapsed.value)
                 const chevron = document.getElementById('sidebar-chevron')
                 if (chevron) {
-                    chevron.classList.toggle('fa-chevron-left', !sidebar_collapsed.value)
+                    chevron.classList.toggle('fa-chevron-left',  !sidebar_collapsed.value)
                     chevron.classList.toggle('fa-chevron-right', sidebar_collapsed.value)
                 }
                 await savePreference({ sidebar_collapsed: sidebar_collapsed.value })
             }
 
-            onMounted(() => { page_is_loading.value = true })
+            // ── Preview toast (anti-spam) ────────────────────────
+            async function previewToast() {
+                if (preview_disabled.value) return
+                preview_disabled.value = true
+
+                const entries = [
+                    { msg: 'Settings saved successfully!',    type: TOAST.SUCCESS },
+                    { msg: 'Check your notifications.',       type: TOAST.INFO    },
+                    { msg: 'Something needs your attention.', type: TOAST.WARNING },
+                    { msg: 'An error occurred.',              type: TOAST.ERROR   },
+                ]
+                const pick = entries[Math.floor(Math.random() * entries.length)]
+                await create_message(pick.msg, pick.type, false)
+
+                setTimeout(() => { preview_disabled.value = false }, toast_duration.value * 1000 + 400)
+            }
+
+            // ── Anchor nav ──────────────────────────────────────
+            function scrollToSection(id) {
+                const el = document.getElementById(id)
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            }
+
+            onMounted(async () => {
+                page_is_loading.value = true
+                await nextTick()
+
+                // Intersection observer to track active section
+                observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) active_section.value = entry.target.id
+                    })
+                }, { rootMargin: '-20% 0px -60% 0px', threshold: 0 })
+
+                sections.forEach(sec => {
+                    const el = document.getElementById(sec.id)
+                    if (el) observer.observe(el)
+                })
+            })
+
+            onUnmounted(() => { if (observer) observer.disconnect() })
 
             return {
                 message_list,
                 page_is_loading,
-                theme,
-                nav_position,
-                sidebar_collapsed,
-                save_status,
-                theme_options,
-                nav_options,
-                setTheme,
-                setNavPosition,
-                toggleSidebarCollapsed,
+                theme, nav_position, sidebar_collapsed,
+                toast_position, toast_style, toast_duration,
+                save_status, preview_disabled, active_section,
+                sections, theme_options, nav_options,
+                toast_position_options, toast_style_options,
+                setTheme, setNavPosition,
+                setToastPosition, setToastStyle, setToastDuration,
+                toggleSidebarCollapsed, previewToast, scrollToSection,
             }
         },
     }).mount('#main-container')

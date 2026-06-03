@@ -1,4 +1,4 @@
-from ..core.db_class.config import THEME_CHOICES, NAV_POSITION_CHOICES
+from ..core.db_class.config import THEME_CHOICES, NAV_POSITION_CHOICES, TOAST_POSITION_CHOICES, TOAST_STYLE_CHOICES, TOAST_DURATION_MIN, TOAST_DURATION_MAX
 
 
 class VerifConfig:
@@ -21,6 +21,25 @@ class VerifConfig:
             if not isinstance(data['sidebar_collapsed'], bool):
                 return {'message': 'sidebar_collapsed must be a boolean'}
             result['sidebar_collapsed'] = data['sidebar_collapsed']
+
+        if 'toast_position' in data:
+            if data['toast_position'] not in TOAST_POSITION_CHOICES:
+                return {'message': f"Invalid toast_position. Valid: {TOAST_POSITION_CHOICES}"}
+            result['toast_position'] = data['toast_position']
+
+        if 'toast_style' in data:
+            if data['toast_style'] not in TOAST_STYLE_CHOICES:
+                return {'message': f"Invalid toast_style. Valid: {TOAST_STYLE_CHOICES}"}
+            result['toast_style'] = data['toast_style']
+
+        if 'toast_duration' in data:
+            try:
+                val = int(data['toast_duration'])
+            except (TypeError, ValueError):
+                return {'message': 'toast_duration must be an integer'}
+            if not (TOAST_DURATION_MIN <= val <= TOAST_DURATION_MAX):
+                return {'message': f"toast_duration must be between {TOAST_DURATION_MIN} and {TOAST_DURATION_MAX}"}
+            result['toast_duration'] = val
 
         if not result:
             return {'message': 'No valid field provided'}

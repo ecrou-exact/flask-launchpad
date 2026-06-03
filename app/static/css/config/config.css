@@ -1,3 +1,70 @@
+/*---SETTINGS_SUB_LABEL---*/
+
+.settings-sub-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+}
+
+
+/*---SETTINGS_ANCHOR_NAV---*/
+
+/* sticky handled by the wrapper div in the template */
+
+.settings-anchor-link {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-decoration: none;
+    position: relative;
+    transition: background var(--transition), color var(--transition);
+    cursor: pointer;
+}
+
+.settings-anchor-link:hover {
+    background: var(--bg-elevated);
+    color: var(--text-main);
+}
+
+.settings-anchor-link.active {
+    background: var(--brand-dim);
+    color: var(--brand);
+    font-weight: 600;
+}
+
+.settings-anchor-indicator {
+    width: 3px;
+    height: 14px;
+    border-radius: 2px;
+    background: transparent;
+    flex-shrink: 0;
+    transition: background var(--transition);
+}
+
+.settings-anchor-link.active .settings-anchor-indicator {
+    background: var(--brand);
+}
+
+.settings-anchor-link i {
+    font-size: 0.75rem;
+    width: 14px;
+    text-align: center;
+    opacity: 0.7;
+}
+
+.settings-anchor-link.active i {
+    opacity: 1;
+}
+
+
 /*---SETTINGS_CARD_HEADER---*/
 
 .settings-card-header {
@@ -708,3 +775,160 @@
     background: rgba(220, 38, 38, 0.08);
     border: 1px solid rgba(220, 38, 38, 0.2);
 }
+
+
+/*---TOAST_SETTINGS---*/
+
+/* Position picker grid */
+.settings-toast-position-group {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+}
+
+.settings-toast-pos-btn {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0.5rem 0.25rem 0.4rem;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    transition: border-color var(--transition), background var(--transition);
+}
+
+.settings-toast-pos-btn:hover {
+    border-color: var(--brand-glow);
+    background: var(--brand-dim);
+}
+
+.settings-toast-pos-btn.active {
+    border-color: var(--brand);
+    background: var(--brand-dim);
+}
+
+/* Mini position preview box */
+.tpos-preview {
+    width: 36px;
+    height: 26px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    position: relative;
+}
+
+.tpos-dot {
+    position: absolute;
+    width: 10px;
+    height: 5px;
+    background: var(--brand);
+    border-radius: 2px;
+}
+
+.tpos-preview--top-right    .tpos-dot { top: 3px;  right: 3px;  }
+.tpos-preview--top-left     .tpos-dot { top: 3px;  left: 3px;   }
+.tpos-preview--top-center   .tpos-dot { top: 3px;  left: 50%; transform: translateX(-50%); }
+.tpos-preview--bottom-right .tpos-dot { bottom: 3px; right: 3px; }
+.tpos-preview--bottom-left  .tpos-dot { bottom: 3px; left: 3px;  }
+.tpos-preview--bottom-center .tpos-dot { bottom: 3px; left: 50%; transform: translateX(-50%); }
+
+.tpos-label {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    text-align: center;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.settings-toast-pos-btn.active .tpos-label { color: var(--brand); font-weight: 600; }
+
+/* Style picker */
+.settings-toast-style-group {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+}
+
+.settings-toast-style-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0.625rem 0.5rem 0.5rem;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    transition: border-color var(--transition), background var(--transition);
+}
+
+.settings-toast-style-card:hover {
+    border-color: var(--brand-glow);
+    background: var(--brand-dim);
+}
+
+.settings-toast-style-card.active {
+    border-color: var(--brand);
+    background: var(--brand-dim);
+}
+
+/* Mini toast preview */
+.toast-style-preview {
+    width: 52px;
+    height: 28px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 5px;
+    position: relative;
+    overflow: hidden;
+}
+
+.tsp-stripe {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 2px;
+    background: var(--brand);
+}
+
+.tsp-icon {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    background: color-mix(in srgb, var(--brand) 20%, transparent);
+    flex-shrink: 0;
+}
+
+.tsp-lines { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.tsp-line  { height: 2px; background: var(--border); border-radius: 1px; }
+.tsp-line--title { width: 70%; background: var(--text-muted); }
+
+/* Pill preview */
+.tsp--pill {
+    border-radius: 100px;
+    background: color-mix(in srgb, var(--brand) 9%, var(--bg-surface));
+    border-color: color-mix(in srgb, var(--brand) 22%, transparent);
+}
+.tsp--pill .tsp-stripe { display: none; }
+
+/* Minimal preview */
+.tsp--minimal {
+    background: var(--bg-elevated);
+    border: none;
+    border-left: 2px solid var(--brand);
+    border-radius: 0 4px 4px 0;
+}
+.tsp--minimal .tsp-stripe { display: none; }
+.tsp--minimal .tsp-icon   { display: none; }
+
+.tsp-label {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+.settings-toast-style-card.active .tsp-label { color: var(--brand); font-weight: 600; }

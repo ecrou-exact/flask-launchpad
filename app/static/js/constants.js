@@ -1,8 +1,9 @@
 // Toast severity — always use these, never raw strings
 export const TOAST = {
-    SUCCESS: 'success-subtle',
-    WARNING: 'warning-subtle',
-    ERROR:   'danger-subtle',
+    SUCCESS: 'success',
+    WARNING: 'warning',
+    ERROR:   'danger',
+    INFO:    'info',
 }
 
 // CSRF token injected by base.html

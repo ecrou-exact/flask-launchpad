@@ -1,7 +1,7 @@
 from flask import request
 from flask_login import current_user
 from ... import db
-from ...core.db_class.config import UserConfig, THEME_CHOICES, NAV_POSITION_CHOICES
+from ...core.db_class.config import UserConfig, THEME_CHOICES, NAV_POSITION_CHOICES, TOAST_POSITION_CHOICES, TOAST_STYLE_CHOICES, TOAST_DURATION_MIN, TOAST_DURATION_MAX
 
 
 def _resolve_user_id():
@@ -59,6 +59,22 @@ def update_config_core(form_dict) -> tuple:
 
         if 'sidebar_collapsed' in form_dict:
             config.sidebar_collapsed = bool(form_dict['sidebar_collapsed'])
+
+        if 'toast_position' in form_dict:
+            if form_dict['toast_position'] not in TOAST_POSITION_CHOICES:
+                return None, "Invalid toast position"
+            config.toast_position = form_dict['toast_position']
+
+        if 'toast_style' in form_dict:
+            if form_dict['toast_style'] not in TOAST_STYLE_CHOICES:
+                return None, "Invalid toast style"
+            config.toast_style = form_dict['toast_style']
+
+        if 'toast_duration' in form_dict:
+            val = int(form_dict['toast_duration'])
+            if not (TOAST_DURATION_MIN <= val <= TOAST_DURATION_MAX):
+                return None, f"Duration must be between {TOAST_DURATION_MIN} and {TOAST_DURATION_MAX}"
+            config.toast_duration = val
 
         db.session.commit()
         return config, "Settings saved"
