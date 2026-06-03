@@ -33,13 +33,26 @@ def create_app():
 
     from .features.home.home import home_blueprint
     from .features.account.account import account_blueprint
+    from .features.config.config import config_blueprint
     app.register_blueprint(home_blueprint, url_prefix="/")
     app.register_blueprint(account_blueprint, url_prefix="/account")
+    app.register_blueprint(config_blueprint, url_prefix="/")
 
     from .api.api import api_blueprint
     csrf.exempt(api_blueprint)
     app.register_blueprint(api_blueprint)
 
+    # Ensure UserConfig table is known to Alembic
+    from .core.db_class.config import UserConfig  # noqa: F401
+
+    @app.context_processor
+    def inject_user_config():
+        from flask_login import current_user
+        from .core.db_class.config import UserConfig as UC
+        config = None
+        if current_user.is_authenticated:
+            config = UC.query.filter_by(user_id=current_user.id, is_active=True).first()
+        return dict(user_config=config)
 
     return app
     

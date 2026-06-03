@@ -1,4 +1,5 @@
 from ..db_class.user import User, Role, db
+from ..db_class.config import UserConfig
 from .utils import generate_api_key
 
 def create_admin_role():
@@ -36,42 +37,46 @@ def create_read_only_role():
 ############
 ############
 
+def _create_config(user):
+    config = UserConfig(user_id=user.id, created_by=user.id)
+    db.session.add(config)
+    db.session.commit()
+
+
 def create_admin():
-    # Role
     role = create_admin_role()
     create_editor_role()
     create_read_only_role()
 
-    # Admin user
     user = User(
         first_name="admin",
         last_name="admin",
         email="admin@admin.admin",
         password="admin",
         role_id=role.id,
-        api_key = generate_api_key()
+        api_key=generate_api_key()
     )
     db.session.add(user)
     db.session.commit()
+    _create_config(user)
 
 
 def create_user_test():
-    # Role
     role = create_admin_role()
     create_editor_role()
     create_read_only_role()
 
-    # Admin user
     user = User(
         first_name="admin",
         last_name="admin",
         email="admin@admin.admin",
         password="admin",
         role_id=role.id,
-        api_key = "admin_api_key"
+        api_key="admin_api_key"
     )
     db.session.add(user)
     db.session.commit()
+    _create_config(user)
 
     user = User(
         first_name="editor",
@@ -79,10 +84,11 @@ def create_user_test():
         email="editor@editor.editor",
         password="editor",
         role_id=2,
-        api_key = "editor_api_key"
+        api_key="editor_api_key"
     )
     db.session.add(user)
     db.session.commit()
+    _create_config(user)
 
     user = User(
         first_name="read",
@@ -90,7 +96,8 @@ def create_user_test():
         email="read@read.read",
         password="read",
         role_id=3,
-        api_key = "read_api_key"
+        api_key="read_api_key"
     )
     db.session.add(user)
     db.session.commit()
+    _create_config(user)

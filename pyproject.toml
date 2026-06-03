@@ -3,5 +3,6 @@
 filterwarnings = [
     "error",
     "ignore::UserWarning",
-    "ignore::DeprecationWarning"
+    "ignore::DeprecationWarning",
+    "ignore::sqlalchemy.exc.SAWarning"
 ]

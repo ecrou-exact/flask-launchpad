@@ -1,0 +1,342 @@
+{% extends 'base.html' %}
+{% block page_title %}Settings{% endblock %}
+{% block head_extra %}
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/config/config.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper" v-cloak>
+    <loading-bar :active="!page_is_loading"></loading-bar>
+
+    <div v-if="page_is_loading">
+
+        <div class="page-header">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-1">
+                        <li class="breadcrumb-item"><a href="/">Home</a></li>
+                        <li class="breadcrumb-item active">Settings</li>
+                    </ol>
+                </nav>
+                <h1 class="page-title">Interface Settings</h1>
+            </div>
+        </div>
+
+        <div class="page-body">
+            <div class="row g-3">
+
+                {# ── Left column ─────────────────────────────────── #}
+                <div class="col-12 col-lg-8">
+
+                    {# Theme ─────────────────────────────────────── #}
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="settings-card-header mb-3">
+                                <div class="settings-card-icon">
+                                    <i class="fas fa-palette"></i>
+                                </div>
+                                <div>
+                                    <h6 class="settings-section-title mb-0">Theme</h6>
+                                    <p class="text-muted small mb-0">Choose the color scheme for the interface.</p>
+                                </div>
+                            </div>
+
+                            <div class="settings-theme-group">
+                                <div
+                                    v-for="option in theme_options"
+                                    :key="option.value"
+                                    class="settings-theme-card"
+                                    :class="{ active: theme === option.value }"
+                                    @click="setTheme(option.value)">
+
+                                    {# Mini UI preview #}
+                                    <div class="theme-preview" :class="'theme-preview--' + option.value">
+                                        <div class="tp-sidebar">
+                                            <div class="tp-logo"></div>
+                                            <div class="tp-nav-item tp-nav-item--active"></div>
+                                            <div class="tp-nav-item"></div>
+                                            <div class="tp-nav-item"></div>
+                                        </div>
+                                        <div class="tp-main">
+                                            <div class="tp-topbar"></div>
+                                            <div class="tp-content">
+                                                <div class="tp-card">
+                                                    <div class="tp-line tp-line--title"></div>
+                                                    <div class="tp-line"></div>
+                                                    <div class="tp-line tp-line--short"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="settings-theme-label">
+                                        <i :class="'fas ' + option.icon"></i>
+                                        <span>[[ option.label ]]</span>
+                                        <i v-if="theme === option.value" class="fas fa-circle-check ms-auto text-primary"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {# Navigation layout ─────────────────────────── #}
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="settings-card-header mb-3">
+                                <div class="settings-card-icon">
+                                    <i class="fas fa-table-columns"></i>
+                                </div>
+                                <div>
+                                    <h6 class="settings-section-title mb-0">Navigation layout</h6>
+                                    <p class="text-muted small mb-0">Choose how navigation is displayed. Takes effect on the next page load.</p>
+                                </div>
+                            </div>
+
+                            <div class="settings-nav-group">
+                                <div
+                                    v-for="option in nav_options"
+                                    :key="option.value"
+                                    class="settings-nav-card"
+                                    :class="{ active: nav_position === option.value }"
+                                    @click="setNavPosition(option.value)">
+
+                                    {# Mini layout preview #}
+                                    <div class="nav-preview" :class="'nav-preview--' + option.value">
+                                        <template v-if="option.value === 'sidebar'">
+                                            <div class="np-sidebar">
+                                                <div class="np-item np-item--active"></div>
+                                                <div class="np-item"></div>
+                                                <div class="np-item"></div>
+                                            </div>
+                                            <div class="np-main">
+                                                <div class="np-topbar"></div>
+                                                <div class="np-content"></div>
+                                            </div>
+                                        </template>
+                                        <template v-else-if="option.value === 'topbar'">
+                                            <div class="np-full">
+                                                <div class="np-topbar np-topbar--nav">
+                                                    <div class="np-brand"></div>
+                                                    <div class="np-link np-link--active"></div>
+                                                    <div class="np-link"></div>
+                                                    <div class="np-link"></div>
+                                                </div>
+                                                <div class="np-content-wide"></div>
+                                            </div>
+                                        </template>
+                                        <template v-else-if="option.value === 'rail'">
+                                            <div class="np-rail">
+                                                <div class="np-rail-item np-rail-item--active">
+                                                    <div class="np-rail-dot"></div>
+                                                    <div class="np-rail-line"></div>
+                                                </div>
+                                                <div class="np-rail-item">
+                                                    <div class="np-rail-dot"></div>
+                                                    <div class="np-rail-line"></div>
+                                                </div>
+                                                <div class="np-rail-item">
+                                                    <div class="np-rail-dot"></div>
+                                                    <div class="np-rail-line"></div>
+                                                </div>
+                                            </div>
+                                            <div class="np-rail-content">
+                                                <div class="np-rail-topbar"></div>
+                                                <div class="np-rail-main"></div>
+                                            </div>
+                                        </template>
+                                        <template v-else>
+                                            <div class="np-full">
+                                                <div class="np-topbar--hidden">
+                                                    <div class="np-hamburger">
+                                                        <span></span><span></span><span></span>
+                                                    </div>
+                                                </div>
+                                                <div class="np-hidden-content"></div>
+                                            </div>
+                                        </template>
+                                    </div>
+
+                                    <div class="settings-nav-label">
+                                        <i :class="'fas ' + option.icon"></i>
+                                        <div>
+                                            <span class="fw-semibold">[[ option.label ]]</span>
+                                            <span class="text-muted d-block" style="font-size:0.72rem;">[[ option.description ]]</span>
+                                        </div>
+                                        <i v-if="nav_position === option.value" class="fas fa-circle-check ms-auto text-primary"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                {# ── Right column — quick toggles ─────────────────── #}
+                <div class="col-12 col-lg-4">
+
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="settings-section-title mb-3">
+                                <i class="fas fa-sliders me-2 text-primary"></i>Quick settings
+                            </h6>
+
+                            {# Sidebar collapsed toggle #}
+                            <div class="settings-toggle-row">
+                                <div class="settings-toggle-info">
+                                    <span class="settings-toggle-label">Collapsed sidebar</span>
+                                    <span class="text-muted small d-block">Start with icons-only sidebar</span>
+                                </div>
+                                <button
+                                    class="settings-toggle-btn"
+                                    :class="{ active: sidebar_collapsed }"
+                                    @click="toggleSidebarCollapsed()"
+                                    :title="sidebar_collapsed ? 'Sidebar is collapsed' : 'Sidebar is expanded'">
+                                    <span class="toggle-track">
+                                        <span class="toggle-thumb"></span>
+                                    </span>
+                                </button>
+                            </div>
+
+                            <hr class="divider my-3">
+
+                            {# Current config summary #}
+                            <div class="settings-summary">
+                                <p class="text-muted small fw-semibold text-uppercase mb-2" style="letter-spacing:.05em; font-size:.65rem;">
+                                    Current settings
+                                </p>
+                                <div class="settings-summary-row">
+                                    <span class="text-muted small">Theme</span>
+                                    <span class="badge bg-primary-subtle text-primary-emphasis rounded-pill small">
+                                        [[ theme ]]
+                                    </span>
+                                </div>
+                                <div class="settings-summary-row">
+                                    <span class="text-muted small">Navigation</span>
+                                    <span class="badge bg-primary-subtle text-primary-emphasis rounded-pill small">
+                                        [[ nav_position ]]
+                                    </span>
+                                </div>
+                                <div class="settings-summary-row">
+                                    <span class="text-muted small">Sidebar</span>
+                                    <span class="badge rounded-pill small"
+                                          :class="sidebar_collapsed ? 'bg-warning-subtle text-warning-emphasis' : 'bg-success-subtle text-success-emphasis'">
+                                        [[ sidebar_collapsed ? 'collapsed' : 'expanded' ]]
+                                    </span>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    {# Save status indicator #}
+                    <div class="settings-save-status mt-2" :class="save_status">
+                        <template v-if="save_status === 'saving'">
+                            <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                            Saving…
+                        </template>
+                        <template v-else-if="save_status === 'saved'">
+                            <i class="fas fa-circle-check me-2"></i>Saved
+                        </template>
+                        <template v-else-if="save_status === 'error'">
+                            <i class="fas fa-circle-xmark me-2"></i>Save failed
+                        </template>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script type="module">
+    const { createApp, ref, onMounted } = Vue
+    import { message_list, create_message } from '/static/js/toaster.js'
+    import { TOAST, apiFetch } from '/static/js/constants.js'
+    import LoadingBar from '/static/js/components/loading-bar.js'
+
+    createApp({
+        delimiters: ['[[', ']]'],
+        components: { LoadingBar },
+        setup() {
+            const page_is_loading   = ref(false)
+            const theme             = ref('{{ config.theme if config else "system" }}')
+            const nav_position      = ref('{{ config.nav_position if config else "sidebar" }}')
+            const sidebar_collapsed = ref({{ 'true' if config and config.sidebar_collapsed else 'false' }})
+            const save_status       = ref('')  // '' | 'saving' | 'saved' | 'error'
+
+            let save_timer = null
+
+            const theme_options = [
+                { value: 'system', label: 'System', icon: 'fa-circle-half-stroke' },
+                { value: 'light',  label: 'Light',  icon: 'fa-sun' },
+                { value: 'dark',   label: 'Dark',   icon: 'fa-moon' },
+            ]
+
+            const nav_options = [
+                { value: 'sidebar', label: 'Sidebar', icon: 'fa-table-columns', description: 'Left panel with labels' },
+                { value: 'topbar',  label: 'Top bar', icon: 'fa-bars',          description: 'Horizontal navigation' },
+                { value: 'rail',    label: 'Rail',    icon: 'fa-grip-vertical',  description: 'Icons + mini labels' },
+                { value: 'hidden',  label: 'Hidden',  icon: 'fa-eye-slash',      description: 'Open on demand' },
+            ]
+
+            async function savePreference(payload) {
+                save_status.value = 'saving'
+                clearTimeout(save_timer)
+                const res = await apiFetch('/config/update', 'POST', payload)
+                if (res.ok) {
+                    save_status.value = 'saved'
+                    save_timer = setTimeout(() => { save_status.value = '' }, 2000)
+                } else {
+                    save_status.value = 'error'
+                    await create_message('Failed to save settings', TOAST.ERROR, true)
+                }
+            }
+
+            async function setTheme(value) {
+                theme.value = value
+                applyTheme(value)
+                updateThemeIcon(value)
+                await savePreference({ theme: value })
+            }
+
+            async function setNavPosition(value) {
+                if (nav_position.value === value) return
+                nav_position.value = value
+                await savePreference({ nav_position: value })
+                window.location.reload()
+            }
+
+            async function toggleSidebarCollapsed() {
+                sidebar_collapsed.value = !sidebar_collapsed.value
+                // Also update the live sidebar immediately
+                const wrapper = document.getElementById('appWrapper')
+                if (wrapper) wrapper.classList.toggle('sidebar-collapsed', sidebar_collapsed.value)
+                const chevron = document.getElementById('sidebar-chevron')
+                if (chevron) {
+                    chevron.classList.toggle('fa-chevron-left', !sidebar_collapsed.value)
+                    chevron.classList.toggle('fa-chevron-right', sidebar_collapsed.value)
+                }
+                await savePreference({ sidebar_collapsed: sidebar_collapsed.value })
+            }
+
+            onMounted(() => { page_is_loading.value = true })
+
+            return {
+                message_list,
+                page_is_loading,
+                theme,
+                nav_position,
+                sidebar_collapsed,
+                save_status,
+                theme_options,
+                nav_options,
+                setTheme,
+                setNavPosition,
+                toggleSidebarCollapsed,
+            }
+        },
+    }).mount('#main-container')
+</script>
+{% endblock %}

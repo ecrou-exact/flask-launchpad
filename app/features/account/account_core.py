@@ -42,6 +42,11 @@ def create_user_core(form_dict) -> tuple:
         )
         db.session.add(user)
         db.session.commit()
+        from ...core.db_class.config import UserConfig
+        config = UserConfig(user_id=user.id, created_by=user.id)
+        db.session.add(config)
+        db.session.commit()
         return user, "User created successfully"
     except Exception:
+        db.session.rollback()
         return None, "Error creating user"

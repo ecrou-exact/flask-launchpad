@@ -34,8 +34,10 @@ api = Api(api_blueprint,
 )
 
 from .account_api import account_ns
+from .config_api import config_ns
 
 api.add_namespace(account_ns, path="/account")
+api.add_namespace(config_ns, path="/config")
 
 
 
