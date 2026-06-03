@@ -219,7 +219,7 @@
                                             data-visible="false" title="Show / hide">
                                         <i class="fas fa-eye" style="font-size:.75rem;"></i>
                                     </button>
-                                    <button class="btn-icon" title="Copy" onclick="copyApiKey()">
+                                    <button class="btn-icon" title="Copy" onclick="copyApiKey(event)">
                                         <i class="fas fa-copy" style="font-size:.75rem;"></i>
                                     </button>
                                     <button class="btn-icon" title="Regenerate" onclick="reloadApiKey()"
@@ -250,6 +250,10 @@
     import { TOAST, apiFetch } from '/static/js/constants.js'
     import LoadingBar from '/static/js/components/loading-bar.js'
 
+    // to have access to these in non-vue functions like copyApiKey
+    window.create_message = create_message;
+    window.TOAST = TOAST;
+
     createApp({
         delimiters: ['[[', ']]'],
         components: { LoadingBar },
@@ -262,19 +266,27 @@
 </script>
 
 <script>
-function copyApiKey() {
-    const key = document.getElementById('api-key')?.textContent?.trim()
-    if (!key) return
+function copyApiKey(event) {
+    const key = document.getElementById('api-key')?.textContent?.trim();
+    if (!key) return;
+    const btn = event.currentTarget;
+    const icon = btn.querySelector('i');
+
     navigator.clipboard.writeText(key).then(() => {
-        const btn = event.currentTarget
-        const icon = btn.querySelector('i')
-        icon.className = 'fas fa-check'
-        icon.style.color = 'var(--brand)'
-        setTimeout(() => {
-            icon.className = 'fas fa-copy'
-            icon.style.color = ''
-        }, 1500)
-    })
+        if (icon) {
+            const originalClass = icon.className; 
+            icon.className = 'fas fa-check';
+            icon.style.color = 'var(--brand)';
+            
+            setTimeout(() => {
+                icon.className = originalClass; 
+                icon.style.color = '';
+            }, 1500);
+        }
+        create_message('API key copied to clipboard', TOAST.SUCCESS);
+    }).catch(err => {
+        create_message('Error copying API key', TOAST.ERROR);
+    });
 }
 
 function reloadApiKey() {
@@ -300,6 +312,7 @@ function reloadApiKey() {
             toggleBtn.setAttribute('data-visible', 'false')
             toggleBtn.querySelector('i').className = 'fas fa-eye'
         }
+        create_message('API key regenerated', TOAST.SUCCESS)
     })
     .catch(() => { icon.className = 'fas fa-rotate' })
 }
