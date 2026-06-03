@@ -169,10 +169,11 @@
                                     Change Password
                                     <span class="text-muted small fw-normal ms-2">Leave empty to keep current</span>
                                 </p>
-                                {{ form.password(class="form-control", placeholder="New password (min 8 chars, upper, lower, digit)") }}
+                                {{ form.password(class="form-control", placeholder="New password (min 8 chars, upper, lower, digit)", id="passwordInput") }}
                                 {% for e in form.password.errors %}
                                 <div class="text-danger small mt-1">{{ e }}</div>
                                 {% endfor %}
+                                <password-strength :value="password_input"></password-strength>
                             </div>
                         </div>
 
@@ -239,18 +240,27 @@
 
 {% block script %}
 <script type="module">
-    const { createApp, ref, onMounted } = Vue
+    const { createApp, ref, onMounted, nextTick } = Vue
     import { message_list, create_message } from '/static/js/toaster.js'
     import { TOAST } from '/static/js/constants.js'
     import LoadingBar from '/static/js/components/loading-bar.js'
+    import PasswordStrength from '/static/js/components/password-strength.js'
 
     createApp({
         delimiters: ['[[', ']]'],
-        components: { LoadingBar },
+        components: { LoadingBar, PasswordStrength },
         setup() {
             const page_is_loading = ref(false)
-            onMounted(() => { page_is_loading.value = true })
-            return { message_list, page_is_loading }
+            const password_input  = ref('')
+
+            onMounted(async () => {
+                page_is_loading.value = true
+                await nextTick()
+                const field = document.getElementById('passwordInput')
+                if (field) field.addEventListener('input', e => { password_input.value = e.target.value })
+            })
+
+            return { message_list, page_is_loading, password_input }
         }
     }).mount('#main-container')
 </script>

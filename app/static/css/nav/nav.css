@@ -205,6 +205,43 @@
     color: #fff;
     flex-shrink: 0;
     font-family: var(--font-display);
+    overflow: hidden;
+}
+
+.sidebar-user-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    border-radius: 50%;
+}
+
+.topbar-user-avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--brand);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+    font-family: var(--font-display);
+    text-decoration: none;
+    overflow: hidden;
+    transition: opacity var(--transition);
+}
+
+.topbar-user-avatar:hover { opacity: 0.82; }
+
+.topbar-user-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    border-radius: 50%;
 }
 
 .sidebar-user-name {

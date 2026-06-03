@@ -333,6 +333,59 @@
 }
 
 
+/*---PASSWORD_STRENGTH---*/
+
+.password-strength {
+    margin-top: 0.5rem;
+}
+
+.password-strength-bar {
+    height: 4px;
+    background: var(--border);
+    border-radius: 100px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.password-strength-fill {
+    height: 100%;
+    border-radius: 100px;
+    transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.password-strength-fill--weak   { background: #ef4444; }
+.password-strength-fill--fair   { background: #f97316; }
+.password-strength-fill--good   { background: #eab308; }
+.password-strength-fill--strong { background: #22c55e; }
+
+.password-strength-criteria {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.password-strength-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.72rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 100px;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    background: var(--bg-elevated);
+    transition: all var(--transition);
+}
+
+.password-strength-chip i { font-size: 0.65rem; }
+
+.password-strength-chip.met {
+    color: #22c55e;
+    border-color: rgba(34, 197, 94, 0.2);
+    background: rgba(34, 197, 94, 0.07);
+}
+
+
 /*---ACCOUNT_ROLE_BADGE---*/
 
 .account-role-chip {
