@@ -1,23 +1,36 @@
 /*
-  Theme system — applied sync before CSS to prevent flash.
-  Current themes: 'light' | 'dark' | 'system'
-  To add a new theme: add a case in applyTheme() and a CSS block in core.css.
+  theme.js — applied sync before CSS to prevent flash.
+  Themes: 'system' | 'light' | 'dark' | 'ocean' | 'forest' | 'midnight'
 
-  Source of truth priority:
-    1. data-user-theme on <html> (injected from DB by server)
-    2. localStorage (for page loads before server response)
+  Arch:
+  - light/dark use Bootstrap's data-bs-theme attribute only
+  - ocean/forest/midnight use data-bs-theme="dark" + data-theme="<name>"
+  - system follows OS preference and resolves to light or dark
+  - DB is the source of truth (server injects data-user-theme)
+  - localStorage mirrors DB for instant no-flash behaviour
 */
 
+var _DARK_THEMES    = ['dark', 'forest', 'midnight', 'slate'];  // ocean is now LIGHT
+var _CUSTOM_THEMES  = ['ocean', 'forest', 'midnight', 'slate'];
+var _BODY_COLORS    = {
+    light:    '#F5F1EC',
+    dark:     '#0E0C10',
+    ocean:    '#E8F4FD',   // light
+    forest:   '#020704',   // very dark
+    midnight: '#030108',   // very dark
+    slate:    '#0C1422',   // dark blue-grey
+};
+
 (function () {
-    var html = document.documentElement;
+    var html        = document.documentElement;
     var serverTheme = html.getAttribute('data-user-theme');
     var theme;
 
-    if (serverTheme === 'system' || !serverTheme) {
+    if (!serverTheme || serverTheme === 'system') {
         var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         theme = prefersDark ? 'dark' : 'light';
     } else {
-        theme = serverTheme; // 'light' or 'dark' from DB
+        theme = serverTheme;
     }
 
     localStorage.setItem('theme', theme);
@@ -25,22 +38,32 @@
 })();
 
 function applyTheme(theme) {
-    var html = document.documentElement;
+    var html    = document.documentElement;
+    var isDark  = _DARK_THEMES.indexOf(theme) !== -1;
+    var isCustom = _CUSTOM_THEMES.indexOf(theme) !== -1;
 
-    html.setAttribute('data-bs-theme', theme === 'dark' ? 'dark' : 'light');
+    /* Bootstrap dark / light mode */
+    html.setAttribute('data-bs-theme', isDark ? 'dark' : 'light');
 
-    var bodyBg = theme === 'dark' ? '#0E0C10' : '#F5F1EC';
-    html.style.backgroundColor = bodyBg;
+    /* Custom palette (ocean / forest / midnight) */
+    if (isCustom) {
+        html.setAttribute('data-theme', theme);
+    } else {
+        html.removeAttribute('data-theme');
+    }
+
+    /* Instant body bg — eliminates flash before CSS loads */
+    html.style.backgroundColor = _BODY_COLORS[theme] || _BODY_COLORS.light;
 
     localStorage.setItem('theme', theme);
-
-    /* Future custom theme hook — extend here */
-    /* html.setAttribute('data-theme', theme); */
 }
 
 function toggleTheme() {
     var current = localStorage.getItem('theme') || 'light';
-    var next = current === 'dark' ? 'light' : 'dark';
+    /* Toggle only between light ↔ dark; custom themes are set from Settings */
+    var next = (current === 'dark' || _CUSTOM_THEMES.indexOf(current) !== -1)
+        ? 'light'
+        : 'dark';
     applyTheme(next);
     updateThemeIcon(next);
     _saveThemeToDb(next);
@@ -49,13 +72,8 @@ function toggleTheme() {
 function updateThemeIcon(theme) {
     var icon = document.getElementById('theme-icon');
     if (!icon) return;
-    if (theme === 'dark') {
-        icon.classList.remove('fa-moon');
-        icon.classList.add('fa-sun');
-    } else {
-        icon.classList.remove('fa-sun');
-        icon.classList.add('fa-moon');
-    }
+    var isDark = _DARK_THEMES.indexOf(theme) !== -1;
+    icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
 }
 
 function _saveThemeToDb(theme) {
@@ -63,10 +81,7 @@ function _saveThemeToDb(theme) {
     if (!csrf) return;
     fetch('/config/update', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': csrf.value,
-        },
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf.value },
         body: JSON.stringify({ theme: theme }),
     });
 }
