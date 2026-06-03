@@ -11,7 +11,7 @@ export default {
     template: `
         <div :class="['user-avatar', 'user-avatar--' + size]" :title="fullName">
             <img v-if="avatarUrl" :src="avatarUrl" :alt="initials" class="user-avatar__img">
-            <span v-else class="user-avatar__initials">[[ initials ]]</span>
+            <span v-else class="user-avatar__initials">{{ initials }}</span>
         </div>
     `,
     setup(props) {

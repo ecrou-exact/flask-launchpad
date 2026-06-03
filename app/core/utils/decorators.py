@@ -14,10 +14,15 @@ def permission_required(perm):
             if perm == "admin":
                 if request.path.startswith("/api/"):
                     api_key = request.headers.get("X-API-KEY")
-                    if not api_key:
-                        abort(403)
-                    user = get_user_api(api_key)
-                    if not user or not user.is_admin():
+                    if api_key:
+                        # API key auth
+                        user = get_user_api(api_key)
+                        if not user or not user.is_admin():
+                            abort(403)
+                    elif current_user.is_authenticated and current_user.is_admin():
+                        # Session auth (internal frontend calls via apiFetch)
+                        pass
+                    else:
                         abort(403)
                 elif not current_user.is_admin():
                     abort(403)

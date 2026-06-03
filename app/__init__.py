@@ -1,3 +1,4 @@
+from datetime import datetime
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import CSRFProtect
@@ -34,9 +35,11 @@ def create_app():
     from .features.home.home import home_blueprint
     from .features.account.account import account_blueprint
     from .features.config.config import config_blueprint
+    from .features.admin.admin import admin_blueprint
     app.register_blueprint(home_blueprint, url_prefix="/")
     app.register_blueprint(account_blueprint, url_prefix="/account")
     app.register_blueprint(config_blueprint, url_prefix="/")
+    app.register_blueprint(admin_blueprint, url_prefix="/admin")
 
     from .api.api import api_blueprint
     csrf.exempt(api_blueprint)
@@ -64,6 +67,17 @@ def create_app():
         except OSError:
             version = '0.0.0'
         return dict(app_version=version)
+
+    @app.before_request
+    def update_last_seen():
+        from flask_login import current_user
+        from datetime import timedelta
+        if current_user.is_authenticated:
+            now = datetime.utcnow()
+            if (current_user.last_seen_at is None or
+                    now - current_user.last_seen_at > timedelta(minutes=2)):
+                current_user.last_seen_at = now
+                db.session.commit()
 
     return app
     

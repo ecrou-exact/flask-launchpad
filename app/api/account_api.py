@@ -1,6 +1,9 @@
 from flask import request
 from flask_restx import Namespace, Resource, fields
+from sqlalchemy import or_
 
+from .. import db
+from ..core.db_class.user import User, Role
 from ..core.utils.decorators import api_required, admin_required
 from ..core.utils.utils import get_user_api
 from ..features.account import account_core as AccountCore
@@ -121,3 +124,146 @@ class DeleteUser(Resource):
             return {'message': 'User not found'}, 404
         ok = AccountCore.delete_user_core(uid)
         return {'message': 'User deleted' if ok else 'Error'}, 200 if ok else 400
+
+
+@account_ns.route('/users')
+class ListUsers(Resource):
+    """Paginated list of all users — admin only."""
+    method_decorators = [admin_required]
+
+    _ALLOWED_SORTS = {'id', 'first_name', 'last_name', 'email', 'created_at', 'role_id'}
+
+    def get(self):
+        # ── Query params ────────────────────────────────────────────────
+        try:
+            page     = max(1, int(request.args.get('page', 1)))
+            per_page = min(100, max(1, int(request.args.get('per_page', 10))))
+        except (TypeError, ValueError):
+            page, per_page = 1, 10
+
+        search   = (request.args.get('search') or '').strip()
+        sort_key = request.args.get('sort', 'id')
+        sort_dir = request.args.get('dir', 'asc')
+
+        if sort_key not in self._ALLOWED_SORTS:
+            sort_key = 'id'
+        if sort_dir not in ('asc', 'desc'):
+            sort_dir = 'asc'
+
+        # ── Query ────────────────────────────────────────────────────────
+        q = db.session.query(User)
+
+        if search:
+            like = f'%{search}%'
+            q = q.filter(or_(
+                User.first_name.ilike(like),
+                User.last_name.ilike(like),
+                User.email.ilike(like),
+                User.username.ilike(like),
+            ))
+
+        sort_col = getattr(User, sort_key)
+        q = q.order_by(sort_col.asc() if sort_dir == 'asc' else sort_col.desc())
+
+        total       = q.count()
+        total_pages = max(1, (total + per_page - 1) // per_page)
+        page        = min(page, total_pages)
+        users       = q.offset((page - 1) * per_page).limit(per_page).all()
+
+        # ── Serialise ────────────────────────────────────────────────────
+        def _role(user):
+            r = Role.query.get(user.role_id) if user.role_id else None
+            return {'id': r.id, 'name': r.name, 'admin': r.admin} if r else None
+
+        from datetime import datetime, timedelta
+        online_threshold = datetime.utcnow() - timedelta(minutes=10)
+
+        items = []
+        for u in users:
+            role = _role(u)
+            items.append({
+                'id':              u.id,
+                'first_name':      u.first_name,
+                'last_name':       u.last_name,
+                'email':           u.email,
+                'username':        u.username,
+                'role_id':         u.role_id,
+                'role_name':       role['name'] if role else None,
+                'is_admin':        role['admin'] if role else False,
+                'avatar_filename': u.avatar_filename,
+                'created_at':      u.created_at.isoformat() if u.created_at else None,
+                'bio':             u.bio,
+                'job_title':       u.job_title,
+                'company':         u.company,
+                'location':        u.location,
+                'is_verified':     u.is_verified,
+                'is_connected':    bool(u.last_seen_at and u.last_seen_at >= online_threshold),
+                'last_seen_at':    u.last_seen_at.isoformat() if u.last_seen_at else None,
+            })
+
+        return {
+            'items':       items,
+            'total':       total,
+            'page':        page,
+            'per_page':    per_page,
+            'total_pages': total_pages,
+        }, 200
+
+
+@account_ns.route('/<int:uid>/toggle-verified')
+class ToggleVerified(Resource):
+    method_decorators = [admin_required]
+
+    def post(self, uid):
+        user = AccountCore.get_user(uid)
+        if not user:
+            return {'message': 'User not found'}, 404
+        user.is_verified = not user.is_verified
+        db.session.commit()
+        return {'is_verified': user.is_verified, 'message': 'Updated'}, 200
+
+
+@account_ns.route('/<int:uid>/disconnect')
+class DisconnectUser(Resource):
+    method_decorators = [admin_required]
+
+    def post(self, uid):
+        user = AccountCore.get_user(uid)
+        if not user:
+            return {'message': 'User not found'}, 404
+        user.force_logout = True
+        db.session.commit()
+        return {'message': 'User disconnected'}, 200
+
+
+@account_ns.route('/bulk-verify')
+class BulkVerify(Resource):
+    method_decorators = [admin_required]
+
+    def post(self):
+        data = request.get_json(silent=True) or {}
+        ids      = data.get('ids', [])
+        verified = bool(data.get('verified', True))
+        if not ids:
+            return {'message': 'No ids provided'}, 400
+        User.query.filter(User.id.in_(ids)).update(
+            {'is_verified': verified}, synchronize_session=False
+        )
+        db.session.commit()
+        return {'message': f'Updated {len(ids)} user(s)'}, 200
+
+
+@account_ns.route('/bulk-disconnect')
+class BulkDisconnect(Resource):
+    method_decorators = [admin_required]
+
+    def post(self):
+        data = request.get_json(silent=True) or {}
+        ids = data.get('ids', [])
+        if not ids:
+            return {'message': 'No ids provided'}, 400
+        User.query.filter(User.id.in_(ids)).update(
+            {'force_logout': True}, synchronize_session=False
+        )
+        db.session.commit()
+        return {'message': f'Disconnected {len(ids)} user(s)'}, 200

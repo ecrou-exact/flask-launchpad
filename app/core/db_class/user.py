@@ -1,4 +1,5 @@
 from datetime import datetime
+from flask import session as flask_session
 from ... import db, login_manager
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask_login import UserMixin, AnonymousUserMixin
@@ -6,7 +7,14 @@ from flask_login import UserMixin, AnonymousUserMixin
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    user = User.query.get(int(user_id))
+    if user is None:
+        return None
+    # Admin force-disconnect: returning None makes current_user = AnonymousUser
+    # force_logout is reset in the login route so the user can re-authenticate
+    if user.force_logout:
+        return None
+    return user
 
 
 class User(UserMixin, db.Model):
@@ -20,6 +28,12 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(256))
     api_key       = db.Column(db.String(60), index=True)
     created_at    = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # ── Status ───────────────────────────────────────────────
+    is_verified     = db.Column(db.Boolean, default=True,  nullable=False)
+    force_logout    = db.Column(db.Boolean, default=False, nullable=False)
+    session_version = db.Column(db.Integer, default=0,     nullable=False)
+    last_seen_at    = db.Column(db.DateTime, nullable=True)
 
     # ── Profile ──────────────────────────────────────────────
     bio             = db.Column(db.String(500), nullable=True)
@@ -91,6 +105,8 @@ class User(UserMixin, db.Model):
             'social_linkedin':self.social_linkedin,
             'created_at':     self.created_at.isoformat() if self.created_at else None,
             'has_avatar':     bool(self.avatar_filename),
+            'is_verified':    self.is_verified,
+            'last_seen_at':   self.last_seen_at.isoformat() if self.last_seen_at else None,
         }
 
 
