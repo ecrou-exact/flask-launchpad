@@ -85,7 +85,7 @@
         {% if current_user.is_authenticated %}
         <a href="{{ url_for('account.index') }}" class="sidebar-user-pill">
             <div class="sidebar-user-avatar">{{ current_user.first_name[0]|upper }}{{ current_user.last_name[0]|upper }}</div>
-            <span class="sidebar-user-name">{{ current_user.username() }}</span>
+            <span class="sidebar-user-name">{{ current_user.full_name() }}</span>
         </a>
         <a href="{{ url_for('account.logout') }}" class="nav-link-item" style="font-size:.82rem;">
             <i class="fas fa-right-from-bracket nav-icon"></i><span class="nav-label">Sign out</span>
@@ -159,11 +159,11 @@
     <div class="sidebar-footer">
         {% if current_user.is_authenticated %}
         <a href="{{ url_for('account.index') }}" class="sidebar-user-pill"
-           data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="{{ current_user.username() }}">
+           data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="{{ current_user.full_name() }}">
             <div class="sidebar-user-avatar">
                 {{ current_user.first_name[0]|upper }}{{ current_user.last_name[0]|upper }}
             </div>
-            <span class="sidebar-user-name">{{ current_user.username() }}</span>
+            <span class="sidebar-user-name">{{ current_user.full_name() }}</span>
         </a>
         <a href="{{ url_for('account.logout') }}" class="nav-link-item" style="font-size:.82rem;"
            data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Sign out">

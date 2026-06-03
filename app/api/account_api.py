@@ -1,87 +1,123 @@
 from flask import request
-from . import verification_api as VerifApi
-from ..features.account import account_core as AccountCore
-
 from flask_restx import Namespace, Resource, fields
-from ..core.utils.decorators import api_required
+
+from ..core.utils.decorators import api_required, admin_required
 from ..core.utils.utils import get_user_api
+from ..features.account import account_core as AccountCore
+from . import verification_api as VerifApi
 
+account_ns = Namespace('account', description='User account management')
 
-account_ns = Namespace("account", description="Endpoints to manage account actions")
-
-add_user_model = account_ns.model('AddUser', {
-    'first_name': fields.String(required=True, description='First name for the user'),
-    'last_name': fields.String(required=True, description='Last name for the user'),
-    'email': fields.String(required=True, description='Email for the user'),
-    'password': fields.String(required=True, description='Password for the user'),
+_add_model = account_ns.model('AddUser', {
+    'first_name': fields.String(required=True),
+    'last_name':  fields.String(required=True),
+    'email':      fields.String(required=True),
+    'password':   fields.String(required=True),
 })
 
-edit_user_model = account_ns.model('EditUser', {
-    'first_name': fields.String(required=False, description='First name for the user'),
-    'last_name': fields.String(required=False, description='Last name for the user'),
-    'email': fields.String(required=False, description='Email for the user'),
+_edit_model = account_ns.model('EditUser', {
+    'first_name':      fields.String,
+    'last_name':       fields.String,
+    'email':           fields.String,
+    'bio':             fields.String,
+    'phone':           fields.String,
+    'job_title':       fields.String,
+    'company':         fields.String,
+    'location':        fields.String,
+    'website':         fields.String,
+    'social_twitter':  fields.String,
+    'social_github':   fields.String,
+    'social_linkedin': fields.String,
 })
 
 
-@account_ns.route('/user/<uid>')
-@account_ns.doc(description='Get a user', params={'uid': 'id of a user'})
-class GetUsers(Resource):
+@account_ns.route('/me')
+class Me(Resource):
     method_decorators = [api_required]
+
+    def get(self):
+        user = get_user_api(request.headers.get('X-API-KEY'))
+        if not user:
+            return {'message': 'User not found'}, 404
+        return user.to_json(), 200
+
+    @account_ns.expect(_edit_model)
+    def put(self):
+        if not request.json:
+            return {'message': 'Please give data'}, 400
+        user = get_user_api(request.headers.get('X-API-KEY'))
+        verif = VerifApi.verif_edit_user(request.json, user.id)
+        if 'message' in verif:
+            return verif, 400
+        u, msg = AccountCore.edit_user_core(verif, user.id)
+        return {'message': msg}, 200 if u else 400
+
+
+@account_ns.route('/me/reload-api-key')
+class ReloadApiKey(Resource):
+    method_decorators = [api_required]
+
+    def post(self):
+        user = get_user_api(request.headers.get('X-API-KEY'))
+        u, msg = AccountCore.reload_api_key_core(user.id)
+        if u:
+            return {'message': msg, 'api_key': u.api_key}, 200
+        return {'message': msg}, 400
+
+
+@account_ns.route('/user/<int:uid>')
+class GetUser(Resource):
+    method_decorators = [api_required]
+
     def get(self, uid):
         user = AccountCore.get_user(uid)
         if user:
             return user.to_json(), 200
-        return {"message": "User not found"}, 404
+        return {'message': 'User not found'}, 404
 
 
 @account_ns.route('/add_user')
-@account_ns.doc(description='Add new user')
 class AddUser(Resource):
-    @account_ns.expect(add_user_model)
+    # public — no api_required so admin can create users from external tools
+    @account_ns.expect(_add_model)
     def post(self):
-        if request.json:
-            verif_dict = VerifApi.verif_add_user(request.json)
-            if "message" not in verif_dict:
-                user, _ = AccountCore.create_user_core(verif_dict)
-                return {"message": f"User created {user.id}", "id": user.id}, 201
-            return verif_dict, 400
-        return {"message": "Please give data"}, 400
+        if not request.json:
+            return {'message': 'Please give data'}, 400
+        verif = VerifApi.verif_add_user(request.json)
+        if 'message' in verif:
+            return verif, 400
+        user, _ = AccountCore.create_user_core(verif)
+        if user:
+            return {'message': 'User created', 'id': user.id}, 201
+        return {'message': 'Error creating user'}, 400
 
 
-@account_ns.route('/edit_user/<id>')
-@account_ns.doc(description='Edit user', params={'id': 'id of a user'})
+@account_ns.route('/edit_user/<int:uid>')
 class EditUser(Resource):
     method_decorators = [api_required]
 
-    @account_ns.expect(edit_user_model)
-    def post(self, id):
-        if request.json:
-            user_to_edit = AccountCore.get_user(id)
-            if not user_to_edit:
-                return {"message": "User not found"}, 404
-
-            verif_dict = VerifApi.verif_edit_user(request.json, id)
-            if "message" not in verif_dict:
-                AccountCore.edit_user_core(verif_dict, id)
-                return {"message": "User edited"}, 200
-            return verif_dict, 400
-        return {"message": "Please give data"}, 400
+    @account_ns.expect(_edit_model)
+    def put(self, uid):
+        if not request.json:
+            return {'message': 'Please give data'}, 400
+        if not AccountCore.get_user(uid):
+            return {'message': 'User not found'}, 404
+        verif = VerifApi.verif_edit_user(request.json, uid)
+        if 'message' in verif:
+            return verif, 400
+        u, msg = AccountCore.edit_user_core(verif, uid)
+        return {'message': msg}, 200 if u else 400
 
 
-@account_ns.route('/delete_user/<id>')
-@account_ns.doc(description='Delete user', params={'id': 'id of a user'})
+@account_ns.route('/delete_user/<int:uid>')
 class DeleteUser(Resource):
-    method_decorators = [api_required]
-    def get(self, id):
-        api_user = get_user_api(request.headers["X-API-KEY"])
+    method_decorators = [admin_required]
 
-        user_to_delete = AccountCore.get_user(id)
-        if not user_to_delete:
-            return {"message": "User not found"}, 404
-
-        if user_to_delete.id == api_user.id:
-            return {"message": "You cannot delete your own account"}, 403
-
-        if AccountCore.delete_user_core(id):
-            return {"message": "User deleted"}, 200
-        return {"message": "Error deleting user"}, 400
+    def delete(self, uid):
+        caller = get_user_api(request.headers.get('X-API-KEY'))
+        if caller and caller.id == uid:
+            return {'message': 'Cannot delete your own account'}, 403
+        if not AccountCore.get_user(uid):
+            return {'message': 'User not found'}, 404
+        ok = AccountCore.delete_user_core(uid)
+        return {'message': 'User deleted' if ok else 'Error'}, 200 if ok else 400

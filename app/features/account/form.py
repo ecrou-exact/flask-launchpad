@@ -3,73 +3,80 @@ from flask_login import current_user
 from flask_wtf import FlaskForm
 from wtforms import ValidationError
 from wtforms.fields import (
-    BooleanField,
-    PasswordField,
-    StringField,
-    SubmitField,
-    EmailField
+    BooleanField, PasswordField, StringField,
+    SubmitField, EmailField, TextAreaField,
 )
-from wtforms.validators import Email, InputRequired, Length, Regexp, Optional
+from wtforms.validators import Email, InputRequired, Length, Optional, Regexp, URL
 from ...core.db_class.user import User
 
 
 class LoginForm(FlaskForm):
-    """Log in form"""
-    email = EmailField('Email', validators=[InputRequired(), Length(1, 64), Email()])
-    password = PasswordField('Password', validators=[InputRequired()])
+    email       = EmailField('Email',    validators=[InputRequired(), Length(1, 128), Email()])
+    password    = PasswordField('Password', validators=[InputRequired()])
     remember_me = BooleanField('Keep me logged in')
-    submit = SubmitField('Log in')
+    submit      = SubmitField('Sign in')
 
 
-class EditUserFrom(FlaskForm):
-    """Edit the user"""
+class EditUserForm(FlaskForm):
+    # ── Identity ──────────────────────────────────────────
     first_name = StringField('First name', validators=[InputRequired(), Length(1, 64)])
-    last_name = StringField('Last name', validators=[InputRequired(), Length(1, 64)])
-    email = EmailField('Email', validators=[InputRequired(), Length(1, 64), Email()])
-    password = PasswordField(
-        'Password',
-        validators=[
-            Optional(),
-            Length(min=8, max=64, message="Password must be between 8 and 64 characters."),
-            Regexp(r'.*[A-Z].*', message="Password must contain at least one uppercase letter."),
-            Regexp(r'.*[a-z].*', message="Password must contain at least one lowercase letter."),
-            Regexp(r'.*\d.*', message="Password must contain at least one digit.")
-        ]
-    )
+    last_name  = StringField('Last name',  validators=[InputRequired(), Length(1, 64)])
+    email      = EmailField('Email',       validators=[InputRequired(), Length(1, 128), Email()])
+    username_handle = StringField('Username', validators=[
+        Optional(), Length(1, 32),
+        Regexp(r'^[a-zA-Z0-9_\-\.]+$', message='Letters, digits, _ - . only'),
+    ])
 
-    submit = SubmitField('Register')
+    # ── Security ──────────────────────────────────────────
+    password = PasswordField('New password', validators=[
+        Optional(),
+        Length(min=8, max=64),
+        Regexp(r'.*[A-Z].*', message='At least one uppercase letter'),
+        Regexp(r'.*[a-z].*', message='At least one lowercase letter'),
+        Regexp(r'.*\d.*',    message='At least one digit'),
+    ])
+
+    # ── Profile ───────────────────────────────────────────
+    bio       = TextAreaField('Bio',       validators=[Optional(), Length(max=500)])
+    phone     = StringField('Phone',       validators=[Optional(), Length(max=25)])
+    job_title = StringField('Job title',   validators=[Optional(), Length(max=100)])
+    company   = StringField('Company',     validators=[Optional(), Length(max=100)])
+    location  = StringField('Location',    validators=[Optional(), Length(max=100)])
+
+    # ── Social ────────────────────────────────────────────
+    website        = StringField('Website',  validators=[Optional(), Length(max=200)])
+    social_twitter = StringField('Twitter / X', validators=[Optional(), Length(max=50)])
+    social_github  = StringField('GitHub',   validators=[Optional(), Length(max=50)])
+    social_linkedin= StringField('LinkedIn', validators=[Optional(), Length(max=200)])
+
+    submit = SubmitField('Save changes')
 
     def validate_email(self, field):
-        if not field.data == current_user.email:
+        if field.data != current_user.email:
             if User.query.filter_by(email=field.data).first():
-                raise ValidationError('Email already registered. (Did you mean to '
-                                    '<a href="{}">log in</a> instead?)'.format(
-                                        url_for('account.index')))
-            
+                raise ValidationError('Email already in use')
+
+    def validate_username_handle(self, field):
+        if field.data:
+            handle = field.data.lstrip('@')
+            existing = User.query.filter_by(username=handle).first()
+            if existing and existing.id != current_user.id:
+                raise ValidationError('Username already taken')
+
 
 class AddNewUserForm(FlaskForm):
-    """Creation form to create a user"""
-    first_name = StringField('First name', validators=[InputRequired()])
-    last_name = StringField('Last name', validators=[InputRequired()])
-    email = StringField('Email', validators=[InputRequired(), Email(message="Please enter a valid email address.")])
-    
-    password = PasswordField(
-        'Password',
-        validators=[
-            InputRequired(),
-            Length(min=8, max=64, message="Password must be between 8 and 64 characters."),
-            Regexp(r'.*[A-Z].*', message="Password must contain at least one uppercase letter."),
-            Regexp(r'.*[a-z].*', message="Password must contain at least one lowercase letter."),
-            Regexp(r'.*\d.*', message="Password must contain at least one digit.")
-        ]
-    )
-    
-    submit = SubmitField('Register')
+    first_name = StringField('First name', validators=[InputRequired(), Length(1, 64)])
+    last_name  = StringField('Last name',  validators=[InputRequired(), Length(1, 64)])
+    email      = EmailField('Email',       validators=[InputRequired(), Length(1, 128), Email()])
+    password   = PasswordField('Password', validators=[
+        InputRequired(),
+        Length(min=8, max=64),
+        Regexp(r'.*[A-Z].*', message='At least one uppercase letter'),
+        Regexp(r'.*[a-z].*', message='At least one lowercase letter'),
+        Regexp(r'.*\d.*',    message='At least one digit'),
+    ])
+    submit = SubmitField('Create user')
+
     def validate_email(self, field):
-        if User.query.filter_by(email=field.data).first():                
-            raise ValidationError(
-                'Email already registered. (Did you mean to '
-                '<a href="{}">log in</a> instead?)'.format(
-                    url_for('account.index')
-                )
-            )
+        if User.query.filter_by(email=field.data).first():
+            raise ValidationError('Email already registered')
