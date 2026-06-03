@@ -8,12 +8,12 @@
     <title>Flask Launchpad</title>
     <link rel="icon" href="{{ url_for('static', filename='image/crolle.png') }}">
 
-    {# Fonts — preconnect first for speed #}
+    {# Fonts #}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-    {# theme.js must load sync before CSS to prevent flash #}
+    {# theme.js — sync, before CSS, prevents flash #}
     <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
 
     {# CSS #}
@@ -22,6 +22,8 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='fontawesome-6.3.0/css/solid.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='fontawesome-6.3.0/css/brands.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/core.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/nav/nav.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/footer/footer.css') }}">
 
     {% block head_extra %}{% endblock %}
 
@@ -29,13 +31,11 @@
     <script src="{{ url_for('static', filename='bootstrap-5.3.0/js/bootstrap.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/vue.global.js') }}"></script>
     <script src="{{ url_for('static', filename='js/blur.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/nav.js') }}" defer></script>
 </head>
 
 <body>
 
-{# ─────────────────────────────────────── #}
-{# APP WRAPPER                             #}
-{# ─────────────────────────────────────── #}
 <div class="app-wrapper
     {%- if nav_mode == 'topbar' %} app-wrapper--topbar
     {%- elif nav_mode == 'rail' %} app-wrapper--rail
@@ -44,217 +44,16 @@
     {%- endif %}"
     id="appWrapper">
 
-    {# ── Navigation block (emptied on login/standalone pages) ── #}
+    {# ── Navigation (set to empty on login / standalone pages) ── #}
     {% block top_nav %}
-
-    {% if nav_mode == 'topbar' %}
-    {# ═══════════════════════════════════ #}
-    {# TOPBAR NAVIGATION MODE              #}
-    {# ═══════════════════════════════════ #}
-    <header class="app-topbar app-topbar--nav">
-        <div class="topbar-left">
-            <div class="topbar-brand">
-                <div class="sidebar-logo-icon flex-shrink-0" style="width:26px;height:26px;font-size:.68rem;">
-                    <i class="fas fa-rocket"></i>
-                </div>
-                <span class="topbar-app-name d-none d-md-block">Flask Launchpad</span>
-            </div>
-
-            <nav class="topbar-links">
-                <a href="{{ url_for('home.home') }}"
-                   class="topbar-nav-link {% if request.endpoint == 'home.home' %}active{% endif %}">
-                    <i class="fas fa-house"></i>Home
-                </a>
-                {% if current_user.is_authenticated %}
-                <a href="{{ url_for('account.index') }}"
-                   class="topbar-nav-link {% if request.blueprint == 'account' %}active{% endif %}">
-                    <i class="fas fa-user"></i>Account
-                </a>
-                {% endif %}
-                {% if current_user.is_authenticated and current_user.is_admin() %}
-                <a href="/api/" class="topbar-nav-link" target="_blank">
-                    <i class="fas fa-code"></i>API
-                </a>
-                {% endif %}
-            </nav>
-        </div>
-
-        <div class="topbar-right">
-            {% if current_user.is_authenticated %}
-            <span class="role-badge">{{ current_user.role.name if current_user.role else 'User' }}</span>
-            <a href="{{ url_for('config.settings') }}" class="btn-icon" title="Settings">
-                <i class="fas fa-gear" style="font-size:.78rem;"></i>
-            </a>
-            <a href="{{ url_for('account.logout') }}" class="btn-icon" title="Sign out">
-                <i class="fas fa-right-from-bracket" style="font-size:.78rem;"></i>
-            </a>
-            {% endif %}
-            <button class="btn-theme" onclick="toggleTheme()" title="Toggle theme">
-                <i class="fas fa-moon" id="theme-icon"></i>
-            </button>
-        </div>
-    </header>
-
-    {% elif nav_mode == 'hidden' %}
-    {# ═══════════════════════════════════ #}
-    {# HIDDEN MODE — sidebar is an overlay #}
-    {# ═══════════════════════════════════ #}
-    <aside class="app-sidebar" id="appSidebar">
-        <div class="sidebar-header">
-            <div class="sidebar-logo-icon flex-shrink-0">
-                <i class="fas fa-rocket"></i>
-            </div>
-            <span class="sidebar-app-name">Flask Launchpad</span>
-            <button class="btn-sidebar-toggle d-inline-flex" onclick="closeSidebar()" title="Close">
-                <i class="fas fa-xmark"></i>
-            </button>
-        </div>
-        <nav class="sidebar-nav">
-            <p class="nav-section-label">Navigation</p>
-            <a href="{{ url_for('home.home') }}" class="nav-link-item {% if request.endpoint == 'home.home' %}active{% endif %}">
-                <i class="fas fa-house nav-icon"></i><span class="nav-label">Home</span>
-            </a>
-            {% if current_user.is_authenticated %}
-            <a href="{{ url_for('account.index') }}" class="nav-link-item {% if request.blueprint == 'account' %}active{% endif %}">
-                <i class="fas fa-user nav-icon"></i><span class="nav-label">Account</span>
-            </a>
-            {% endif %}
-            {% if current_user.is_authenticated and current_user.is_admin() %}
-            <p class="nav-section-label">Admin</p>
-            <a href="/api/" class="nav-link-item" target="_blank">
-                <i class="fas fa-code nav-icon"></i><span class="nav-label">API Docs</span>
-            </a>
-            {% endif %}
-        </nav>
-        <div class="sidebar-footer">
-            {% if current_user.is_authenticated %}
-            <a href="{{ url_for('account.index') }}" class="sidebar-user-pill">
-                <div class="sidebar-user-avatar">{{ current_user.first_name[0]|upper }}{{ current_user.last_name[0]|upper }}</div>
-                <span class="sidebar-user-name">{{ current_user.username() }}</span>
-            </a>
-            <a href="{{ url_for('account.logout') }}" class="nav-link-item" style="font-size:.82rem;">
-                <i class="fas fa-right-from-bracket nav-icon"></i><span class="nav-label">Sign out</span>
-            </a>
-            {% else %}
-            <a href="{{ url_for('account.login') }}" class="nav-link-item" style="font-size:.82rem;">
-                <i class="fas fa-right-to-bracket nav-icon"></i><span class="nav-label">Sign in</span>
-            </a>
-            {% endif %}
-            <div class="sidebar-footer-actions">
-                <span class="sidebar-version-label me-auto">v1.0.0</span>
-                {% if current_user.is_authenticated %}
-                <a href="{{ url_for('config.settings') }}" class="btn-sidebar-icon" title="Settings"><i class="fas fa-gear"></i></a>
-                {% endif %}
-                <button class="btn-theme ms-1" onclick="toggleTheme()" title="Toggle theme"><i class="fas fa-moon" id="theme-icon"></i></button>
-            </div>
-        </div>
-    </aside>
-    <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
-
-    {% else %}
-    {# ═══════════════════════════════════ #}
-    {# SIDEBAR / RAIL MODE (default)       #}
-    {# ═══════════════════════════════════ #}
-    <aside class="app-sidebar" id="appSidebar">
-
-        {# ── Header ── #}
-        <div class="sidebar-header">
-            <div class="sidebar-logo-icon flex-shrink-0">
-                <i class="fas fa-rocket"></i>
-            </div>
-            <span class="sidebar-app-name">Flask Launchpad</span>
-            <button class="btn-sidebar-toggle d-none d-lg-inline-flex"
-                    onclick="toggleSidebarCollapsed()"
-                    title="Collapse sidebar"
-                    id="sidebarToggleBtn">
-                <i class="fas fa-chevron-left" id="sidebar-chevron"></i>
-            </button>
-        </div>
-
-        {# ── Nav ── #}
-        <nav class="sidebar-nav">
-            <p class="nav-section-label">Navigation</p>
-
-            <a href="{{ url_for('home.home') }}"
-               class="nav-link-item {% if request.endpoint == 'home.home' %}active{% endif %}"
-               data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Home">
-                <i class="fas fa-house nav-icon"></i>
-                <span class="nav-label">Home</span>
-            </a>
-
-            {% if current_user.is_authenticated %}
-            <a href="{{ url_for('account.index') }}"
-               class="nav-link-item {% if request.blueprint == 'account' %}active{% endif %}"
-               data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Account">
-                <i class="fas fa-user nav-icon"></i>
-                <span class="nav-label">Account</span>
-            </a>
-            {% endif %}
-
-            {% if current_user.is_authenticated and current_user.is_admin() %}
-            <p class="nav-section-label">Admin</p>
-            <a href="/api/" class="nav-link-item" target="_blank"
-               data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="API Docs">
-                <i class="fas fa-code nav-icon"></i>
-                <span class="nav-label">API Docs</span>
-                <i class="fas fa-arrow-up-right-from-square nav-icon ms-auto" style="font-size:.55rem;opacity:.4;"></i>
-            </a>
-            {% endif %}
-        </nav>
-
-        {# ── Footer ── #}
-        <div class="sidebar-footer">
-            {% if current_user.is_authenticated %}
-            <a href="{{ url_for('account.index') }}" class="sidebar-user-pill"
-               data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="{{ current_user.username() }}">
-                <div class="sidebar-user-avatar">
-                    {{ current_user.first_name[0]|upper }}{{ current_user.last_name[0]|upper }}
-                </div>
-                <span class="sidebar-user-name">{{ current_user.username() }}</span>
-            </a>
-            <a href="{{ url_for('account.logout') }}" class="nav-link-item"
-               style="font-size:.82rem;"
-               data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Sign out">
-                <i class="fas fa-right-from-bracket nav-icon"></i>
-                <span class="nav-label">Sign out</span>
-            </a>
-            {% else %}
-            <a href="{{ url_for('account.login') }}" class="nav-link-item" style="font-size:.82rem;">
-                <i class="fas fa-right-to-bracket nav-icon"></i>
-                <span class="nav-label">Sign in</span>
-            </a>
-            {% endif %}
-
-            {# Action row: version + settings + theme #}
-            <div class="sidebar-footer-actions">
-                <span class="sidebar-version-label me-auto">v1.0.0</span>
-                {% if current_user.is_authenticated %}
-                <a href="{{ url_for('config.settings') }}"
-                   class="btn-sidebar-icon"
-                   title="Settings"
-                   data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Settings">
-                    <i class="fas fa-gear"></i>
-                </a>
-                {% endif %}
-                <button class="btn-theme ms-1" onclick="toggleTheme()" title="Toggle theme">
-                    <i class="fas fa-moon" id="theme-icon"></i>
-                </button>
-            </div>
-        </div>
-
-    </aside>
-
-    {# Mobile backdrop #}
-    <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
-    {% endif %}
-
+    {% include 'macros/_nav.html' %}
     {% endblock %}
 
     {# ── Main content area ── #}
     <div class="app-main {% if not self.top_nav()|trim or nav_mode in ('topbar', 'hidden') %}app-main--full{% endif %}">
 
-        {# Topbar — sidebar mode only, hidden on standalone pages #}
-        {% if self.top_nav()|trim and nav_mode != 'topbar' %}
+        {# Secondary topbar (sidebar / rail modes only) — shows page title #}
+        {% if self.top_nav()|trim and nav_mode not in ('topbar',) %}
         <header class="app-topbar">
             <div class="topbar-left">
                 <button class="btn-icon btn-hamburger" onclick="openSidebar()" title="Menu">
@@ -283,10 +82,8 @@
                         <template v-for="msg in message_list" :key="msg.id">
                             <div :id="'liveToast-' + msg.id"
                                  :class="'toast align-items-center border-0 bg-' + msg.toast_class"
-                                 role="alert"
-                                 data-bs-delay="5000"
-                                 aria-live="assertive"
-                                 aria-atomic="true">
+                                 role="alert" data-bs-delay="5000"
+                                 aria-live="assertive" aria-atomic="true">
                                 <div class="d-flex">
                                     <div class="toast-body d-flex align-items-center gap-2">
                                         <i :class="msg.icon"></i>
@@ -304,40 +101,20 @@
             {% block content %}{% endblock %}
         </main>
 
-        {# ── Footer ── #}
+        {# Footer — only on pages with navigation #}
         {% if self.top_nav()|trim %}
-        <footer class="app-footer">
-            <div class="footer-inner">
-                <div class="footer-brand">
-                    <span class="footer-brand-name">P'tit Crolle</span>
-                    <code class="footer-version">v1.0.0</code>
-                </div>
-                <nav class="footer-links">
-                    {% if current_user.is_authenticated and current_user.is_admin() %}
-                    <a href="/api/" target="_blank" class="footer-link">
-                        <i class="fas fa-code me-1" style="font-size:.65rem;"></i>API Docs
-                    </a>
-                    {% endif %}
-                    {% if current_user.is_authenticated %}
-                    <a href="{{ url_for('config.settings') }}" class="footer-link">Settings</a>
-                    {% endif %}
-                </nav>
-                <span class="footer-copy">© 2026 Flask Launchpad</span>
-            </div>
-        </footer>
+        {% include 'macros/_footer.html' %}
         {% endif %}
 
     </div>
 </div>
 
-{# CSRF token #}
+{# CSRF token for JS API calls #}
 <div style="display:none;">
     <input type="hidden" id="csrf_token" name="csrf_token" value="{{ csrf_token()|safe }}">
 </div>
 
-{# ─────────────────────────────────────── #}
-{# SCRIPTS                                 #}
-{# ─────────────────────────────────────── #}
+{# ── Scripts ── #}
 {% block script %}
 <script type="module">
     const { createApp } = Vue
@@ -348,73 +125,6 @@
     }).mount('#main-container')
 </script>
 {% endblock %}
-
-<script>
-// ── Mobile sidebar ────────────────────────────────────────────
-function openSidebar() {
-    document.getElementById('appSidebar')?.classList.add('is-open');
-    document.getElementById('sidebarBackdrop')?.classList.add('is-open');
-    document.body.style.overflow = 'hidden';
-}
-function closeSidebar() {
-    document.getElementById('appSidebar')?.classList.remove('is-open');
-    document.getElementById('sidebarBackdrop')?.classList.remove('is-open');
-    document.body.style.overflow = '';
-}
-
-// ── Desktop sidebar collapse ──────────────────────────────────
-function toggleSidebarCollapsed() {
-    var wrapper   = document.getElementById('appWrapper');
-    var chevron   = document.getElementById('sidebar-chevron');
-    var collapsed = wrapper.classList.toggle('sidebar-collapsed');
-
-    if (chevron) {
-        chevron.classList.toggle('fa-chevron-left',  !collapsed);
-        chevron.classList.toggle('fa-chevron-right',  collapsed);
-    }
-
-    _updateTooltips(collapsed);
-
-    var csrf = document.getElementById('csrf_token');
-    if (!csrf) return;
-    fetch('/config/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf.value },
-        body: JSON.stringify({ sidebar_collapsed: collapsed }),
-    });
-}
-
-// ── Bootstrap tooltips (active only when collapsed) ───────────
-var _tooltipInstances = [];
-
-function _initTooltips() {
-    var els = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-    _tooltipInstances = Array.from(els).map(function(el) {
-        return new bootstrap.Tooltip(el, { trigger: 'hover' });
-    });
-}
-
-function _updateTooltips(collapsed) {
-    _tooltipInstances.forEach(function(t) {
-        collapsed ? t.enable() : t.disable();
-        if (!collapsed) t.hide();
-    });
-}
-
-document.addEventListener('DOMContentLoaded', function () {
-    var wrapper  = document.getElementById('appWrapper');
-    var chevron  = document.getElementById('sidebar-chevron');
-    var collapsed = wrapper?.classList.contains('sidebar-collapsed') || false;
-
-    if (chevron) {
-        chevron.classList.toggle('fa-chevron-left',  !collapsed);
-        chevron.classList.toggle('fa-chevron-right',  collapsed);
-    }
-
-    _initTooltips();
-    _updateTooltips(collapsed);
-});
-</script>
 
 </body>
 </html>

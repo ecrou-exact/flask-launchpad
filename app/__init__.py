@@ -54,5 +54,16 @@ def create_app():
             config = UC.query.filter_by(user_id=current_user.id, is_active=True).first()
         return dict(user_config=config)
 
+    @app.context_processor
+    def inject_app_version():
+        import os
+        version_path = os.path.join(app.root_path, '..', 'version')
+        try:
+            with open(version_path) as f:
+                version = f.read().strip()
+        except OSError:
+            version = '0.0.0'
+        return dict(app_version=version)
+
     return app
     
