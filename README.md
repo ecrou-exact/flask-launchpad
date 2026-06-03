@@ -1,6 +1,5 @@
-# P'tit Crolle
+<img width="676" height="369" alt="image" src="https://github.com/user-attachments/assets/6440edd6-17b7-47c8-a744-fefd296693ca" />
 
-<img title="MarkText logo" src="https://github.com/DavidCruciani/ptit-crolle/blob/main/doc/crolle.png?raw=true" alt="Alt text" width="388" data-align="center">
 
 Flask application template
 
