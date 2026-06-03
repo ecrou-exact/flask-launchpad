@@ -27,6 +27,63 @@
 
         <div class="page-body">
 
+            {# ── User settings ── #}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <div style="width:28px;height:28px;border-radius:var(--radius-sm);background:var(--brand-dim);color:var(--brand);display:flex;align-items:center;justify-content:center;font-size:.72rem;flex-shrink:0;">
+                            <i class="fas fa-shield-halved"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0" style="font-size:.85rem;font-weight:600;">User settings</h6>
+                            <p class="text-muted mb-0" style="font-size:.75rem;">Admin-only configuration for user access.</p>
+                        </div>
+                        <div class="ms-auto">
+                            <span v-if="settings_saved" class="text-success small">
+                                <i class="fas fa-circle-check me-1"></i>Saved
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="users-setting-row">
+                        <div class="users-setting-info">
+                            <span class="users-setting-label">
+                                <i class="fas fa-user-plus me-1" style="font-size:.75rem;color:var(--text-muted);"></i>
+                                Public registration
+                            </span>
+                            <span class="text-muted small d-block" style="padding-left:1.25rem;">
+                                Allow anyone to create an account from the login page. When disabled, only admins can create accounts.
+                            </span>
+                        </div>
+                        <button class="users-setting-toggle"
+                                :class="{ active: allow_registration }"
+                                @click="toggleSetting('allow_registration')"
+                                :title="allow_registration ? 'Enabled — click to disable' : 'Disabled — click to enable'">
+                            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                        </button>
+                    </div>
+
+                    <div class="users-setting-row">
+                        <div class="users-setting-info">
+                            <span class="users-setting-label">
+                                <i class="fas fa-lock me-1" style="font-size:.75rem;color:var(--text-muted);"></i>
+                                Admin-only login
+                            </span>
+                            <span class="text-muted small d-block" style="padding-left:1.25rem;">
+                                When enabled, only admins can log in. Non-admin accounts are blocked at the login page.
+                            </span>
+                        </div>
+                        <button class="users-setting-toggle"
+                                :class="{ active: !allow_login }"
+                                @click="toggleSetting('allow_login')"
+                                :title="allow_login ? 'All users can log in — click to restrict' : 'Admin-only — click to open'">
+                            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+
             <data-table
                 ref="table_ref"
                 fetch-url="/api/account/users"
@@ -186,8 +243,12 @@
         components: { LoadingBar, UserAvatar, DataTable },
 
         setup() {
-            const page_is_loading = ref(false)
-            const table_ref       = ref(null)
+            const page_is_loading   = ref(false)
+            const table_ref         = ref(null)
+            const allow_registration = ref({{ 'true' if allow_registration else 'false' }})
+            const allow_login        = ref({{ 'true' if allow_login else 'false' }})
+            const settings_saved     = ref(false)
+            let   saved_timer        = null
 
             onMounted(() => { page_is_loading.value = true })
 
@@ -209,7 +270,26 @@
                 { key: 'delete',     label: 'Delete',      icon: 'fa-trash',         variant: 'danger'  },
             ]
 
-            // ── Inline toggles ────────────────────────────────────────────
+            // ── Site settings ─────────────────────────────────────────────
+            async function toggleSetting(key) {
+                const ref_map = { allow_registration, allow_login }
+                if (key in ref_map) {
+                    ref_map[key].value = !ref_map[key].value
+                    const res = await apiFetch('/api/admin/site-config', 'POST', {
+                        key, value: ref_map[key].value
+                    })
+                    if (res.ok) {
+                        clearTimeout(saved_timer)
+                        settings_saved.value = true
+                        saved_timer = setTimeout(() => { settings_saved.value = false }, 2500)
+                    } else {
+                        ref_map[key].value = !ref_map[key].value  // revert
+                        await create_message('Failed to save setting', TOAST.ERROR, true)
+                    }
+                }
+            }
+
+            // ── Inline toggles ─────────────────────────────────────────────
             async function toggleVerified(item) {
                 const res = await apiFetch(`/api/account/${item.id}/toggle-verified`, 'POST')
                 if (res.ok) {
@@ -307,6 +387,7 @@
 
             return {
                 message_list, page_is_loading, table_ref,
+                allow_registration, allow_login, settings_saved, toggleSetting,
                 columns, bulk_actions,
                 toggleVerified, disconnectUser,
                 handleCreate, handleEdit, handleView, handleDelete, handleBulkAction,

@@ -45,8 +45,17 @@ def create_app():
     csrf.exempt(api_blueprint)
     app.register_blueprint(api_blueprint)
 
-    # Ensure UserConfig table is known to Alembic
-    from .core.db_class.config import UserConfig  # noqa: F401
+    # Ensure these tables are known to Alembic
+    from .core.db_class.config import UserConfig       # noqa: F401
+    from .core.db_class.site_config import SiteConfig  # noqa: F401
+
+    @app.context_processor
+    def inject_site_config():
+        from .core.db_class.site_config import get_site_bool
+        return dict(
+            allow_registration=get_site_bool('allow_registration', True),
+            allow_login=get_site_bool('allow_login', True),
+        )
 
     @app.context_processor
     def inject_user_config():
@@ -67,6 +76,13 @@ def create_app():
         except OSError:
             version = '0.0.0'
         return dict(app_version=version)
+
+    with app.app_context():
+        from .core.db_class.site_config import seed_site_config
+        try:
+            seed_site_config()
+        except Exception:
+            pass  # DB not yet created (first migration)
 
     @app.before_request
     def update_last_seen():

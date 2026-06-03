@@ -87,6 +87,11 @@ def reload_api_key():
 
 @account_blueprint.route('/register', methods=['GET', 'POST'])
 def create_user():
+    from ...core.db_class.site_config import get_site_bool
+    if not get_site_bool('allow_registration', True):
+        if not (current_user.is_authenticated and current_user.is_admin()):
+            flash('Account registration is currently disabled.', 'warning')
+            return redirect(url_for('account.login'))
     form = AddNewUserForm()
     if form.validate_on_submit():
         form_dict = form_to_dict(form)
@@ -110,8 +115,19 @@ def login():
         if user and user.password_hash and user.verify_password(form.password.data):
             if not user.is_verified:
                 flash('Your account is pending verification. Please wait for admin approval.', 'warning')
+            elif not user.is_admin():
+                from ...core.db_class.site_config import get_site_bool
+                if not get_site_bool('allow_login', True):
+                    flash('Login is currently restricted to administrators only.', 'warning')
+                else:
+                    if user.force_logout:
+                        from ... import db as _db
+                        user.force_logout = False
+                        _db.session.commit()
+                    login_user(user, form.remember_me.data)
+                    return redirect(request.args.get('next') or url_for('home.home'))
             else:
-                # Reset force_logout so a previously disconnected user can re-authenticate
+                # Admin always allowed
                 if user.force_logout:
                     from ... import db as _db
                     user.force_logout = False
