@@ -1,47 +1,56 @@
 {% extends 'base.html' %}
 
 {% block head_extra %}
-<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/login.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
 {% endblock %}
 
 {% block top_nav %}{% endblock %}
 
 {% block content %}
-<form action="" method="post" class="form-signin mx-auto">
-    {{ form.hidden_tag() }}
+<div class="login-card">
 
-    <div class="text-center mb-4">
-        <img src="{{ url_for('static', filename='image/crolle.png') }}" height="80" alt="P'tit Crolle Logo" />
-        <h1 class="h3 mb-3 fw-bold italic"><i>P'tit Crolle</i></h1>
-    </div>
-
-    <div class="form-floating mb-3">
-        {{ form.email(class_="form-control", placeholder="name@example.com", id="floatingEmail") }}
-        <label for="floatingEmail">{{ form.email.label.text }}</label>
-        {% if form.email.errors %}
-        <div class="text-danger small mt-1">{{ form.email.errors[0] | safe }}</div>
-        {% endif %}
-    </div>
-
-    <div class="form-floating mb-3">
-        {{ form.password(class_="form-control", placeholder="Password", id="floatingPassword") }}
-        <label for="floatingPassword">{{ form.password.label.text }}</label>
-    </div>
-
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div class="form-check">
-            {{ form.remember_me(class="form-check-input", id="rememberMe") }}
-            <label class="form-check-label small" for="rememberMe">
-                {{ form.remember_me.label.text }}
-            </label>
+    <div class="login-header">
+        <div class="login-logo">
+            <i class="fas fa-rocket"></i>
         </div>
-        <a href="/account/register" class="small text-decoration-none">Create account</a>
+        <h1 class="login-title">Flask Launchpad</h1>
+        <p class="login-subtitle">Sign in to your account</p>
     </div>
 
-    <button class="btn btn-primary w-100 py-2 fw-bold" type="submit">
-        Sign in
-    </button>
+    <form action="" method="post" class="login-form">
+        {{ form.hidden_tag() }}
 
-    <p class="mt-4 mb-0 text-muted text-center small">&copy; P'tit Crolle 2026</p>
-</form>
+        <div class="form-floating mb-3">
+            {{ form.email(class_="form-control", placeholder="name@example.com", id="floatingEmail") }}
+            <label for="floatingEmail">{{ form.email.label.text }}</label>
+            {% if form.email.errors %}
+            <div class="text-danger small mt-1">{{ form.email.errors[0] }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-floating mb-4">
+            {{ form.password(class_="form-control", placeholder="Password", id="floatingPassword") }}
+            <label for="floatingPassword">{{ form.password.label.text }}</label>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="form-check">
+                {{ form.remember_me(class="form-check-input", id="rememberMe") }}
+                <label class="form-check-label small" for="rememberMe">
+                    {{ form.remember_me.label.text }}
+                </label>
+            </div>
+            <a href="{{ url_for('account.create_user') }}" class="small text-decoration-none">
+                Create account
+            </a>
+        </div>
+
+        <button class="btn btn-primary w-100 py-2 fw-semibold" type="submit">
+            Sign in
+        </button>
+    </form>
+
+    <p class="login-footer-text">&copy; Flask Launchpad {{ now.year if now else '2026' }}</p>
+
+</div>
 {% endblock %}

@@ -1,72 +1,269 @@
 {% extends 'base.html' %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/home/home.css') }}">
+{% endblock %}
+
+{% block page_title %}Home{% endblock %}
+
 {% block content %}
-<div class="container mt-4" v-cloak>
+<div class="page-wrapper" v-cloak>
     <loading-bar :active="!page_is_loading"></loading-bar>
+
     <div v-if="page_is_loading">
+
+        {# ── Hero ── #}
+        <div class="home-hero">
+            <div class="home-hero-badge">
+                <i class="fas fa-rocket"></i>
+                Flask Launchpad
+            </div>
+            <h1 class="home-hero-title">Your Flask project,<br>ready to ship.</h1>
+            <p class="home-hero-subtitle">
+                A production-ready Flask boilerplate with authentication, roles, REST API,
+                and a clean component system. Clone, build, deploy.
+            </p>
+        </div>
+
+        {# ── Stats row ── #}
+        <div class="row g-3">
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="home-stat-card">
+                    <div class="home-stat-icon home-stat-icon--primary">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div>
+                        <div class="home-stat-value">[[ stats.users ]]</div>
+                        <div class="home-stat-label">Registered users</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="home-stat-card">
+                    <div class="home-stat-icon home-stat-icon--success">
+                        <i class="fas fa-circle-check"></i>
+                    </div>
+                    <div>
+                        <div class="home-stat-value">[[ stats.roles ]]</div>
+                        <div class="home-stat-label">Roles configured</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="home-stat-card">
+                    <div class="home-stat-icon home-stat-icon--info">
+                        <i class="fas fa-plug"></i>
+                    </div>
+                    <div>
+                        <div class="home-stat-value">[[ stats.endpoints ]]</div>
+                        <div class="home-stat-label">API endpoints</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="home-stat-card">
+                    <div class="home-stat-icon home-stat-icon--warning">
+                        <i class="fas fa-shield-halved"></i>
+                    </div>
+                    <div>
+                        <div class="home-stat-value">[[ stats.features ]]</div>
+                        <div class="home-stat-label">Feature flags</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# ── Feature cards ── #}
+        <div>
+            <p class="home-section-title">What's included</p>
+            <div class="row g-3">
+
+                <div class="col-12 col-md-6 col-lg-4">
+                    <a href="{{ url_for('account.index') if current_user.is_authenticated else url_for('account.login') }}"
+                       class="home-feature-card">
+                        <div class="home-feature-icon">
+                            <i class="fas fa-user-shield"></i>
+                        </div>
+                        <div>
+                            <p class="home-feature-title">Authentication</p>
+                            <p class="home-feature-desc">
+                                Login, registration, session management and role-based access control.
+                                Admin, Editor, Read-Only out of the box.
+                            </p>
+                        </div>
+                        <i class="fas fa-arrow-right home-feature-arrow"></i>
+                    </a>
+                </div>
+
+                <div class="col-12 col-md-6 col-lg-4">
+                    <a href="/api/" class="home-feature-card" target="_blank">
+                        <div class="home-feature-icon">
+                            <i class="fas fa-code"></i>
+                        </div>
+                        <div>
+                            <p class="home-feature-title">REST API</p>
+                            <p class="home-feature-desc">
+                                Flask-RESTX with Swagger UI. API key authentication,
+                                namespaces, and input validation ready.
+                            </p>
+                        </div>
+                        <i class="fas fa-arrow-right home-feature-arrow"></i>
+                    </a>
+                </div>
+
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="home-feature-card" style="cursor: default;">
+                        <div class="home-feature-icon" style="background: rgba(25,135,84,0.08); color: var(--bs-success);">
+                            <i class="fas fa-flag"></i>
+                        </div>
+                        <div>
+                            <p class="home-feature-title">Feature Flags</p>
+                            <p class="home-feature-desc">
+                                Enable or disable features at runtime without redeployment.
+                                Per-feature routing guard and nav link control.
+                            </p>
+                        </div>
+                        <i class="fas fa-arrow-right home-feature-arrow"></i>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="home-feature-card" style="cursor: default;">
+                        <div class="home-feature-icon" style="background: rgba(13,202,240,0.08); color: var(--bs-info);">
+                            <i class="fas fa-layer-group"></i>
+                        </div>
+                        <div>
+                            <p class="home-feature-title">Vue 3 Components</p>
+                            <p class="home-feature-desc">
+                                Composition API, ES modules, DataTable, Pagination,
+                                LoadingBar and Toast — no build step required.
+                            </p>
+                        </div>
+                        <i class="fas fa-arrow-right home-feature-arrow"></i>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="home-feature-card" style="cursor: default;">
+                        <div class="home-feature-icon" style="background: rgba(255,193,7,0.10); color: var(--bs-warning);">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <div>
+                            <p class="home-feature-title">Alembic Migrations</p>
+                            <p class="home-feature-desc">
+                                SQLAlchemy + Alembic with a one-command workflow via
+                                <code style="font-size: 0.78rem;">./launch.sh</code>.
+                            </p>
+                        </div>
+                        <i class="fas fa-arrow-right home-feature-arrow"></i>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="home-feature-card" style="cursor: default;">
+                        <div class="home-feature-icon" style="background: rgba(220,53,69,0.08); color: var(--bs-danger);">
+                            <i class="fas fa-vial"></i>
+                        </div>
+                        <div>
+                            <p class="home-feature-title">Test Suite</p>
+                            <p class="home-feature-desc">
+                                Pytest with role-based fixtures. HTML, API, and security
+                                tests included. Run with <code style="font-size: 0.78rem;">./launch.sh --test</code>.
+                            </p>
+                        </div>
+                        <i class="fas fa-arrow-right home-feature-arrow"></i>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        {# ── Stack info ── #}
+        <div>
+            <p class="home-section-title">Tech stack</p>
+            <div class="d-flex flex-wrap gap-2">
+                <div class="home-stack-item">
+                    <i class="fab fa-python"></i>
+                    Flask 3
+                </div>
+                <div class="home-stack-item">
+                    <i class="fas fa-database"></i>
+                    SQLAlchemy + Alembic
+                </div>
+                <div class="home-stack-item">
+                    <i class="fas fa-plug"></i>
+                    Flask-RESTX
+                </div>
+                <div class="home-stack-item">
+                    <i class="fab fa-bootstrap"></i>
+                    Bootstrap 5.3
+                </div>
+                <div class="home-stack-item">
+                    <i class="fas fa-v"></i>
+                    Vue 3
+                </div>
+                <div class="home-stack-item">
+                    <i class="fas fa-shield-halved"></i>
+                    Flask-WTF CSRF
+                </div>
+                <div class="home-stack-item">
+                    <i class="fas fa-key"></i>
+                    Flask-Login + Bcrypt
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
-
 {% endblock %}
+
 {% block script %}
 <script type="module">
-    const { createApp, ref, onMounted } = Vue;
-    import { message_list, create_message } from '../static/js/toaster.js';
-    import Pagination from '../static/js/components/pagination.js';
-    import LoadingBar from '../static/js/components/loading-bar.js';
+    const { createApp, ref, onMounted } = Vue
+    import { message_list, create_message } from '/static/js/toaster.js'
+    import LoadingBar from '/static/js/components/loading-bar.js'
+
     createApp({
         delimiters: ['[[', ']]'],
-        components: {
-            Pagination,
-            LoadingBar
-        },
+        components: { LoadingBar },
         setup() {
-            /**
-             * #######################
-             * #    Init the page    #
-             * #######################
-             * */
+
+            // ── Init ────────────────────────────────────────
             const page_is_loading = ref(false)
 
+            const stats = ref({
+                users:     '—',
+                roles:     '—',
+                endpoints: '—',
+                features:  '—',
+            })
+
             async function init() {
-                // let 1 sec before loading the page remove it when you will fetch real data to avoid seeing the loading spinner too much
-                // await new Promise(resolve => setTimeout(resolve, 1000))
                 await Promise.all([
-                    create_message("Welcome to P'tit Crolle !", "success-subtle", true, "fas fa-check"),
-                    // call functions to fetch data ...
+                    fetchStats(),
                 ])
                 page_is_loading.value = true
             }
 
-            onMounted(() => {
-                init()
-            })
-
-            /**
-             * #######################
-             * #    Pagination       #
-             * #######################
-             * */
-            const current_page = ref(1);
-            const total_pages = ref(20);
-
-            function handlePageChange(page) {
-                current_page.value = page;
-                // fetch_your_data(newPage);
-                // call functions to fetch data ...
+            async function fetchStats() {
+                // Replace with real API calls when endpoints exist
+                stats.value = {
+                    users:     1,
+                    roles:     3,
+                    endpoints: 4,
+                    features:  0,
+                }
             }
 
+            onMounted(() => init())
+
+            // ── Return ──────────────────────────────────────
             return {
                 message_list,
-                create_message,
                 page_is_loading,
-
-                // Pagination
-                current_page,
-                total_pages,
-                handlePageChange
-
+                stats,
             }
         },
-    }).mount('#main-container');
+    }).mount('#main-container')
 </script>
 {% endblock %}

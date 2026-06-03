@@ -1,100 +1,213 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>P'tit Crolle</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Flask Launchpad</title>
     <link rel="icon" href="{{ url_for('static', filename='image/crolle.png') }}">
 
-    <!-- JS libraries -->
-    <script src="{{ url_for('static', filename='js/popper.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='bootstrap-5.3.0/js/bootstrap.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/jquery.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/vue.global.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/dayjs/dayjs.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/dayjs/dayjs-utc.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/dayjs/dayjs-relativeTime.js') }}"></script>
-    <script>dayjs.extend(window.dayjs_plugin_utc)</script>
-    <script>dayjs.extend(window.dayjs_plugin_relativeTime)</script>
-    <!-- theme.js must load here (sync, before CSS) to apply saved theme and avoid flash -->
+    {# theme.js must load sync before CSS to prevent flash of unstyled content #}
     <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
 
-    <!-- CSS -->
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='bootstrap-5.3.0/css/bootstrap.min.css') }}">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='fontawesome-6.3.0/css/fontawesome.css') }}">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='fontawesome-6.3.0/css/solid.css') }}">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='fontawesome-6.3.0/css/brands.css') }}">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/core.css') }}">
+    {# CSS #}
+    <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap-5.3.0/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='fontawesome-6.3.0/css/fontawesome.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='fontawesome-6.3.0/css/solid.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='fontawesome-6.3.0/css/brands.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/core.css') }}">
 
     {% block head_extra %}{% endblock %}
 
-    <script src="{{ url_for('static', filename='js/blur.js') }}"></script>
+    {# JS libraries #}
+    <script src="{{ url_for('static', filename='bootstrap-5.3.0/js/bootstrap.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/vue.global.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/blur.js') }}" defer></script>
 </head>
 
-<body class="d-flex flex-column min-vh-100">
-    <div class="container-fluid">
-        <div class="row flex-nowrap">
-            <main class="col ps-md-4 pt-2" id="main-container">
-                {% include 'macros/_flashes.html' %}
+<body>
 
-                <div aria-live="polite" aria-atomic="true">
-                    <div class="toast-container start-50 translate-middle-x top-0 p-3" style="position: fixed;">
-                        <template v-if="message_list">
-                            <template v-for="message in message_list" v-key="message.id">
-                                <div :id="`liveToast-${message.id}`" :class="`toast bg-${message.toast_class}`"
-                                    role="alert" aria-live="assertive" data-bs-delay="5000" aria-atomic="true"
-                                    style="--bs-toast-spacing: 0.5rem;">
-                                    <div class="d-flex">
-                                        <div class="toast-body">
-                                            <template v-if="message.message">
-                                                <i :class="message.icon" class="me-2"></i> [[message.message]]
-                                            </template>
-                                        </div>
-                                        <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast"
-                                            aria-label="Close"></button>
-                                    </div>
-                                </div>
-                            </template>
-                        </template>
-                    </div>
-                </div>
+{# ─────────────────────────────────────────────────── #}
+{# APP WRAPPER                                          #}
+{# ─────────────────────────────────────────────────── #}
+<div class="app-wrapper">
 
-                {% block content %}{% endblock %}
-            </main>
+    {# ── Sidebar (empties this block on login/standalone pages) ── #}
+    {% block top_nav %}
+    <aside class="app-sidebar" id="appSidebar">
 
-            {# CSRF token for JS requests #}
-            {% if csrf_token()|safe %}
-            <div style="visibility: hidden; display: none">
-                <input type="hidden" id="csrf_token" name="csrf_token" value="{{ csrf_token()|safe }}">
+        <div class="sidebar-header">
+            <div class="sidebar-logo-icon">
+                <i class="fas fa-rocket"></i>
             </div>
-            {% endif %}
+            <span class="sidebar-app-name">Flask Launchpad</span>
         </div>
-    </div>
 
-    {% block script %}
-    <script type="module">
-        const { createApp } = Vue
-        createApp({
-            delimiters: ['[[', ']]'],
-            setup() {}
-        }).mount('#main-container')
-    </script>
+        <nav class="sidebar-nav">
+            <p class="nav-section-label">Navigation</p>
+
+            <a href="{{ url_for('home.home') }}"
+               class="nav-link-item {% if request.endpoint == 'home.home' %}active{% endif %}">
+                <i class="fas fa-house nav-icon"></i>
+                Home
+            </a>
+
+            {% if current_user.is_authenticated %}
+            <a href="{{ url_for('account.index') }}"
+               class="nav-link-item {% if request.blueprint == 'account' %}active{% endif %}">
+                <i class="fas fa-user nav-icon"></i>
+                Account
+            </a>
+            {% endif %}
+
+            {% if current_user.is_authenticated and current_user.is_admin() %}
+            <p class="nav-section-label">Admin</p>
+
+            <a href="/api/" class="nav-link-item" target="_blank">
+                <i class="fas fa-code nav-icon"></i>
+                API Docs
+                <i class="fas fa-arrow-up-right-from-square nav-icon ms-auto" style="font-size:0.6rem; opacity:0.45;"></i>
+            </a>
+            {% endif %}
+        </nav>
+
+        <div class="sidebar-footer">
+            {% if current_user.is_authenticated %}
+            <a href="{{ url_for('account.index') }}"
+               class="nav-link-item" style="padding: 0.4rem 0.5rem; border-radius: 8px;">
+                <i class="fas fa-circle-user nav-icon" style="font-size: 1rem;"></i>
+                <span class="text-truncate" style="font-size: 0.8rem;">
+                    {{ current_user.username() }}
+                </span>
+            </a>
+            <a href="{{ url_for('account.logout') }}" class="nav-link-item"
+               style="padding: 0.4rem 0.5rem; border-radius: 8px;">
+                <i class="fas fa-right-from-bracket nav-icon"></i>
+                <span style="font-size: 0.8rem;">Sign out</span>
+            </a>
+            {% else %}
+            <a href="{{ url_for('account.login') }}" class="nav-link-item"
+               style="padding: 0.4rem 0.5rem; border-radius: 8px;">
+                <i class="fas fa-right-to-bracket nav-icon"></i>
+                <span style="font-size: 0.8rem;">Sign in</span>
+            </a>
+            {% endif %}
+
+            <div class="d-flex align-items-center justify-content-between mt-1 px-1">
+                <span style="font-size: 0.65rem; color: var(--text-sidebar-muted);">
+                    v1.0.0
+                </span>
+                <button class="btn-theme" onclick="toggleTheme()" title="Toggle theme">
+                    <i class="fas fa-moon" id="theme-icon"></i>
+                </button>
+            </div>
+        </div>
+
+    </aside>
+
+    {# Mobile backdrop #}
+    <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
     {% endblock %}
 
-    <script>
-        $(document).ready(function () {
-            $('.message').each((i, el) => {
-                const $el = $(el);
-                const $xx = $el.find('.close');
-                const sec = $el.data('autohide');
-                const triggerRemove = () => clearTimeout($el.trigger('remove').T);
+    {# ── Main content area ── #}
+    <div class="app-main {% if not self.top_nav()|trim %}app-main--full{% endif %}">
 
-                $el.one('remove', () => $el.remove());
-                $xx.one('click', triggerRemove);
-                if (sec) $el.T = setTimeout(triggerRemove, sec * 1000);
-            });
-        });
-    </script>
+        {# Topbar — hidden on standalone pages (login, etc.) #}
+        {% if self.top_nav()|trim %}
+        <header class="app-topbar">
+            <div class="topbar-left">
+                <button class="btn-icon btn-hamburger" onclick="openSidebar()" title="Menu">
+                    <i class="fas fa-bars" style="font-size: 0.8rem;"></i>
+                </button>
+                <span class="topbar-page-title">
+                    {% block page_title %}Flask Launchpad{% endblock %}
+                </span>
+            </div>
+            <div class="topbar-right">
+                {% if current_user.is_authenticated %}
+                <span class="badge bg-primary-subtle text-primary-emphasis rounded-pill"
+                      style="font-size: 0.7rem; font-weight: 600;">
+                    {{ current_user.role.name if current_user.role else 'User' }}
+                </span>
+                {% endif %}
+            </div>
+        </header>
+        {% endif %}
+
+        {# Page content #}
+        <main id="main-container">
+
+            {# Flask flash messages #}
+            {% include 'macros/_flashes.html' %}
+
+            {# Vue toast container #}
+            <div aria-live="polite" aria-atomic="true">
+                <div class="toast-container">
+                    <template v-if="message_list">
+                        <template v-for="msg in message_list" :key="msg.id">
+                            <div :id="'liveToast-' + msg.id"
+                                 :class="'toast align-items-center border-0 bg-' + msg.toast_class"
+                                 role="alert"
+                                 data-bs-delay="5000"
+                                 aria-live="assertive"
+                                 aria-atomic="true">
+                                <div class="d-flex">
+                                    <div class="toast-body d-flex align-items-center gap-2">
+                                        <i :class="msg.icon"></i>
+                                        <span>[[ msg.message ]]</span>
+                                    </div>
+                                    <button type="button"
+                                            class="btn-close me-2 m-auto"
+                                            data-bs-dismiss="toast"
+                                            aria-label="Close">
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                    </template>
+                </div>
+            </div>
+
+            {% block content %}{% endblock %}
+
+        </main>
+    </div>
+
+</div>
+
+{# CSRF token for JS API calls #}
+<div style="display: none;">
+    <input type="hidden" id="csrf_token" name="csrf_token" value="{{ csrf_token()|safe }}">
+</div>
+
+{# ─────────────────────────────────────────────────── #}
+{# SCRIPTS                                              #}
+{# ─────────────────────────────────────────────────── #}
+{% block script %}
+<script type="module">
+    const { createApp } = Vue
+    import { message_list } from '/static/js/toaster.js'
+
+    createApp({
+        delimiters: ['[[', ']]'],
+        setup() {
+            return { message_list }
+        }
+    }).mount('#main-container')
+</script>
+{% endblock %}
+
+<script>
+    function openSidebar() {
+        document.getElementById('appSidebar')?.classList.add('is-open');
+        document.getElementById('sidebarBackdrop')?.classList.add('is-open');
+        document.body.style.overflow = 'hidden';
+    }
+    function closeSidebar() {
+        document.getElementById('appSidebar')?.classList.remove('is-open');
+        document.getElementById('sidebarBackdrop')?.classList.remove('is-open');
+        document.body.style.overflow = '';
+    }
+</script>
+
 </body>
-
 </html>

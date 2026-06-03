@@ -1,29 +1,50 @@
+/*
+  Theme system — applied sync before CSS to prevent flash.
+  Current themes: 'light' | 'dark'
+  To add a new theme: add a case in applyTheme() and a CSS block in core.css.
+*/
+
 (function () {
-    const theme = localStorage.getItem('theme') || 'light';
-    document.documentElement.setAttribute('data-bs-theme', theme);
-    document.documentElement.style.backgroundColor = theme === 'dark' ? '#212529' : '#fbfbfb';
+    var theme = localStorage.getItem('theme') || 'light';
+    applyTheme(theme);
 })();
 
-function toggleDarkMode() {
-    const html = document.documentElement;
-    const icon = document.getElementById('theme-icon');
-    const newTheme = html.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
+function applyTheme(theme) {
+    var html = document.documentElement;
 
-    html.setAttribute('data-bs-theme', newTheme);
-    html.style.backgroundColor = newTheme === 'dark' ? '#212529' : '#fbfbfb';
-    localStorage.setItem('theme', newTheme);
+    /* Bootstrap dark mode toggle */
+    html.setAttribute('data-bs-theme', theme === 'dark' ? 'dark' : 'light');
 
-    if (icon) {
-        icon.classList.replace(
-            newTheme === 'dark' ? 'fa-moon' : 'fa-sun',
-            newTheme === 'dark' ? 'fa-sun' : 'fa-moon'
-        );
+    /* Instant body bg to prevent flash */
+    var bodyBg = theme === 'dark' ? '#12141a' : '#f0f2f5';
+    html.style.backgroundColor = bodyBg;
+
+    /* Future custom theme hook — extend here */
+    /* html.setAttribute('data-theme', theme); */
+
+    localStorage.setItem('theme', theme);
+}
+
+function toggleTheme() {
+    var current = localStorage.getItem('theme') || 'light';
+    var next = current === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+    updateThemeIcon(next);
+}
+
+function updateThemeIcon(theme) {
+    var icon = document.getElementById('theme-icon');
+    if (!icon) return;
+    if (theme === 'dark') {
+        icon.classList.remove('fa-moon');
+        icon.classList.add('fa-sun');
+    } else {
+        icon.classList.remove('fa-sun');
+        icon.classList.add('fa-moon');
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const icon = document.getElementById('theme-icon');
-    if (icon && localStorage.getItem('theme') === 'dark') {
-        icon.classList.replace('fa-moon', 'fa-sun');
-    }
+document.addEventListener('DOMContentLoaded', function () {
+    var theme = localStorage.getItem('theme') || 'light';
+    updateThemeIcon(theme);
 });
