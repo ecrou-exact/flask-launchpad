@@ -5,6 +5,7 @@ from sqlalchemy import or_
 from .. import db
 from ..core.db_class.log import Log
 from ..core.utils.decorators import admin_required
+from ..core.utils.logger import log_action
 
 log_ns = Namespace('log', description='Application logs — admin only')
 
@@ -93,6 +94,9 @@ class LogDetail(Resource):
             return {'message': 'Log not found'}, 404
         db.session.delete(log)
         db.session.commit()
+        log_action("Log entry deleted", "delete_log", category="api", level="warning",
+                   object_type="log", object_id=log_uuid, is_public=False,
+                   meta={"log_uuid": log_uuid})
         return {'message': 'Log deleted'}, 200
 
 
@@ -111,4 +115,7 @@ class LogBulkDelete(Resource):
             synchronize_session=False
         )
         db.session.commit()
+        log_action("Bulk log entries deleted", "bulk_delete_log", category="api", level="warning",
+                   object_type="log", is_public=False,
+                   meta={"count": deleted})
         return {'message': f'Deleted {deleted} log(s)'}, 200

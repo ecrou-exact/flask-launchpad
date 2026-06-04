@@ -183,6 +183,58 @@ log_action(
 | `delete` / `restore` / `hard_delete` | feature name | `False` |
 | `bulk_delete` / `bulk_edit` | feature name | `False` |
 
+**Règle catégorie** : tout `log_action` dans un fichier `*_api.py` utilise obligatoirement `category="api"`, quelle que soit la sévérité ou le type d'action.
+
+**Logging automatique** : seuls les appels avec `X-API-KEY` (appels externes) sont loggés automatiquement via `after_request` dans `api.py`. Les appels internes du frontend (session auth, sans clé) ne sont pas loggés ici. Le `meta` contient `method`, `path`, `status_code`, `request_body` (champs sensibles masqués) et `response`.
+
+---
+
+## API routes reference
+
+Swagger UI at `http://127.0.0.1:7009/api/`. Auth: `X-API-KEY` header.
+
+### `/api/account` — User management
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/api/account/me` | api_required | Current user profile |
+| PUT | `/api/account/me` | api_required | Edit own profile |
+| POST | `/api/account/me/reload-api-key` | api_required | Regenerate own API key |
+| GET | `/api/account/user/<uid>` | api_required | Get user by id |
+| POST | `/api/account/add_user` | public | Create user |
+| PUT | `/api/account/edit_user/<uid>` | api_required | Edit user (admin use) |
+| DELETE | `/api/account/delete_user/<uid>` | admin_required | Soft-delete user |
+| GET | `/api/account/users` | admin_required | Paginated user list (`?page&per_page&search&sort&dir`) |
+| POST | `/api/account/<uid>/toggle-verified` | admin_required | Toggle verified status |
+| POST | `/api/account/<uid>/disconnect` | admin_required | Force logout user |
+| POST | `/api/account/bulk-verify` | admin_required | Bulk verify `{ ids, verified }` |
+| POST | `/api/account/bulk-disconnect` | admin_required | Bulk force logout `{ ids }` |
+| GET | `/api/account/roles` | admin_required | List all roles |
+| PUT | `/api/account/admin/user/<uid>` | admin_required | Admin full edit (role, email, verified…) |
+| GET | `/api/account/user-activity/<uid>` | admin_required | 30-day activity chart data |
+
+### `/api/config` — User preferences
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/api/config/` | api_required | Get current user config (theme, nav…) |
+| PATCH | `/api/config/` | api_required | Update config fields |
+
+### `/api/admin` — Site configuration
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/api/admin/site-config` | admin_required | All site config key-values |
+| POST | `/api/admin/site-config` | admin_required | Update a config key `{ key, value }` |
+
+### `/api/log` — Application logs
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/api/log/` | admin_required | Paginated logs (`?page&per_page&search&category&level&sort&dir&actor_id`) |
+| DELETE | `/api/log/<uuid>` | admin_required | Delete one log entry |
+| POST | `/api/log/bulk-delete` | admin_required | Delete multiple logs `{ uuids }` |
+
 ---
 
 ## Architecture patterns

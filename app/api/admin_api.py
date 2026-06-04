@@ -34,7 +34,7 @@ class SiteConfigList(Resource):
         log_action(
             f"Site config updated: {key}",
             "site_config_update",
-            category="system",
+            category="api",
             level="info",
             object_type="site_config",
             object_id=key,

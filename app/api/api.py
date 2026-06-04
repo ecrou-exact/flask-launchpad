@@ -1,5 +1,5 @@
 import os
-from flask import Blueprint
+from flask import Blueprint, g, request
 from flask_restx import Api
 
 api_blueprint = Blueprint(
@@ -21,13 +21,11 @@ def version():
 
 
 api = Api(api_blueprint,
-    title='flask-launchpad API', 
+    title='flask-launchpad API',
     description="<a href='https://github.com/ecrou-exact/flask-launchpad' rel='noreferrer' target='_blank'>"
     "<img src='/static/image/logo.png'  /></a><br />"
     'API to query flask-launchpad.',
-    version=version(), 
-    # license="GNU Affero General Public License version 3",
-    # license_url="https://www.gnu.org/licenses/agpl-3.0.html",
+    version=version(),
     doc='/',
     security="apikey",
     authorizations=authorizations
@@ -44,5 +42,59 @@ api.add_namespace(admin_ns, path="/admin")
 api.add_namespace(log_ns, path="/log")
 
 
+# ── Automatic API call logging ────────────────────────────────────────────────
+
+_SENSITIVE_KEYS = {'password', 'password_hash', 'api_key', 'token', 'secret'}
+
+def _sanitize(obj):
+    if not isinstance(obj, dict):
+        return obj
+    return {k: '***' if k in _SENSITIVE_KEYS else v for k, v in obj.items()}
 
 
+@api_blueprint.before_request
+def _store_request_body():
+    g._api_req_body = request.get_json(silent=True)
+
+
+@api_blueprint.after_request
+def _log_api_call(response):
+    try:
+        # Only log external API calls (identified by X-API-KEY header)
+        # Internal frontend calls use session auth and must not be logged here
+        if not request.headers.get('X-API-KEY'):
+            return response
+
+        # Skip Swagger UI assets
+        if request.path in ('/', '') or '/swaggerui/' in request.path:
+            return response
+
+        status = response.status_code
+        if status < 300:
+            level = 'success'
+        elif status < 500:
+            level = 'warning'
+        else:
+            level = 'error'
+
+        resp_body = response.get_json(silent=True)
+        req_body  = _sanitize(getattr(g, '_api_req_body', None))
+
+        from ..core.utils.logger import log_action
+        log_action(
+            f"{request.method} {request.path} → {status}",
+            "api_call",
+            category="api",
+            level=level,
+            is_public=False,
+            meta={
+                "method":       request.method,
+                "path":         request.path,
+                "status_code":  status,
+                "request_body": req_body,
+                "response":     resp_body,
+            },
+        )
+    except Exception:
+        pass
+    return response
