@@ -740,3 +740,49 @@ a {
     height: 88px;
     font-size: 1.60rem;
 }
+
+
+/*---SCROLL_TOP---*/
+
+#scrollTopBtn {
+    position: fixed;
+    bottom: 1.75rem;
+    right: 1.75rem;
+    z-index: 500;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--brand-glow);
+    background: var(--brand);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: .72rem;
+    box-shadow: 0 4px 16px var(--brand-glow);
+
+    opacity: 0;
+    transform: translateY(10px) scale(.85);
+    pointer-events: none;
+    transition:
+        opacity .22s var(--ease),
+        transform .22s var(--ease),
+        box-shadow var(--transition);
+}
+
+#scrollTopBtn.is-visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: all;
+}
+
+#scrollTopBtn:hover {
+    box-shadow: 0 6px 22px var(--brand-glow);
+    transform: translateY(-3px) scale(1);
+}
+
+#scrollTopBtn.is-clicked {
+    transform: scale(.88);
+    transition: transform .1s var(--ease);
+}

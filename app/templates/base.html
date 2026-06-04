@@ -160,6 +160,12 @@ document.addEventListener('DOMContentLoaded', function () {
 })
 </script>
 
+{# ── Scroll to top ── #}
+<button id="scrollTopBtn" aria-label="Scroll to top" title="Back to top">
+    <i class="fas fa-chevron-up"></i>
+</button>
+<script src="{{ url_for('static', filename='js/scroll-top.js') }}" defer></script>
+
 {# ── Global search panel ── #}
 {% if current_user.is_authenticated %}
 <div class="gs-backdrop" id="gsBackdrop" onclick="gsClose()"></div>
