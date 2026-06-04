@@ -67,6 +67,9 @@
             </div>
             <div class="topbar-right">
                 {% if current_user.is_authenticated %}
+                <button class="gs-btn" onclick="gsOpen()" title="Search (Ctrl+K)">
+                    <i class="fas fa-magnifying-glass"></i>
+                </button>
                 <span class="role-badge">{{ current_user.role.name if current_user.role else 'User' }}</span>
                 {% endif %}
             </div>
@@ -156,6 +159,22 @@ document.addEventListener('DOMContentLoaded', function () {
     })
 })
 </script>
+
+{# ── Global search panel ── #}
+{% if current_user.is_authenticated %}
+<div class="gs-backdrop" id="gsBackdrop" onclick="gsClose()"></div>
+<div class="gs-panel" id="gsPanel" role="dialog" aria-label="Search">
+    <div class="gs-input-wrap">
+        <i class="fas fa-magnifying-glass gs-input-icon"></i>
+        <input type="text" class="gs-input" id="gsInput" placeholder="Search pages…" autocomplete="off" spellcheck="false">
+        <kbd class="gs-kbd">Esc</kbd>
+    </div>
+    <div class="gs-body" id="gsBody"></div>
+</div>
+
+{% include 'macros/_search_sections.html' %}
+<script src="{{ url_for('static', filename='js/global-search.js') }}" defer></script>
+{% endif %}
 
 {# ── Scripts ── #}
 {% block script %}

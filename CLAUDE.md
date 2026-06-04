@@ -17,6 +17,7 @@
 - **CSS / Architecture** — always reuse existing CSS classes and components before creating new ones. Check `static/css/` and `static/js/components/` first.
 - **File structure** — create `app/features/<feature>/` + `app/api/<feature>_api.py` + `tests/<feature>/` for each new feature. If the feature belongs to an existing domain (e.g. adding a route to `account`), add to the existing files — never create a parallel folder.
 - **API** — every new HTML route that reads/writes data must have a matching API endpoint. Update `app/api/<feature>_api.py` and register the namespace in `api.py`.
+- **Global search** — `app/templates/macros/_search_sections.html` must be updated whenever a new page or section is added. Admin-only pages go inside `{% if current_user.is_admin() %}`. Each entry: `{ label, icon (fa-*), href, group, external? }`. Logic in `static/js/global-search.js`.
 - **Every new feature** must cover all 9 blocks: structure · model · access · CRUD · logs · jobs · tests · docs · security.
 
 ---

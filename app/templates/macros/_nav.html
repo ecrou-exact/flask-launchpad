@@ -43,6 +43,9 @@
     </div>
     <div class="topbar-right">
         {% if current_user.is_authenticated %}
+        <button class="gs-btn" onclick="gsOpen()" title="Search (Ctrl+K)">
+            <i class="fas fa-magnifying-glass"></i>
+        </button>
         <span class="role-badge">{{ current_user.role.name if current_user.role else 'User' }}</span>
         <a href="{{ url_for('account.index') }}" class="topbar-user-avatar" title="{{ current_user.full_name() }}">
             {% if current_user.avatar_filename %}
@@ -56,7 +59,6 @@
             <i class="fas fa-right-from-bracket" style="font-size:.78rem;"></i>
         </a>
         {% endif %}
-       
     </div>
 </header>
 
