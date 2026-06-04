@@ -9,7 +9,7 @@ const GS_SECTIONS = [
     {# ── Navigation (all authenticated users) ── #}
     { label: 'Home',     icon: 'fa-house', href: '/',                group: 'Navigation' },
     { label: 'Account',  icon: 'fa-user',  href: '/account/',        group: 'Navigation' },
-    { label: 'Settings', icon: 'fa-gear',  href: '/config/settings', group: 'Navigation' },
+    { label: 'Settings', icon: 'fa-gear',  href: '/settings', group: 'Navigation' },
 
     {# ── Admin only ── #}
     {% if current_user.is_admin() %}
