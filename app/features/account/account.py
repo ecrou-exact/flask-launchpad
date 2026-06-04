@@ -19,6 +19,15 @@ def index():
     return render_template('account/profile.html', user=current_user)
 
 
+# ── Public profile ────────────────────────────────────────────────────────────
+
+@account_blueprint.route('/profile/<int:uid>')
+@login_required
+def user_profile(uid):
+    user = User.query.get_or_404(uid)
+    return render_template('account/user_profile.html', user=user)
+
+
 # ── Edit profile ──────────────────────────────────────────────────────────────
 
 @account_blueprint.route('/edit', methods=['GET', 'POST'])
