@@ -7,7 +7,7 @@ from sqlalchemy import or_, func
 from .. import db
 from ..core.db_class.user import User, Role
 from ..core.db_class.log import Log
-from ..core.utils.decorators import api_required, admin_required
+from ..core.utils.decorators import api_require_permission
 from ..core.utils.utils import get_user_api
 from ..core.utils.logger import log_action, api_category
 from ..features.account import account_core as AccountCore
@@ -40,7 +40,7 @@ _edit_model = account_ns.model('EditUser', {
 
 @account_ns.route('/me')
 class Me(Resource):
-    method_decorators = [api_required]
+    method_decorators = [api_require_permission()]
 
     def get(self):
         user = get_user_api(request.headers.get('X-API-KEY'))
@@ -66,7 +66,7 @@ class Me(Resource):
 
 @account_ns.route('/me/reload-api-key')
 class ReloadApiKey(Resource):
-    method_decorators = [api_required]
+    method_decorators = [api_require_permission()]
 
     def post(self):
         user = get_user_api(request.headers.get('X-API-KEY'))
@@ -81,7 +81,7 @@ class ReloadApiKey(Resource):
 
 @account_ns.route('/user/<int:uid>')
 class GetUser(Resource):
-    method_decorators = [api_required]
+    method_decorators = [api_require_permission("users.view")]
 
     def get(self, uid):
         user = AccountCore.get_user(uid)
@@ -111,7 +111,7 @@ class AddUser(Resource):
 
 @account_ns.route('/edit_user/<int:uid>')
 class EditUser(Resource):
-    method_decorators = [api_required]
+    method_decorators = [api_require_permission("users.edit")]
 
     @account_ns.expect(_edit_model)
     def put(self, uid):
@@ -132,7 +132,7 @@ class EditUser(Resource):
 
 @account_ns.route('/delete_user/<int:uid>')
 class DeleteUser(Resource):
-    method_decorators = [admin_required]
+    method_decorators = [api_require_permission("users.delete")]
 
     def delete(self, uid):
         caller = get_user_api(request.headers.get('X-API-KEY'))
@@ -151,7 +151,7 @@ class DeleteUser(Resource):
 @account_ns.route('/users')
 class ListUsers(Resource):
     """Paginated list of all users — admin only."""
-    method_decorators = [admin_required]
+    method_decorators = [api_require_permission("users.view")]
 
     _ALLOWED_SORTS = {'id', 'first_name', 'last_name', 'email', 'created_at', 'role_id'}
 
@@ -195,7 +195,10 @@ class ListUsers(Resource):
         # ── Serialise ────────────────────────────────────────────────────
         def _role(user):
             r = Role.query.get(user.role_id) if user.role_id else None
-            return {'id': r.id, 'name': r.name, 'admin': r.admin} if r else None
+            if not r:
+                return None
+            return {'id': r.id, 'name': r.name, 'admin': r.admin,
+                    'color': r.color or 'gray', 'icon': r.icon or 'fa-user'}
 
         from datetime import datetime, timedelta
         online_threshold = datetime.utcnow() - timedelta(minutes=10)
@@ -210,7 +213,9 @@ class ListUsers(Resource):
                 'email':           u.email,
                 'username':        u.username,
                 'role_id':         u.role_id,
-                'role_name':       role['name'] if role else None,
+                'role_name':       role['name']  if role else None,
+                'role_color':      role['color'] if role else 'gray',
+                'role_icon':       role['icon']  if role else 'fa-user',
                 'is_admin':        role['admin'] if role else False,
                 'avatar_filename': u.avatar_filename,
                 'created_at':      u.created_at.isoformat() if u.created_at else None,
@@ -234,7 +239,7 @@ class ListUsers(Resource):
 
 @account_ns.route('/<int:uid>/toggle-verified')
 class ToggleVerified(Resource):
-    method_decorators = [admin_required]
+    method_decorators = [api_require_permission("users.edit")]
 
     def post(self, uid):
         user = AccountCore.get_user(uid)
@@ -257,7 +262,7 @@ class ToggleVerified(Resource):
 
 @account_ns.route('/<int:uid>/disconnect')
 class DisconnectUser(Resource):
-    method_decorators = [admin_required]
+    method_decorators = [api_require_permission("users.edit")]
 
     def post(self, uid):
         user = AccountCore.get_user(uid)
@@ -280,7 +285,7 @@ class DisconnectUser(Resource):
 
 @account_ns.route('/bulk-verify')
 class BulkVerify(Resource):
-    method_decorators = [admin_required]
+    method_decorators = [api_require_permission("users.edit")]
 
     def post(self):
         data = request.get_json(silent=True) or {}
@@ -300,7 +305,7 @@ class BulkVerify(Resource):
 
 @account_ns.route('/bulk-disconnect')
 class BulkDisconnect(Resource):
-    method_decorators = [admin_required]
+    method_decorators = [api_require_permission("users.edit")]
 
     def post(self):
         data = request.get_json(silent=True) or {}
@@ -320,7 +325,7 @@ class BulkDisconnect(Resource):
 @account_ns.route('/roles')
 class ListRoles(Resource):
     """List all roles — admin required."""
-    method_decorators = [admin_required]
+    method_decorators = [api_require_permission("users.view")]
 
     def get(self):
         roles = AccountCore.get_all_roles()
@@ -330,7 +335,7 @@ class ListRoles(Resource):
 @account_ns.route('/admin/user/<int:uid>')
 class AdminEditUser(Resource):
     """Admin endpoint to edit any user's fields."""
-    method_decorators = [admin_required]
+    method_decorators = [api_require_permission("users.edit")]
 
     def put(self, uid):
         user = AccountCore.get_user(uid)
@@ -428,8 +433,10 @@ class AdminEditUser(Resource):
             'email':           user.email,
             'username':        user.username,
             'role_id':         user.role_id,
-            'role_name':       role_obj.name if role_obj else None,
-            'is_admin':        role_obj.admin if role_obj else False,
+            'role_name':       role_obj.name             if role_obj else None,
+            'role_color':      role_obj.color or 'gray'  if role_obj else 'gray',
+            'role_icon':       role_obj.icon  or 'fa-user' if role_obj else 'fa-user',
+            'is_admin':        role_obj.admin             if role_obj else False,
             'is_verified':     user.is_verified,
             'avatar_filename': user.avatar_filename,
             'bio':             user.bio,
@@ -444,7 +451,7 @@ class AdminEditUser(Resource):
 @account_ns.route('/user-activity/<int:uid>')
 class UserActivity(Resource):
     """30-day activity chart data for a user — admin only."""
-    method_decorators = [admin_required]
+    method_decorators = [api_require_permission("users.view")]
 
     def get(self, uid):
         user = AccountCore.get_user(uid)

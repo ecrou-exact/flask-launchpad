@@ -1,7 +1,7 @@
 from flask import request
 from flask_restx import Namespace, Resource
 
-from ..core.utils.decorators import admin_required
+from ..core.utils.decorators import api_require_permission
 from ..core.db_class.site_config import SiteConfig, get_site_bool, set_site_value
 from ..core.utils.logger import log_action, api_category
 from flask_login import current_user
@@ -13,7 +13,7 @@ _ALLOWED_KEYS = {'allow_registration', 'allow_login'}
 
 @admin_ns.route('/site-config')
 class SiteConfigList(Resource):
-    method_decorators = [admin_required]
+    method_decorators = [api_require_permission("admin.site_config")]
 
     def get(self):
         rows = SiteConfig.query.all()

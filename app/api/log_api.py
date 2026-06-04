@@ -4,7 +4,7 @@ from sqlalchemy import or_
 
 from .. import db
 from ..core.db_class.log import Log
-from ..core.utils.decorators import admin_required
+from ..core.utils.decorators import api_require_permission
 from ..core.utils.logger import log_action
 
 log_ns = Namespace('log', description='Application logs — admin only')
@@ -16,7 +16,7 @@ _ALLOWED_SORTS = {'id', 'created_at', 'category', 'level', 'action'}
 @log_ns.route('/')
 class LogList(Resource):
     """Paginated, filtered, sorted list of logs."""
-    method_decorators = [admin_required]
+    method_decorators = [api_require_permission("logs.view")]
 
     def get(self):
         # ── Query params ────────────────────────────────────────────────────────
@@ -86,7 +86,7 @@ class LogList(Resource):
 @log_ns.route('/<string:log_uuid>')
 class LogDetail(Resource):
     """Delete a single log entry by UUID."""
-    method_decorators = [admin_required]
+    method_decorators = [api_require_permission("logs.delete")]
 
     def delete(self, log_uuid):
         log = Log.query.filter_by(uuid=log_uuid).first()
@@ -103,7 +103,7 @@ class LogDetail(Resource):
 @log_ns.route('/bulk-delete')
 class LogBulkDelete(Resource):
     """Delete multiple log entries by UUID list."""
-    method_decorators = [admin_required]
+    method_decorators = [api_require_permission("logs.delete")]
 
     def post(self):
         data = request.get_json(silent=True) or {}

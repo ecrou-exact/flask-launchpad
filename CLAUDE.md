@@ -17,7 +17,7 @@
 - **CSS / Architecture** — always reuse existing CSS classes and components before creating new ones. Check `static/css/` and `static/js/components/` first.
 - **File structure** — create `app/features/<feature>/` + `app/api/<feature>_api.py` + `tests/<feature>/` for each new feature. If the feature belongs to an existing domain (e.g. adding a route to `account`), add to the existing files — never create a parallel folder.
 - **API** — every new HTML route that reads/writes data must have a matching API endpoint. Update `app/api/<feature>_api.py` and register the namespace in `api.py`.
-- **Global search** — `app/templates/macros/_search_sections.html` must be updated whenever a new page or section is added. Admin-only pages go inside `{% if current_user.is_admin() %}`. Each entry: `{ label, icon (fa-*), href, group, external? }`. Logic in `static/js/global-search.js`.
+- **Nav + search + permissions** — all driven from two files only. Never modify `_nav.html` or `_search_sections.html` for new features.
 - **Every new feature** must cover all 9 blocks: structure · model · access · CRUD · logs · jobs · tests · docs · security.
 
 ---
@@ -187,6 +187,56 @@ log_action(
 **Règle catégorie** : tout `log_action` dans un fichier `*_api.py` utilise obligatoirement `category="api"`, quelle que soit la sévérité ou le type d'action.
 
 **Logging automatique** : seuls les appels avec `X-API-KEY` (appels externes) sont loggés automatiquement via `after_request` dans `api.py`. Les appels internes du frontend (session auth, sans clé) ne sont pas loggés ici. Le `meta` contient `method`, `path`, `status_code`, `request_body` (champs sensibles masqués) et `response`.
+
+---
+
+## Adding a new feature — quick reference
+
+### The two files to edit
+
+| File | What to add |
+|---|---|
+| `app/core/utils/permissions.py` | The permission key(s) for this feature |
+| `app/core/utils/nav_registry.py` | The nav item(s) — nav + search auto-update |
+
+Everything else (nav, sidebar, search bar, topbar) updates automatically. Never touch `_nav.html` or `_search_sections.html`.
+
+### Route (Python)
+```python
+from app.core.utils.decorators import require_permission
+
+@feature_blueprint.route('/')
+@require_permission()                    # any authenticated user
+@require_permission('feature.view')      # specific permission (or admin)
+@require_permission('admin_only')        # admin only
+def index(): ...
+```
+
+**Routes never touch the DB.** Always call a `*_core()` function:
+```python
+# ✓
+from .feature_core import get_item_or_404
+def detail(uid): item = get_item_or_404(uid) ...
+
+# ✗
+from ...core.db_class.user import User
+def detail(uid): user = User.query.get_or_404(uid) ...
+```
+
+### Template (Vue buttons)
+```javascript
+// USER_PERMS and hasPerm() are global — no import needed
+const can_edit   = hasPerm('feature.edit')
+const can_delete = hasPerm('feature.delete')
+```
+```html
+<data-table :can-edit="can_edit" :can-delete="can_delete" ...>
+```
+
+### Permission values in nav_registry.py
+- `None` → all authenticated users
+- `'key'` → users who have that permission (or admins)
+- `'admin_only'` → admins only
 
 ---
 

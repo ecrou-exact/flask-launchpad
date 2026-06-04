@@ -23,6 +23,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='fontawesome-6.3.0/css/brands.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/core.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/modal.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/role-badge.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/toast/toast.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/nav/nav.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/footer/footer.css') }}">
@@ -67,10 +68,11 @@
             </div>
             <div class="topbar-right">
                 {% if current_user.is_authenticated %}
+                {% from 'macros/_role_badge.html' import role_badge %}
                 <button class="gs-btn" onclick="gsOpen()" title="Search (Ctrl+K)">
                     <i class="fas fa-magnifying-glass"></i>
                 </button>
-                <span class="role-badge">{{ current_user.role.name if current_user.role else 'User' }}</span>
+                {{ role_badge(current_user.role) }}
                 {% endif %}
             </div>
         </header>
@@ -178,6 +180,7 @@ document.addEventListener('DOMContentLoaded', function () {
     <div class="gs-body" id="gsBody"></div>
 </div>
 
+{% include 'macros/_user_perms.html' %}
 {% include 'macros/_search_sections.html' %}
 <script src="{{ url_for('static', filename='js/global-search.js') }}" defer></script>
 {% endif %}

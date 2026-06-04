@@ -1,7 +1,7 @@
 from flask import request
 from flask_restx import Namespace, Resource
 
-from ..core.utils.decorators import api_required
+from ..core.utils.decorators import api_require_permission
 from ..features.config.config_core import get_user_config, update_config_core
 from .verification_config import VerifConfig
 
@@ -10,7 +10,7 @@ config_ns = Namespace('config', description='User interface preferences')
 
 @config_ns.route('/')
 class ConfigResource(Resource):
-    method_decorators = [api_required]
+    method_decorators = [api_require_permission()]
 
     def get(self):
         config = get_user_config()

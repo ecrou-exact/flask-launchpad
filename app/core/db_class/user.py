@@ -62,6 +62,12 @@ class User(UserMixin, db.Model):
         r = self.role
         return bool(r and r.read_only)
 
+    def has_permission(self, key: str) -> bool:
+        if self.is_admin():
+            return True
+        r = self.role
+        return r.has_permission(key) if r else False
+
     def full_name(self):
         return f"{self.first_name} {self.last_name}"
 
@@ -119,12 +125,32 @@ class AnonymousUser(AnonymousUserMixin):
 login_manager.anonymous_user = AnonymousUser
 
 
+class RolePermission(db.Model):
+    __tablename__ = 'role_permission'
+    role_id    = db.Column(db.Integer, db.ForeignKey('role.id', ondelete='CASCADE'), primary_key=True)
+    permission = db.Column(db.String(64), primary_key=True)
+
+
 class Role(db.Model):
     id          = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name        = db.Column(db.String(64), index=True, unique=True)
     description = db.Column(db.String, nullable=True)
     admin       = db.Column(db.Boolean, default=False)
     read_only   = db.Column(db.Boolean, default=False)
+    protected   = db.Column(db.Boolean, default=False)
+    color       = db.Column(db.String(32), nullable=True, default='gray')
+    icon        = db.Column(db.String(64), nullable=True, default='fa-user')
+
+    permissions = db.relationship('RolePermission', cascade='all, delete-orphan',
+                                  foreign_keys=[RolePermission.role_id])
+
+    def has_permission(self, key: str) -> bool:
+        if self.admin:
+            return True
+        return any(p.permission == key for p in self.permissions)
+
+    def permission_keys(self) -> list:
+        return [p.permission for p in self.permissions]
 
     def to_json(self):
         return {
@@ -133,4 +159,8 @@ class Role(db.Model):
             'description': self.description,
             'admin':       self.admin,
             'read_only':   self.read_only,
+            'color':       self.color     or 'gray',
+            'icon':        self.icon      or 'fa-user',
+            'protected':   self.protected or False,
+            'permissions': self.permission_keys(),
         }

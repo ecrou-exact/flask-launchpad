@@ -46,9 +46,10 @@ def create_app():
     app.register_blueprint(api_blueprint)
 
     # Ensure these tables are known to Alembic
-    from .core.db_class.config import UserConfig       # noqa: F401
-    from .core.db_class.site_config import SiteConfig  # noqa: F401
-    from .core.db_class.log import Log                 # noqa: F401
+    from .core.db_class.config import UserConfig           # noqa: F401
+    from .core.db_class.site_config import SiteConfig      # noqa: F401
+    from .core.db_class.log import Log                     # noqa: F401
+    from .core.db_class.user import RolePermission         # noqa: F401
 
     @app.context_processor
     def inject_site_config():
@@ -66,6 +67,19 @@ def create_app():
         if current_user.is_authenticated:
             config = UC.query.filter_by(user_id=current_user.id, is_active=True).first()
         return dict(user_config=config)
+
+    @app.context_processor
+    def inject_user_permissions():
+        from flask_login import current_user
+        from .core.utils.nav_registry import get_nav_for_user
+        if current_user.is_authenticated:
+            is_admin = current_user.is_admin()
+            perms    = current_user.role.permission_keys() if current_user.role else []
+        else:
+            is_admin = False
+            perms    = []
+        nav_items = get_nav_for_user(is_admin, perms)
+        return dict(user_is_admin=is_admin, user_perms=perms, nav_items=nav_items)
 
     @app.context_processor
     def inject_app_version():

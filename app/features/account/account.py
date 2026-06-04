@@ -1,8 +1,9 @@
 from flask import (Blueprint, render_template, redirect, url_for,
                    request, flash, jsonify)
-from flask_login import current_user, login_required, login_user, logout_user
+from flask_login import current_user, login_user, logout_user
 
 from ...core.db_class.user import User
+from ...core.utils.decorators import require_permission
 from .form import AddNewUserForm, LoginForm, EditUserForm
 from ..account import account_core as AccountCore
 from ...core.utils.utils import form_to_dict
@@ -14,7 +15,7 @@ account_blueprint = Blueprint('account', __name__)
 # ── Profile ───────────────────────────────────────────────────────────────────
 
 @account_blueprint.route('/')
-@login_required
+@require_permission()
 def index():
     return render_template('account/profile.html', user=current_user)
 
@@ -22,7 +23,7 @@ def index():
 # ── Public profile ────────────────────────────────────────────────────────────
 
 @account_blueprint.route('/profile/<int:uid>')
-@login_required
+@require_permission()
 def user_profile(uid):
     user = User.query.get_or_404(uid)
     return render_template('account/user_profile.html', user=user)
@@ -31,7 +32,7 @@ def user_profile(uid):
 # ── Edit profile ──────────────────────────────────────────────────────────────
 
 @account_blueprint.route('/edit', methods=['GET', 'POST'])
-@login_required
+@require_permission()
 def edit_user():
     form = EditUserForm()
 
@@ -62,7 +63,7 @@ def edit_user():
 # ── Avatar upload (JSON endpoint) ─────────────────────────────────────────────
 
 @account_blueprint.route('/avatar', methods=['POST'])
-@login_required
+@require_permission()
 def upload_avatar():
     if 'avatar' not in request.files:
         return jsonify({'message': 'No file provided'}), 400
@@ -76,7 +77,7 @@ def upload_avatar():
 
 
 @account_blueprint.route('/avatar', methods=['DELETE'])
-@login_required
+@require_permission()
 def delete_avatar():
     ok, msg = AccountCore.delete_avatar_core(current_user.id)
     return jsonify({'message': msg}), 200 if ok else 400
@@ -85,7 +86,7 @@ def delete_avatar():
 # ── Reload API key (JSON endpoint) ────────────────────────────────────────────
 
 @account_blueprint.route('/reload-api-key', methods=['POST'])
-@login_required
+@require_permission()
 def reload_api_key():
     user, msg = AccountCore.reload_api_key_core(current_user.id)
     if user:
@@ -215,7 +216,7 @@ def login():
 
 
 @account_blueprint.route('/logout')
-@login_required
+@require_permission()
 def logout():
     log_action(
         "User logged out",

@@ -27,8 +27,8 @@
 
         <div class="page-body">
 
-            {# ── User settings ── #}
-            <div class="card mb-3">
+            {# ── User settings — requires admin.site_config ── #}
+            <div v-if="can_site_config" class="card mb-3">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-2 mb-3">
                         <div style="width:28px;height:28px;border-radius:var(--radius-sm);background:var(--brand-dim);color:var(--brand);display:flex;align-items:center;justify-content:center;font-size:.72rem;flex-shrink:0;">
@@ -89,9 +89,9 @@
                 fetch-url="/api/account/users"
                 mode="manage"
                 :columns="columns"
-                :can-create="true"
-                :can-edit="true"
-                :can-delete="true"
+                :can-create="can_create"
+                :can-edit="can_edit"
+                :can-delete="can_delete"
                 :can-view="true"
                 :bulk-actions="bulk_actions"
                 default-view="table"
@@ -126,14 +126,22 @@
 
                 {# ── Role ── #}
                 <template #cell-role="{ item }">
-                    <select class="user-role-select"
-                            :class="item.is_admin ? 'user-role-select--admin' : ''"
-                            :value="item.role_id"
-                            @change.stop="changeRole(item, $event.target.value)"
-                            @click.stop>
-                        <option v-for="r in roles_list" :key="r.id" :value="r.id">[[ r.name ]]</option>
-                        <option v-if="!item.role_id" :value="null">No role</option>
-                    </select>
+                    <div class="d-flex align-items-center gap-2">
+                        <role-badge
+                            :name="item.role_name || 'No role'"
+                            :color="item.role_color || 'gray'"
+                            :icon="item.role_icon || 'fa-user'"
+                            :href="roleHref(item)">
+                        </role-badge>
+                        <select v-if="can_edit"
+                                class="user-role-select"
+                                :value="item.role_id"
+                                @change.stop="changeRole(item, $event.target.value)"
+                                @click.stop>
+                            <option v-for="r in roles_list" :key="r.id" :value="r.id">[[ r.name ]]</option>
+                            <option v-if="!item.role_id" :value="null">No role</option>
+                        </select>
+                    </div>
                 </template>
 
                 {# ── Joined ── #}
@@ -150,7 +158,7 @@
                         <span class="user-status-label" :class="item.is_connected ? 'user-status-label--online' : ''">
                             [[ item.is_connected ? 'Online' : 'Offline' ]]
                         </span>
-                        <button v-if="item.is_connected"
+                        <button v-if="item.is_connected && can_edit"
                                 class="user-action-icon user-action-icon--danger"
                                 title="Force disconnect"
                                 @click.stop="disconnectUser(item)">
@@ -161,13 +169,21 @@
 
                 {# ── Verified ── #}
                 <template #cell-verified="{ item }">
-                    <button class="user-verified-toggle"
+                    <button v-if="can_edit"
+                            class="user-verified-toggle"
                             :class="item.is_verified ? 'user-verified-toggle--on' : 'user-verified-toggle--off'"
                             :title="item.is_verified ? 'Verified — click to revoke' : 'Not verified — click to approve'"
                             @click.stop="toggleVerified(item)">
                         <i :class="item.is_verified ? 'fas fa-shield-check' : 'fas fa-shield-xmark'"></i>
                         [[ item.is_verified ? 'Verified' : 'Pending' ]]
                     </button>
+                    <span v-else
+                          class="user-verified-toggle"
+                          :class="item.is_verified ? 'user-verified-toggle--on' : 'user-verified-toggle--off'"
+                          style="cursor:default;pointer-events:none;">
+                        <i :class="item.is_verified ? 'fas fa-shield-check' : 'fas fa-shield-xmark'"></i>
+                        [[ item.is_verified ? 'Verified' : 'Pending' ]]
+                    </span>
                 </template>
 
                 {# ── Card body ── #}
@@ -266,14 +282,26 @@
     import ModalEditUser from '/static/js/components/modals/modal-edit-user.js'
     import ModalConfirm  from '/static/js/components/modals/modal-confirm.js'
     import BaseModal     from '/static/js/components/modals/base-modal.js'
+    import RoleBadge     from '/static/js/components/role-badge.js'
 
     createApp({
         delimiters: ['[[', ']]'],
-        components: { LoadingBar, UserAvatar, DataTable, ModalEditUser, ModalConfirm, BaseModal },
+        components: { LoadingBar, UserAvatar, DataTable, ModalEditUser, ModalConfirm, BaseModal, RoleBadge },
 
         setup() {
             const page_is_loading    = ref(false)
             const table_ref          = ref(null)
+            const can_create      = hasPerm('users.edit')
+            const can_edit        = hasPerm('users.edit')
+            const can_delete      = hasPerm('users.delete')
+            const can_site_config = hasPerm('admin.site_config')
+
+            function roleHref(item) {
+                return hasPerm('admin.roles') && item.role_id
+                    ? `/admin/roles/${item.role_id}`
+                    : null
+            }
+
             const allow_registration = ref({{ 'true' if allow_registration else 'false' }})
             const allow_login        = ref({{ 'true' if allow_login else 'false' }})
             const settings_saved     = ref(false)
@@ -287,7 +315,7 @@
             const delete_loading    = ref(false)
 
             onMounted(async () => {
-                await fetchRoles()
+                if (can_edit) await fetchRoles()
                 page_is_loading.value = true
             })
 
@@ -309,12 +337,12 @@
                 { key: 'created',   label: 'Joined',    sortable: true,  truncate: false, width: '110px' },
             ]
 
-            const bulk_actions = [
-                { key: 'verify',     label: 'Verify',      icon: 'fa-shield-check',  variant: 'success' },
-                { key: 'unverify',   label: 'Unverify',    icon: 'fa-shield-xmark',  variant: 'warning' },
+            const bulk_actions = can_edit ? [
+                { key: 'verify',     label: 'Verify',      icon: 'fa-shield-check',      variant: 'success'   },
+                { key: 'unverify',   label: 'Unverify',    icon: 'fa-shield-xmark',      variant: 'warning'   },
                 { key: 'disconnect', label: 'Disconnect',  icon: 'fa-plug-circle-xmark', variant: 'secondary' },
-                { key: 'delete',     label: 'Delete',      icon: 'fa-trash',         variant: 'danger'  },
-            ]
+                { key: 'delete',     label: 'Delete',      icon: 'fa-trash',             variant: 'danger'    },
+            ] : []
 
             // ── Site settings ─────────────────────────────────────────────
             async function toggleSetting(key) {
@@ -480,6 +508,7 @@
 
             return {
                 message_list, page_is_loading, table_ref,
+                can_create, can_edit, can_delete, can_site_config, roleHref,
                 allow_registration, allow_login, settings_saved, toggleSetting,
                 columns, bulk_actions,
                 toggleVerified, disconnectUser, handleBulkAction, changeRole,

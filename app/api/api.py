@@ -35,11 +35,13 @@ from .account_api import account_ns
 from .config_api import config_ns
 from .admin_api import admin_ns
 from .log_api import log_ns
+from .role_api import role_ns
 
 api.add_namespace(account_ns, path="/account")
 api.add_namespace(config_ns, path="/config")
 api.add_namespace(admin_ns, path="/admin")
 api.add_namespace(log_ns, path="/log")
+api.add_namespace(role_ns, path="/roles")
 
 
 # ── Automatic API call logging ────────────────────────────────────────────────

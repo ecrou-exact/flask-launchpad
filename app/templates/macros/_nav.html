@@ -1,52 +1,47 @@
 {#
-  _nav.html — Navigation component (all 4 modes)
-  Included inside {% block top_nav %} in base.html.
-  Variables available: nav_mode, is_collapsed, user_config, current_user, request
+  _nav.html — Navigation component (all 4 modes).
+  Driven entirely by nav_items (injected by context processor from nav_registry.py).
+  To add a nav item: edit nav_registry.py only. Never modify this file for new features.
 #}
+{% from 'macros/_role_badge.html' import role_badge %}
+
+{# ── Active path helper ──────────────────────────────────────────────────── #}
+{# item is active if path matches exactly (for '/') or starts with href #}
+{% macro is_active(item) %}
+  {%- if item.href == '/' -%}{{ 'active' if request.path == '/' else '' }}
+  {%- else -%}{{ 'active' if request.path.startswith(item.href) else '' }}
+  {%- endif -%}
+{% endmacro %}
 
 {% if nav_mode == 'topbar' %}
 {# ═══════════════════════════════════════ #}
-{# TOPBAR MODE — horizontal top bar        #}
+{# TOPBAR MODE                             #}
 {# ═══════════════════════════════════════ #}
 <header class="app-topbar app-topbar--nav">
     <div class="topbar-left">
         <div class="topbar-brand">
-            <a href="{{ url_for('home.home') }}" class="topbar-brand-link">
+            <a href="/" class="topbar-brand-link">
                 <img src="{{ url_for('static', filename='image/logo.png') }}" alt="Logo" style="height:50px;">
             </a>
         </div>
+        {% if current_user.is_authenticated %}
         <nav class="topbar-links">
-            <a href="{{ url_for('home.home') }}"
-               class="topbar-nav-link {% if request.endpoint == 'home.home' %}active{% endif %}">
-                <i class="fas fa-house"></i>Home
+            {% for item in nav_items %}
+            <a href="{{ item.href }}"
+               class="topbar-nav-link {{ is_active(item) }}"
+               {% if item.external %}target="_blank" rel="noopener noreferrer"{% endif %}>
+                <i class="fas {{ item.icon }}"></i>{{ item.label }}
             </a>
-            {% if current_user.is_authenticated %}
-            <a href="{{ url_for('account.index') }}"
-               class="topbar-nav-link {% if request.blueprint == 'account' %}active{% endif %}">
-                <i class="fas fa-user"></i>Account
-            </a>
-            {% endif %}
-            {% if current_user.is_authenticated and current_user.is_admin() %}
-            <a href="{{ url_for('admin.users') }}"
-               class="topbar-nav-link {% if request.endpoint == 'admin.users' %}active{% endif %}">
-                <i class="fas fa-users"></i>Users
-            </a>
-            <a href="{{ url_for('admin.logs') }}"
-               class="topbar-nav-link {% if request.endpoint == 'admin.logs' %}active{% endif %}">
-                <i class="fas fa-scroll"></i>Logs
-            </a>
-            <a href="/api/" class="topbar-nav-link" target="_blank">
-                <i class="fas fa-code"></i>API
-            </a>
-            {% endif %}
+            {% endfor %}
         </nav>
+        {% endif %}
     </div>
     <div class="topbar-right">
         {% if current_user.is_authenticated %}
         <button class="gs-btn" onclick="gsOpen()" title="Search (Ctrl+K)">
             <i class="fas fa-magnifying-glass"></i>
         </button>
-        <span class="role-badge">{{ current_user.role.name if current_user.role else 'User' }}</span>
+        {{ role_badge(current_user.role) }}
         <a href="{{ url_for('account.index') }}" class="topbar-user-avatar" title="{{ current_user.full_name() }}">
             {% if current_user.avatar_filename %}
             <img src="{{ url_for('static', filename='uploads/avatars/' + current_user.avatar_filename) }}" alt="">
@@ -64,36 +59,30 @@
 
 {% elif nav_mode == 'hidden' %}
 {# ═══════════════════════════════════════ #}
-{# HIDDEN MODE — sidebar opens as overlay  #}
+{# HIDDEN MODE                             #}
 {# ═══════════════════════════════════════ #}
 <aside class="app-sidebar" id="appSidebar">
     <div class="topbar-brand">
-        <a href="{{ url_for('home.home') }}" class="topbar-brand-link">
+        <a href="/" class="topbar-brand-link">
             <img src="{{ url_for('static', filename='image/logo.png') }}" alt="Logo" style="height:50px;">
             <span class="topbar-app-name">Flask Launchpad</span>
         </a>
     </div>
     <nav class="sidebar-nav">
-        <p class="nav-section-label">Navigation</p>
-        <a href="{{ url_for('home.home') }}" class="nav-link-item {% if request.endpoint == 'home.home' %}active{% endif %}">
-            <i class="fas fa-house nav-icon"></i><span class="nav-label">Home</span>
-        </a>
         {% if current_user.is_authenticated %}
-        <a href="{{ url_for('account.index') }}" class="nav-link-item {% if request.blueprint == 'account' %}active{% endif %}">
-            <i class="fas fa-user nav-icon"></i><span class="nav-label">Account</span>
-        </a>
-        {% endif %}
-        {% if current_user.is_authenticated and current_user.is_admin() %}
-        <p class="nav-section-label">Admin</p>
-        <a href="{{ url_for('admin.users') }}" class="nav-link-item {% if request.endpoint == 'admin.users' %}active{% endif %}">
-            <i class="fas fa-users nav-icon"></i><span class="nav-label">Users</span>
-        </a>
-        <a href="{{ url_for('admin.logs') }}" class="nav-link-item {% if request.endpoint == 'admin.logs' %}active{% endif %}">
-            <i class="fas fa-scroll nav-icon"></i><span class="nav-label">Logs</span>
-        </a>
-        <a href="/api/" class="nav-link-item" target="_blank">
-            <i class="fas fa-code nav-icon"></i><span class="nav-label">API Docs</span>
-        </a>
+        {% set ns = namespace(current_group=None) %}
+        {% for item in nav_items %}
+            {% if item.group != ns.current_group %}
+                {% set ns.current_group = item.group %}
+                <p class="nav-section-label">{{ item.group }}</p>
+            {% endif %}
+            <a href="{{ item.href }}"
+               class="nav-link-item {{ is_active(item) }}"
+               {% if item.external %}target="_blank" rel="noopener noreferrer"{% endif %}>
+                <i class="fas {{ item.icon }} nav-icon"></i>
+                <span class="nav-label">{{ item.label }}</span>
+            </a>
+        {% endfor %}
         {% endif %}
     </nav>
     <div class="sidebar-footer">
@@ -121,7 +110,6 @@
                 <i class="fas fa-gear"></i>
             </a>
             {% endif %}
-            
         </div>
     </div>
 </aside>
@@ -132,9 +120,8 @@
 {# SIDEBAR / RAIL MODE (default)           #}
 {# ═══════════════════════════════════════ #}
 <aside class="app-sidebar" id="appSidebar">
-
     <div class="sidebar-header">
-        <div class="">
+        <div>
             <img src="{{ url_for('static', filename='image/logo.png') }}" alt="Logo" style="height:30px;">
         </div>
         <span class="sidebar-app-name">Flask Launchpad</span>
@@ -147,41 +134,24 @@
     </div>
 
     <nav class="sidebar-nav">
-        <p class="nav-section-label">Navigation</p>
-        <a href="{{ url_for('home.home') }}"
-           class="nav-link-item {% if request.endpoint == 'home.home' %}active{% endif %}"
-           data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Home">
-            <i class="fas fa-house nav-icon"></i>
-            <span class="nav-label">Home</span>
-        </a>
         {% if current_user.is_authenticated %}
-        <a href="{{ url_for('account.index') }}"
-           class="nav-link-item {% if request.blueprint == 'account' %}active{% endif %}"
-           data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Account">
-            <i class="fas fa-user nav-icon"></i>
-            <span class="nav-label">Account</span>
-        </a>
-        {% endif %}
-        {% if current_user.is_authenticated and current_user.is_admin() %}
-        <p class="nav-section-label">Admin</p>
-        <a href="{{ url_for('admin.users') }}"
-           class="nav-link-item {% if request.endpoint == 'admin.users' %}active{% endif %}"
-           data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Users">
-            <i class="fas fa-users nav-icon"></i>
-            <span class="nav-label">Users</span>
-        </a>
-        <a href="{{ url_for('admin.logs') }}"
-           class="nav-link-item {% if request.endpoint == 'admin.logs' %}active{% endif %}"
-           data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Logs">
-            <i class="fas fa-scroll nav-icon"></i>
-            <span class="nav-label">Logs</span>
-        </a>
-        <a href="/api/" class="nav-link-item" target="_blank"
-           data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="API Docs">
-            <i class="fas fa-code nav-icon"></i>
-            <span class="nav-label">API Docs</span>
-            <i class="fas fa-arrow-up-right-from-square nav-icon ms-auto" style="font-size:.55rem;opacity:.4;"></i>
-        </a>
+        {% set ns = namespace(current_group=None) %}
+        {% for item in nav_items %}
+            {% if item.group != ns.current_group %}
+                {% set ns.current_group = item.group %}
+                <p class="nav-section-label">{{ item.group }}</p>
+            {% endif %}
+            <a href="{{ item.href }}"
+               class="nav-link-item {{ is_active(item) }}"
+               data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="{{ item.label }}"
+               {% if item.external %}target="_blank" rel="noopener noreferrer"{% endif %}>
+                <i class="fas {{ item.icon }} nav-icon"></i>
+                <span class="nav-label">{{ item.label }}</span>
+                {% if item.external %}
+                <i class="fas fa-arrow-up-right-from-square nav-icon ms-auto" style="font-size:.55rem;opacity:.4;"></i>
+                {% endif %}
+            </a>
+        {% endfor %}
         {% endif %}
     </nav>
 
@@ -210,14 +180,13 @@
         <div class="sidebar-footer-actions">
             <span class="sidebar-version-label me-auto">{{ app_version }}</span>
             {% if current_user.is_authenticated %}
-            <a href="{{ url_for('config.settings') }}" class="btn-sidebar-icon" title="Settings"
+            <a href="{{ url_for('config.settings') }}" class="btn-sidebar-icon"
                data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Settings">
                 <i class="fas fa-gear"></i>
             </a>
             {% endif %}
         </div>
     </div>
-
 </aside>
 <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
 {% endif %}

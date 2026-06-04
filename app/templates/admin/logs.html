@@ -28,7 +28,7 @@
             <log-table
                 ref="log_table_ref"
                 fetch-url="/api/log/"
-                :can-delete="true"
+                :can-delete="can_delete_logs"
                 @delete="handleDelete"
                 @bulk-delete="handleBulkDelete">
             </log-table>
@@ -53,8 +53,9 @@
         setup() {
 
             // ── Init ─────────────────────────────────────────────────────────
-            const page_is_loading = ref(false)
-            const log_table_ref   = ref(null)
+            const page_is_loading   = ref(false)
+            const log_table_ref     = ref(null)
+            const can_delete_logs   = hasPerm('logs.delete')
 
             onMounted(() => {
                 page_is_loading.value = true
@@ -95,6 +96,7 @@
                 message_list,
                 page_is_loading,
                 log_table_ref,
+                can_delete_logs,
                 handleDelete,
                 handleBulkDelete,
             }

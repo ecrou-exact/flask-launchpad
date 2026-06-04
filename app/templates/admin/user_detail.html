@@ -30,7 +30,7 @@
                 <a href="/admin/users" class="btn btn-sm btn-secondary">
                     <i class="fas fa-arrow-left me-1"></i>Back
                 </a>
-                <button class="btn btn-sm btn-primary" @click="show_edit = true">
+                <button v-if="can_edit" class="btn btn-sm btn-primary" @click="show_edit = true">
                     <i class="fas fa-pen me-1"></i>Edit
                 </button>
             </div>
@@ -91,9 +91,12 @@
                                 <div style="flex:1;min-width:0;">
                                     <div class="ud-info-label">Role</div>
                                     <div class="ud-info-value">
-                                        <span class="ud-badge" :class="user_data.is_admin ? 'ud-badge--admin' : 'ud-badge--role'">
-                                            [[ user_data.role_name || 'No role' ]]
-                                        </span>
+                                        <role-badge
+                                            :name="user_data.role_name || 'No role'"
+                                            :color="user_data.role_color || 'gray'"
+                                            :icon="user_data.role_icon || 'fa-user'"
+                                            :href="role_href">
+                                        </role-badge>
                                     </div>
                                 </div>
                             </div>
@@ -168,8 +171,8 @@
                 {# ── Right column ── #}
                 <div class="col-12 col-lg-4">
 
-                    {# Quick actions card #}
-                    <div class="card mb-3">
+                    {# Quick actions card — requires users.edit #}
+                    <div v-if="can_edit" class="card mb-3">
                         <div class="card-body">
                             <p class="ud-section-title">Quick actions</p>
                             <div class="ud-actions-list">
@@ -197,8 +200,8 @@
                         </div>
                     </div>
 
-                    {# Recent logs card #}
-                    <div class="card">
+                    {# Recent logs card — requires logs.view #}
+                    <div v-if="can_view_logs" class="card">
                         <div class="card-body">
                             <p class="ud-section-title">Recent activity</p>
                             <div v-if="logs_loading" class="text-center text-muted py-3" style="font-size:.8rem;">
@@ -226,6 +229,7 @@
 
     {# ── Modals ── #}
     <modal-edit-user
+        v-if="can_edit"
         :visible="show_edit"
         :user="user_data"
         :roles="roles_list"
@@ -244,6 +248,12 @@
     import LoadingBar     from '/static/js/components/loading-bar.js'
     import ModalEditUser  from '/static/js/components/modals/modal-edit-user.js'
     import BaseModal      from '/static/js/components/modals/base-modal.js'
+    import RoleBadge      from '/static/js/components/role-badge.js'
+
+    /* global hasPerm, USER_PERMS */
+    // ── Permissions ──────────────────────────────────────────────────────────
+    const can_edit      = hasPerm('users.edit')
+    const can_view_logs = hasPerm('logs.view')
 
     // ── Jinja-injected data ──────────────────────────────────────────────────
     const USER_ID = {{ user.id }}
@@ -255,7 +265,9 @@
         email:           '{{ user.email | e }}',
         username:        '{{ user.username | e if user.username else "" }}',
         role_id:         {{ user.role_id if user.role_id else 'null' }},
-        role_name:       '{{ user.role.name | e if user.role else "" }}',
+        role_name:       '{{ user.role.name  | e if user.role else "" }}',
+        role_color:      '{{ user.role.color | e if user.role else "gray" }}',
+        role_icon:       '{{ user.role.icon  | e if user.role else "fa-user" }}',
         is_admin:        {{ 'true' if user.is_admin() else 'false' }},
         is_verified:     {{ 'true' if user.is_verified else 'false' }},
         avatar_filename: '{{ user.avatar_filename | e if user.avatar_filename else "" }}',
@@ -275,7 +287,7 @@
 
     createApp({
         delimiters: ['[[', ']]'],
-        components: { LoadingBar, ModalEditUser, BaseModal },
+        components: { LoadingBar, ModalEditUser, BaseModal, RoleBadge },
 
         setup() {
             const page_is_loading = ref(false)
@@ -291,6 +303,12 @@
             const logs_loading = ref(true)
             const recent_logs  = ref([])
 
+            // Role link — only if current viewer has admin.roles permission
+            const role_href = computed(() => {
+                if (!user_data.value.role_id) return null
+                return hasPerm('admin.roles') ? `/admin/roles/${user_data.value.role_id}` : null
+            })
+
             // Computed
             const initials = computed(() => {
                 const f = (user_data.value.first_name || ' ')[0].toUpperCase()
@@ -300,7 +318,9 @@
 
             // ── Init ───────────────────────────────────────────────────────
             async function init() {
-                await Promise.all([fetchActivity(), fetchRecentLogs()])
+                const tasks = [fetchActivity()]
+                if (can_view_logs) tasks.push(fetchRecentLogs())
+                await Promise.all(tasks)
                 page_is_loading.value = true
             }
 
@@ -439,7 +459,8 @@
 
             return {
                 message_list, page_is_loading,
-                user_data, roles_list, initials,
+                can_edit, can_view_logs,
+                user_data, roles_list, initials, role_href,
                 show_edit, onSaved,
                 activity_loading, activity,
                 logs_loading, recent_logs,
