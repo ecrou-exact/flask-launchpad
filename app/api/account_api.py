@@ -9,7 +9,7 @@ from ..core.db_class.user import User, Role
 from ..core.db_class.log import Log
 from ..core.utils.decorators import api_required, admin_required
 from ..core.utils.utils import get_user_api
-from ..core.utils.logger import log_action
+from ..core.utils.logger import log_action, api_category
 from ..features.account import account_core as AccountCore
 from . import verification_api as VerifApi
 
@@ -58,7 +58,7 @@ class Me(Resource):
             return verif, 400
         u, msg = AccountCore.edit_user_core(verif, user.id)
         if u:
-            log_action("User updated own profile", "edit", category="api", level="info",
+            log_action("User updated own profile", "edit", category=api_category("user"), level="info",
                        object_type="user", object_id=user.id, is_public=False,
                        meta={"user_id": user.id})
         return {'message': msg}, 200 if u else 400
@@ -72,7 +72,7 @@ class ReloadApiKey(Resource):
         user = get_user_api(request.headers.get('X-API-KEY'))
         u, msg = AccountCore.reload_api_key_core(user.id)
         if u:
-            log_action("API key regenerated", "api_key_reload", category="api", level="warning",
+            log_action("API key regenerated", "api_key_reload", category=api_category("user"), level="warning",
                        object_type="user", object_id=user.id, is_public=False,
                        meta={"user_id": user.id})
             return {'message': msg, 'api_key': u.api_key}, 200
@@ -102,7 +102,7 @@ class AddUser(Resource):
             return verif, 400
         user, _ = AccountCore.create_user_core(verif)
         if user:
-            log_action("User created via API", "create", category="api", level="success",
+            log_action("User created via API", "create", category=api_category("admin"), level="success",
                        object_type="user", object_id=user.id, is_public=False,
                        meta={"user_id": user.id})
             return {'message': 'User created', 'id': user.id}, 201
@@ -124,7 +124,7 @@ class EditUser(Resource):
             return verif, 400
         u, msg = AccountCore.edit_user_core(verif, uid)
         if u:
-            log_action("User edited via API", "edit", category="api", level="info",
+            log_action("User edited via API", "edit", category=api_category("admin"), level="info",
                        object_type="user", object_id=uid, is_public=False,
                        meta={"user_id": uid})
         return {'message': msg}, 200 if u else 400
@@ -142,7 +142,7 @@ class DeleteUser(Resource):
             return {'message': 'User not found'}, 404
         ok = AccountCore.delete_user_core(uid)
         if ok:
-            log_action("User deleted", "delete", category="api", level="warning",
+            log_action("User deleted", "delete", category=api_category("admin"), level="warning",
                        object_type="user", object_id=uid, is_public=False,
                        meta={"user_id": uid})
         return {'message': 'User deleted' if ok else 'Error'}, 200 if ok else 400
@@ -245,7 +245,7 @@ class ToggleVerified(Resource):
         log_action(
             f"User verification toggled to {user.is_verified}",
             "toggle_verified",
-            category="api",
+            category=api_category("admin"),
             level="info",
             object_type="user",
             object_id=uid,
@@ -268,7 +268,7 @@ class DisconnectUser(Resource):
         log_action(
             "User force-disconnected by admin",
             "force_disconnect",
-            category="api",
+            category=api_category("admin"),
             level="warning",
             object_type="user",
             object_id=uid,
@@ -292,7 +292,7 @@ class BulkVerify(Resource):
             {'is_verified': verified}, synchronize_session=False
         )
         db.session.commit()
-        log_action("Bulk verify users", "bulk_verify", category="api", level="info",
+        log_action("Bulk verify users", "bulk_verify", category=api_category("admin"), level="info",
                    object_type="user", is_public=False,
                    meta={"ids": ids, "verified": verified})
         return {'message': f'Updated {len(ids)} user(s)'}, 200
@@ -311,7 +311,7 @@ class BulkDisconnect(Resource):
             {'force_logout': True}, synchronize_session=False
         )
         db.session.commit()
-        log_action("Bulk disconnect users", "bulk_disconnect", category="api", level="warning",
+        log_action("Bulk disconnect users", "bulk_disconnect", category=api_category("admin"), level="warning",
                    object_type="user", is_public=False,
                    meta={"ids": ids})
         return {'message': f'Disconnected {len(ids)} user(s)'}, 200
@@ -407,7 +407,7 @@ class AdminEditUser(Resource):
         log_action(
             "Admin edited user",
             "admin_edit_user",
-            category="api",
+            category=api_category("admin"),
             level="info",
             object_type="user",
             object_id=uid,

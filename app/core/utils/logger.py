@@ -16,6 +16,19 @@ failure can never break the main request flow.
 from __future__ import annotations
 
 
+def api_category(ui_category: str = 'admin') -> str:
+    """Return 'api' if the request carries X-API-KEY, else ui_category.
+
+    Use this in API endpoints to distinguish external API calls from
+    internal UI calls made via session auth (no API key).
+    """
+    try:
+        from flask import request
+        return 'api' if request.headers.get('X-API-KEY') else ui_category
+    except Exception:
+        return ui_category
+
+
 def log_action(
     title: str,
     action: str,

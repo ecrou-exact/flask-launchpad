@@ -3,7 +3,7 @@ from flask_restx import Namespace, Resource
 
 from ..core.utils.decorators import admin_required
 from ..core.db_class.site_config import SiteConfig, get_site_bool, set_site_value
-from ..core.utils.logger import log_action
+from ..core.utils.logger import log_action, api_category
 from flask_login import current_user
 
 admin_ns = Namespace('admin', description='Admin-only site configuration')
@@ -34,7 +34,7 @@ class SiteConfigList(Resource):
         log_action(
             f"Site config updated: {key}",
             "site_config_update",
-            category="api",
+            category=api_category('admin'),
             level="info",
             object_type="site_config",
             object_id=key,
