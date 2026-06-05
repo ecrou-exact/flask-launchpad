@@ -107,7 +107,18 @@
                                             <span class="ms-1 font-mono small">[[ t.css_key ]]</span>
                                         </div>
                                     </div>
-                                    <div class="ts-theme-actions">
+                                    <div class="ts-theme-actions align-items-center">
+                                        <button class="settings-toggle-btn me-1"
+                                                :class="{ active: t.is_public }"
+                                                :title="t.is_public ? 'Public — click to make private' : 'Private — click to publish'"
+                                                @click="toggleVisibility(t)">
+                                            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                                        </button>
+                                        <span class="small me-2"
+                                              :class="t.is_public ? 'text-success' : 'text-muted'"
+                                              style="font-size:0.72rem;min-width:42px;">
+                                            [[ t.is_public ? 'Public' : 'Private' ]]
+                                        </span>
                                         <button class="btn-icon" title="Edit" @click="openEditModal(t)">
                                             <i class="fas fa-pen"></i>
                                         </button>
@@ -711,6 +722,19 @@
                 icon_search.value      = ''
             }
 
+            function buildCssBlock(cssKey, cssVars) {
+                const lines = [`[data-theme="${cssKey}"] {`]
+                for (const group of VAR_GROUPS) {
+                    lines.push('')
+                    for (const v of group.vars) {
+                        const val = (cssVars || {})[v]
+                        if (val) lines.push(`    ${v}: ${val};`)
+                    }
+                }
+                lines.push('}')
+                return lines.join('\n')
+            }
+
             function _fillForm(theme) {
                 modal_form.name    = theme.name
                 modal_form.icon    = theme.icon
@@ -719,6 +743,8 @@
                 for (const k of Object.keys(vars)) {
                     modal_form.css_vars[k] = (theme.css_vars || {})[k] || ''
                 }
+                paste_input.value  = buildCssBlock(theme.css_key, theme.css_vars)
+                paste_result.value = null
             }
 
             function openCreateModal() {
@@ -742,7 +768,11 @@
             function openBuiltinModal(key) {
                 _resetForm()
                 const existing = studio_themes.value.find(t => t.css_key === key && t.is_builtin)
-                if (existing) _fillForm(existing)
+                if (existing) {
+                    _fillForm(existing)
+                } else {
+                    paste_input.value = `[data-theme="${key}"] {\n    /* paste your overrides here */\n}`
+                }
                 modal_title.value        = `Override "${BUILTIN_META[key].label}" theme`
                 modal_is_builtin.value   = true
                 modal_editing_uuid.value = existing ? existing.uuid : null
@@ -780,6 +810,18 @@
                 } else {
                     const d = await res.json()
                     await create_message(d.message || 'Error saving theme', TOAST.ERROR, true)
+                }
+            }
+
+            async function toggleVisibility(t) {
+                const next = !t.is_public
+                const res  = await apiFetch(`/api/config/themes/${t.uuid}/visibility`, 'PATCH', { is_public: next })
+                if (res.ok) {
+                    t.is_public = next
+                    await create_message(next ? `"${t.name}" is now public` : `"${t.name}" is now private`, TOAST.SUCCESS)
+                } else {
+                    const d = await res.json()
+                    await create_message(d.message || 'Error', TOAST.ERROR, true)
                 }
             }
 
@@ -949,8 +991,8 @@
                 const modalEl = document.getElementById('themeStudioModal')
                 if (modalEl) _modal = new bootstrap.Modal(modalEl)
 
-                // Load custom themes and merge into picker
-                if (IS_SUPER_ADMIN) await loadStudioThemes()
+                // Load custom themes — API returns only public ones for non-admins
+                await loadStudioThemes()
 
                 // Intersection observer to track active section
                 observer = new IntersectionObserver((entries) => {
@@ -984,7 +1026,7 @@
                 show_icon_picker, icon_search, filteredIcons,
                 builtin_keys, builtin_meta, var_groups, var_placeholders,
                 openCreateModal, openEditModal, openBuiltinModal,
-                saveTheme, deleteTheme, resetBuiltin, getPreviewStyle, parsePaste, pickIcon,
+                saveTheme, deleteTheme, resetBuiltin, getPreviewStyle, parsePaste, pickIcon, toggleVisibility,
             }
         },
     }).directive('click-outside', {

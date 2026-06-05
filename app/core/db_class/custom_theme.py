@@ -25,6 +25,7 @@ class CustomTheme(db.Model):
     icon       = db.Column(db.String(64), nullable=False, default='fa-palette')
     is_dark    = db.Column(db.Boolean, default=False, nullable=False)
     is_builtin = db.Column(db.Boolean, default=False, nullable=False)
+    is_public  = db.Column(db.Boolean, default=False, nullable=False)
     css_vars   = db.Column(db.JSON, nullable=True)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
@@ -45,6 +46,7 @@ class CustomTheme(db.Model):
             'is_dark':    self.is_dark,
             'is_builtin': self.is_builtin,
             'css_vars':   self.css_vars or {},
+            'is_public':  self.is_public,
             'is_active':  self.is_active,
             'created_at': self.created_at.isoformat() if self.created_at else None,
         }

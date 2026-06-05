@@ -8,10 +8,11 @@ class VerifConfig:
         result = {}
 
         if 'theme' in data:
+            from flask_login import current_user
             from ..features.config.config_core import get_valid_theme_keys
-            valid = get_valid_theme_keys()
-            if data['theme'] not in valid:
-                return {'message': f"Invalid theme."}
+            is_admin = current_user.is_authenticated and current_user.is_admin()
+            if data['theme'] not in get_valid_theme_keys(admin=is_admin):
+                return {'message': "Invalid theme."}
             result['theme'] = data['theme']
 
         if 'nav_position' in data:

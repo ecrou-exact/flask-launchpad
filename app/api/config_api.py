@@ -41,8 +41,8 @@ class ThemeListResource(Resource):
     method_decorators = [api_require_permission()]
 
     def get(self):
-        """List all active custom themes."""
-        themes = get_all_custom_themes()
+        """List active custom themes. Admin sees all; others see only public ones."""
+        themes = get_all_custom_themes(admin_view=current_user.is_admin())
         return {'themes': [t.to_json() for t in themes]}, 200
 
     def post(self):
@@ -104,10 +104,27 @@ class ThemeResource(Resource):
         return {'message': msg, 'theme': theme.to_json()}, 200
 
     def delete(self, uuid):
-        """Delete a custom theme (super admin only)."""
+        """Delete a custom theme (admin only)."""
         if not current_user.is_admin():
-            return {'message': 'Super admin only'}, 403
+            return {'message': 'Admin only'}, 403
         ok, msg = delete_custom_theme_core(uuid, current_user.id)
         if not ok:
             return {'message': msg}, 400
         return {'message': msg}, 200
+
+
+@config_ns.route('/themes/<string:uuid>/visibility')
+class ThemeVisibilityResource(Resource):
+    method_decorators = [api_require_permission()]
+
+    def patch(self, uuid):
+        """Toggle public/private visibility of a custom theme (admin only)."""
+        if not current_user.is_admin():
+            return {'message': 'Admin only'}, 403
+        data = request.json or {}
+        if 'is_public' not in data:
+            return {'message': 'is_public required'}, 400
+        theme, msg = update_custom_theme_core(uuid, {'is_public': data['is_public']}, current_user.id)
+        if not theme:
+            return {'message': msg}, 400
+        return {'message': msg, 'theme': theme.to_json()}, 200

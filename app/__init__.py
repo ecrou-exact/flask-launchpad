@@ -90,9 +90,13 @@ def create_app():
     @app.context_processor
     def inject_custom_themes_for_js():
         from .core.db_class.custom_theme import CustomTheme as CT
+        from flask_login import current_user
         themes = []
         try:
-            for t in CT.query.filter_by(is_active=True, is_builtin=False).all():
+            q = CT.query.filter_by(is_active=True, is_builtin=False)
+            if not (current_user.is_authenticated and current_user.is_admin()):
+                q = q.filter_by(is_public=True)
+            for t in q.all():
                 bg_body = (t.css_vars or {}).get('--bg-body', '')
                 themes.append({'css_key': t.css_key, 'is_dark': t.is_dark, 'bg_body': bg_body})
         except Exception:

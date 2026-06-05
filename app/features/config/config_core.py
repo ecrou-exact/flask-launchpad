@@ -29,13 +29,21 @@ _BUILTIN_META = {
 }
 
 
-def get_valid_theme_keys():
-    custom_keys = {t.css_key for t in CustomTheme.query.filter_by(is_active=True, is_builtin=False).all()}
+def get_valid_theme_keys(admin=False):
+    """Admin can select any active custom theme; others only public ones."""
+    q = CustomTheme.query.filter_by(is_active=True, is_builtin=False)
+    if not admin:
+        q = q.filter_by(is_public=True)
+    custom_keys = {t.css_key for t in q.all()}
     return BUILTIN_STATIC_THEMES | custom_keys
 
 
-def get_all_custom_themes():
-    return CustomTheme.query.filter_by(is_active=True).order_by(CustomTheme.id).all()
+def get_all_custom_themes(admin_view=True):
+    """Return active themes. Admin sees all; non-admin sees only public ones."""
+    q = CustomTheme.query.filter_by(is_active=True)
+    if not admin_view:
+        q = q.filter_by(is_public=True)
+    return q.order_by(CustomTheme.id).all()
 
 
 def regenerate_custom_themes_css():
@@ -103,6 +111,8 @@ def update_custom_theme_core(uuid, data, user_id):
                 theme.icon = icon.strip()
             if 'is_dark' in data:
                 theme.is_dark = bool(data['is_dark'])
+        if 'is_public' in data:
+            theme.is_public = bool(data['is_public'])
         if 'css_vars' in data:
             css_vars = {k: v for k, v in (data['css_vars'] or {}).items() if k in THEME_VAR_KEYS and v}
             theme.css_vars = css_vars or None
@@ -227,7 +237,11 @@ def update_config_core(form_dict) -> tuple:
                 return None, msg
 
         if 'theme' in form_dict:
-            if form_dict['theme'] not in get_valid_theme_keys():
+            uid = _resolve_user_id()
+            from ...core.db_class.user import User
+            user = User.query.get(uid) if uid else None
+            is_admin = user.is_admin() if user else False
+            if form_dict['theme'] not in get_valid_theme_keys(admin=is_admin):
                 return None, "Invalid theme"
             config.theme = form_dict['theme']
 
