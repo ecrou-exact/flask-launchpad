@@ -72,25 +72,37 @@ app/
       permissions.py         # all permission keys
       nav_registry.py        # nav + search (the only two files to edit for nav)
   features/
-    account/                 # login, register, profile, verify (/account/verify)
+    account/                 # login, register, profile, verify (/account/verify), email-change verify
     admin/                   # user list, user detail, roles, logs (/admin/*)
+    comments/                # forum + comment system (/comments/)
+      comment.py             # route — comments.view
+      comment_core.py        # CRUD + reactions + stats + profanity filter (better-profanity)
     site_settings/           # server settings admin page (/admin/settings)
       site_settings.py       # route — admin_only
-      site_settings_core.py  # .env read/write, system info, SMTP config, session key regen
+      site_settings_core.py  # .env read/write, system info, SMTP config, session key regen, packages
     config/                  # user preferences
     home/
+  core/
+    db_class/
+      comment.py             # Comment (threading: parent_id/depth/root_id, soft-delete) + CommentReaction
   api/
     api.py                   # namespace registry
+    comment_api.py           # GET/POST /comments, PUT/DELETE /comments/<uuid>, /react, /restore, /stats/user/<id>
     site_settings_api.py     # GET /system, GET/POST /smtp, POST /smtp/test, POST /session-key
+                             # GET /packages, POST /packages/update, POST /packages/install
   templates/
-    site_settings/index.html
+    comments/forum.html      # Community Forum page using <comment-thread> Vue component
+    site_settings/index.html # includes Python Packages section with searchable table + pip log panel
     account/verify.html      # email verification code entry page
+    account/verify_email_change.html  # email change confirmation page
   static/
+    css/comments/comments.css
     css/site_settings/site_settings.css
     js/
       constants.js           # TOAST, CSRF_TOKEN, apiFetch()
       toaster.js             # create_message()
       components/            # loading-bar.js, pagination.js, data-table.js
+                             # comment-thread.js — recursive Vue component (infinite scroll, reactions, collapse)
 
 tests/<feature>/test_<feature>.py
 ```

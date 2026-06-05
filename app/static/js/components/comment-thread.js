@@ -2,7 +2,7 @@
  * comment-thread.js — Recursive comment thread component.
  * Uses Vue 3 Composition API, ES modules, delimiters [[...]].
  */
-import { ref, computed, h } from 'vue'
+const { ref, computed } = Vue
 import { apiFetch } from '/static/js/constants.js'
 import { create_message } from '/static/js/toaster.js'
 
@@ -22,6 +22,7 @@ function fmt_date(dateStr) {
 
 const CommentItem = {
     name: 'CommentItem',
+    delimiters: ['[[', ']]'],
     props: {
         comment:       { type: Object,  required: true },
         canCreate:     { type: Boolean, default: false },
@@ -304,6 +305,7 @@ CommentItem.components = { CommentItem }
 
 const CommentThread = {
     name: 'CommentThread',
+    delimiters: ['[[', ']]'],
     components: { CommentItem },
     props: {
         objectType:    { type: String,  required: true },
