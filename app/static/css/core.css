@@ -786,3 +786,39 @@ a {
     transform: scale(.88);
     transition: transform .1s var(--ease);
 }
+
+/*---TOOLTIP---*/
+
+.custom-tooltip {
+    position: relative;
+    cursor: help;
+}
+
+.custom-tooltip::after {
+    content: attr(data-tooltip);
+    position: absolute;
+
+    top: calc(100% + 10px);
+    right: 0;
+
+    background: #333;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+
+    white-space: normal;
+    width: 250px;
+    text-align: left;
+
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s;
+    z-index: 1000;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.custom-tooltip:hover::after {
+    opacity: 1;
+    visibility: visible;
+}

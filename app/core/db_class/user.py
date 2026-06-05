@@ -58,6 +58,12 @@ class User(UserMixin, db.Model):
     @property
     def role(self):
         return Role.query.get(self.role_id) if self.role_id else None
+    
+    def role_list_permissions(self):
+        r = self.role
+        if r is None:
+            return []
+        return r.permission_keys() if r else []
 
     def is_admin(self):
         r = self.role

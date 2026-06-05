@@ -1,20 +1,15 @@
-{#
-  _role_badge.html — Jinja macro for role badges.
-  Usage: {% from 'macros/_role_badge.html' import role_badge %}
-         {{ role_badge(current_user.role) }}
-         {{ role_badge(current_user.role, href='/admin/roles/1') }}
-#}
-
 {% macro role_badge(role, href=None) %}
 {% if role %}
   {% set color = role.color or 'gray' %}
   {% set icon  = role.icon  or 'fa-user' %}
+  {% set permissions = 'You have all permissions' if role.admin else role.permission_keys() | join(' • ') %}
+  
   {% if href %}
-  <a href="{{ href }}" class="rb rb--{{ color }}">
+  <a href="{{ href }}" class="rb rb--{{ color }} custom-tooltip" data-tooltip="{{ permissions }}">
       <i class="fas {{ icon }}"></i>{{ role.name }}
   </a>
   {% else %}
-  <span class="rb rb--{{ color }}">
+  <span class="rb rb--{{ color }} custom-tooltip" data-tooltip="{{ permissions }}">
       <i class="fas {{ icon }}"></i>{{ role.name }}
   </span>
   {% endif %}
