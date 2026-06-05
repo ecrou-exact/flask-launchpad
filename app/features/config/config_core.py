@@ -1,7 +1,186 @@
-from flask import request
+import os
+from datetime import datetime
+from flask import request, current_app
 from flask_login import current_user
 from ... import db
-from ...core.db_class.config import UserConfig, THEME_CHOICES, NAV_POSITION_CHOICES, TOAST_POSITION_CHOICES, TOAST_STYLE_CHOICES, TOAST_DURATION_MIN, TOAST_DURATION_MAX
+from ...core.db_class.config import UserConfig, NAV_POSITION_CHOICES, TOAST_POSITION_CHOICES, TOAST_STYLE_CHOICES, TOAST_DURATION_MIN, TOAST_DURATION_MAX
+from ...core.db_class.custom_theme import CustomTheme, slugify
+
+
+THEME_VAR_KEYS = [
+    '--brand', '--brand-dim', '--brand-glow',
+    '--bg-body', '--bg-surface', '--bg-elevated', '--bg-sidebar',
+    '--text-main', '--text-secondary', '--text-muted',
+    '--text-sidebar', '--text-sidebar-muted',
+    '--border', '--border-subtle', '--border-sidebar',
+    '--sidebar-hover', '--sidebar-active',
+    '--shadow-sm', '--shadow-md', '--shadow-lg',
+]
+
+BUILTIN_STATIC_THEMES = {'system', 'light', 'dark', 'ocean', 'forest', 'midnight', 'slate'}
+BUILTIN_OVERRIDABLE = {'dark', 'ocean', 'forest', 'midnight', 'slate'}
+
+_BUILTIN_META = {
+    'dark':     ('Dark',     'fa-moon',        True),
+    'ocean':    ('Ocean',    'fa-water',        False),
+    'forest':   ('Forest',   'fa-tree',         True),
+    'midnight': ('Midnight', 'fa-star',         True),
+    'slate':    ('Slate',    'fa-layer-group',  True),
+}
+
+
+def get_valid_theme_keys():
+    custom_keys = {t.css_key for t in CustomTheme.query.filter_by(is_active=True, is_builtin=False).all()}
+    return BUILTIN_STATIC_THEMES | custom_keys
+
+
+def get_all_custom_themes():
+    return CustomTheme.query.filter_by(is_active=True).order_by(CustomTheme.id).all()
+
+
+def regenerate_custom_themes_css():
+    themes = CustomTheme.query.filter_by(is_active=True).order_by(CustomTheme.id).all()
+    lines = ['/* Auto-generated custom themes — do not edit manually */']
+    for t in themes:
+        if not t.css_vars:
+            continue
+        lines.append(f'\n[data-theme="{t.css_key}"] {{')
+        for var, value in t.css_vars.items():
+            if var in THEME_VAR_KEYS and value:
+                lines.append(f'    {var}: {value};')
+        lines.append('}')
+    css = '\n'.join(lines) + '\n'
+    path = os.path.join(current_app.root_path, 'static', 'css', 'themes', 'custom-themes.css')
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write(css)
+
+
+def create_custom_theme_core(data, user_id):
+    try:
+        name = (data.get('name') or '').strip()
+        if not name or len(name) > 64:
+            return None, "Theme name is required (max 64 chars)"
+        css_key = slugify(name)
+        if not css_key:
+            return None, "Invalid theme name"
+        if css_key in BUILTIN_STATIC_THEMES:
+            return None, "Cannot use a built-in theme name"
+        existing = CustomTheme.query.filter_by(css_key=css_key).first()
+        if existing:
+            return None, "A theme with this name already exists"
+        icon    = (data.get('icon') or 'fa-palette').strip()
+        is_dark = bool(data.get('is_dark', False))
+        css_vars = {k: v for k, v in (data.get('css_vars') or {}).items() if k in THEME_VAR_KEYS and v}
+        theme = CustomTheme(
+            name=name, css_key=css_key, icon=icon,
+            is_dark=is_dark, is_builtin=False,
+            css_vars=css_vars or None, created_by=user_id,
+        )
+        db.session.add(theme)
+        db.session.commit()
+        regenerate_custom_themes_css()
+        from ...core.utils.logger import log_action
+        log_action(f"Custom theme '{name}' created", "create", category="themes",
+                   level="success", object_type="custom_theme", object_id=theme.id,
+                   is_public=False, meta={"css_key": css_key})
+        return theme, "Theme created"
+    except Exception as e:
+        db.session.rollback()
+        return None, f"Error creating theme: {e}"
+
+
+def update_custom_theme_core(uuid, data, user_id):
+    try:
+        theme = CustomTheme.query.filter_by(uuid=uuid, is_active=True).first()
+        if not theme:
+            return None, "Theme not found"
+        if not theme.is_builtin:
+            name = (data.get('name') or '').strip()
+            if name and len(name) <= 64:
+                theme.name = name
+            icon = data.get('icon')
+            if icon:
+                theme.icon = icon.strip()
+            if 'is_dark' in data:
+                theme.is_dark = bool(data['is_dark'])
+        if 'css_vars' in data:
+            css_vars = {k: v for k, v in (data['css_vars'] or {}).items() if k in THEME_VAR_KEYS and v}
+            theme.css_vars = css_vars or None
+        db.session.commit()
+        regenerate_custom_themes_css()
+        from ...core.utils.logger import log_action
+        log_action(f"Theme '{theme.name}' updated", "edit", category="themes",
+                   level="success", object_type="custom_theme", object_id=theme.id,
+                   is_public=False)
+        return theme, "Theme updated"
+    except Exception as e:
+        db.session.rollback()
+        return None, f"Error updating theme: {e}"
+
+
+def delete_custom_theme_core(uuid, user_id):
+    try:
+        theme = CustomTheme.query.filter_by(uuid=uuid, is_active=True).first()
+        if not theme:
+            return False, "Theme not found"
+        if theme.is_builtin:
+            return False, "Cannot delete a built-in theme override"
+        theme.is_active  = False
+        theme.deleted_at = datetime.utcnow()
+        theme.deleted_by = user_id
+        db.session.commit()
+        regenerate_custom_themes_css()
+        from ...core.utils.logger import log_action
+        log_action(f"Theme '{theme.name}' deleted", "delete", category="themes",
+                   level="success", object_type="custom_theme", object_id=theme.id,
+                   is_public=False)
+        return True, "Theme deleted"
+    except Exception as e:
+        db.session.rollback()
+        return False, f"Error deleting theme: {e}"
+
+
+def upsert_builtin_theme_override_core(css_key, data, user_id):
+    if css_key not in BUILTIN_OVERRIDABLE:
+        return None, "Not a valid built-in theme"
+    try:
+        theme = CustomTheme.query.filter_by(css_key=css_key, is_builtin=True).first()
+        bname, bicon, bdark = _BUILTIN_META[css_key]
+        if not theme:
+            theme = CustomTheme(
+                name=bname, css_key=css_key, icon=bicon,
+                is_dark=bdark, is_builtin=True, created_by=user_id,
+            )
+            db.session.add(theme)
+        css_vars = {k: v for k, v in (data.get('css_vars') or {}).items() if k in THEME_VAR_KEYS and v}
+        theme.css_vars  = css_vars or None
+        theme.is_active = bool(css_vars)
+        db.session.commit()
+        regenerate_custom_themes_css()
+        from ...core.utils.logger import log_action
+        log_action(f"Built-in theme '{css_key}' overridden", "edit", category="themes",
+                   level="success", object_type="custom_theme", object_id=theme.id,
+                   is_public=False)
+        return theme, "Theme vars saved"
+    except Exception as e:
+        db.session.rollback()
+        return None, f"Error saving theme: {e}"
+
+
+def reset_builtin_theme_core(css_key, user_id):
+    if css_key not in BUILTIN_OVERRIDABLE:
+        return False, "Not a valid built-in theme"
+    try:
+        theme = CustomTheme.query.filter_by(css_key=css_key, is_builtin=True).first()
+        if theme:
+            theme.is_active = False
+            theme.css_vars  = None
+            db.session.commit()
+            regenerate_custom_themes_css()
+        return True, "Built-in theme reset to defaults"
+    except Exception as e:
+        db.session.rollback()
+        return False, f"Error resetting theme: {e}"
 
 
 def _resolve_user_id():
@@ -48,7 +227,7 @@ def update_config_core(form_dict) -> tuple:
                 return None, msg
 
         if 'theme' in form_dict:
-            if form_dict['theme'] not in THEME_CHOICES:
+            if form_dict['theme'] not in get_valid_theme_keys():
                 return None, "Invalid theme"
             config.theme = form_dict['theme']
 

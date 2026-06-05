@@ -1,4 +1,4 @@
-from ..core.db_class.config import THEME_CHOICES, NAV_POSITION_CHOICES, TOAST_POSITION_CHOICES, TOAST_STYLE_CHOICES, TOAST_DURATION_MIN, TOAST_DURATION_MAX
+from ..core.db_class.config import NAV_POSITION_CHOICES, TOAST_POSITION_CHOICES, TOAST_STYLE_CHOICES, TOAST_DURATION_MIN, TOAST_DURATION_MAX
 
 
 class VerifConfig:
@@ -8,8 +8,10 @@ class VerifConfig:
         result = {}
 
         if 'theme' in data:
-            if data['theme'] not in THEME_CHOICES:
-                return {'message': f"Invalid theme. Valid: {THEME_CHOICES}"}
+            from ..features.config.config_core import get_valid_theme_keys
+            valid = get_valid_theme_keys()
+            if data['theme'] not in valid:
+                return {'message': f"Invalid theme."}
             result['theme'] = data['theme']
 
         if 'nav_position' in data:

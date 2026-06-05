@@ -444,6 +444,57 @@
 .theme-preview--slate .tp-line--short { width: 40%; }
 
 
+/*---THEME_PREVIEW_CUSTOM---*/
+/* Dynamic preview for custom themes — colors injected as inline CSS vars via Vue :style */
+
+.theme-preview--custom {
+    background: var(--tp-body, #F5F1EC);
+}
+.theme-preview--custom .tp-sidebar {
+    background: var(--tp-sidebar, #141210);
+    width: 28px; padding: 5px 4px;
+    display: flex; flex-direction: column; gap: 3px; flex-shrink: 0;
+}
+.theme-preview--custom .tp-logo {
+    width: 14px; height: 8px;
+    background: var(--tp-brand-dim, rgba(212,82,42,0.5));
+    border-radius: 2px; margin-bottom: 3px;
+}
+.theme-preview--custom .tp-nav-item {
+    height: 5px;
+    background: var(--tp-nav-item, rgba(255,255,255,0.12));
+    border-radius: 2px;
+}
+.theme-preview--custom .tp-nav-item--active {
+    background: var(--tp-nav-active, rgba(255,255,255,0.35));
+}
+.theme-preview--custom .tp-main { flex: 1; display: flex; flex-direction: column; }
+.theme-preview--custom .tp-topbar {
+    height: 14px;
+    background: var(--tp-surface, #FFFFFF);
+    border-bottom: 1px solid var(--tp-border, rgba(0,0,0,0.08));
+    flex-shrink: 0;
+}
+.theme-preview--custom .tp-content { flex: 1; padding: 5px; display: flex; flex-direction: column; gap: 3px; }
+.theme-preview--custom .tp-card {
+    background: var(--tp-surface, #FFFFFF);
+    border-radius: 4px; padding: 4px 5px;
+    display: flex; flex-direction: column; gap: 2px;
+}
+.theme-preview--custom .tp-line {
+    height: 4px;
+    background: var(--tp-line, rgba(0,0,0,0.10));
+    border-radius: 2px;
+}
+.theme-preview--custom .tp-line--title {
+    height: 5px;
+    background: var(--tp-brand, #D4522A);
+    opacity: 0.4;
+    width: 60%;
+}
+.theme-preview--custom .tp-line--short { width: 40%; }
+
+
 /*---NAV_LAYOUT_PICKER---*/
 
 .settings-nav-group {
@@ -932,3 +983,246 @@
     font-weight: 500;
 }
 .settings-toast-style-card.active .tsp-label { color: var(--brand); font-weight: 600; }
+
+
+/*---ICON_PICKER---*/
+
+.ip-trigger {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem 0.65rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-elevated);
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: var(--text-main);
+    transition: border-color var(--transition), background var(--transition);
+    user-select: none;
+    min-width: 0;
+    width: 100%;
+}
+
+.ip-trigger:hover {
+    border-color: var(--brand);
+    background: var(--bg-surface);
+}
+
+.ip-trigger i {
+    font-size: 1rem;
+    color: var(--brand);
+    width: 18px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.ip-trigger span {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ip-trigger .ip-caret {
+    margin-left: auto;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.ip-dropdown {
+    position: absolute;
+    z-index: 1060;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    width: 320px;
+    padding: 0.6rem;
+}
+
+.ip-search {
+    margin-bottom: 0.5rem;
+}
+
+.ip-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 3px;
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+.ip-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all var(--transition);
+    padding: 0;
+}
+
+.ip-btn:hover {
+    background: var(--brand-dim);
+    color: var(--brand);
+    border-color: var(--brand-glow);
+}
+
+.ip-btn.active {
+    background: var(--brand);
+    color: #fff;
+    border-color: var(--brand);
+}
+
+.ip-wrapper {
+    position: relative;
+}
+
+
+/*---THEME_STUDIO---*/
+
+.ts-theme-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.ts-theme-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-elevated);
+    transition: border-color var(--transition);
+}
+
+.ts-theme-row:hover {
+    border-color: var(--brand);
+}
+
+.ts-theme-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    background: var(--brand-dim);
+    color: var(--brand);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+}
+
+.ts-theme-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.ts-theme-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.ts-theme-meta {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-top: 1px;
+}
+
+.ts-theme-actions {
+    display: flex;
+    gap: 0.35rem;
+    flex-shrink: 0;
+}
+
+.ts-builtin-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 0.5rem;
+}
+
+.ts-builtin-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.75rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-elevated);
+    cursor: pointer;
+    transition: all var(--transition);
+    text-align: center;
+}
+
+.ts-builtin-card:hover {
+    border-color: var(--brand);
+    background: var(--brand-dim);
+}
+
+.ts-builtin-card i {
+    font-size: 1.1rem;
+    color: var(--brand);
+}
+
+.ts-builtin-card span {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.ts-vars-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+.ts-var-group {
+    margin-bottom: 1rem;
+}
+
+.ts-var-group-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.3rem;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.ts-var-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.ts-var-label {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+}
+
+.ts-var-input {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+}
+
+.ts-modal-body {
+    max-height: 70vh;
+    overflow-y: auto;
+}

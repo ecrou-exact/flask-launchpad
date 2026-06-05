@@ -128,9 +128,9 @@ class User(UserMixin, db.Model):
 
 
 class AnonymousUser(AnonymousUserMixin):
-    def is_admin(self):   return False
-    def read_only(self):  return True
-    def initials(self):   return '?'
+    def is_admin(self):  return False
+    def read_only(self): return True
+    def initials(self):  return '?'
 
 
 login_manager.anonymous_user = AnonymousUser

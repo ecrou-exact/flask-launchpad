@@ -10,16 +10,25 @@
   - localStorage mirrors DB for instant no-flash behaviour
 */
 
-var _DARK_THEMES    = ['dark', 'forest', 'midnight', 'slate'];  // ocean is now LIGHT
+var _DARK_THEMES    = ['dark', 'forest', 'midnight', 'slate'];
 var _CUSTOM_THEMES  = ['ocean', 'forest', 'midnight', 'slate'];
 var _BODY_COLORS    = {
     light:    '#F5F1EC',
     dark:     '#0E0C10',
-    ocean:    '#E8F4FD',   // light
-    forest:   '#020704',   // very dark
-    midnight: '#030108',   // very dark
-    slate:    '#0C1422',   // dark blue-grey
+    ocean:    '#E8F4FD',
+    forest:   '#020704',
+    midnight: '#030108',
+    slate:    '#0C1422',
 };
+
+// Extend with server-injected custom themes (window.__CUSTOM_THEMES__ set in base.html)
+if (window.__CUSTOM_THEMES__) {
+    window.__CUSTOM_THEMES__.forEach(function(t) {
+        if (t.is_dark && _DARK_THEMES.indexOf(t.css_key) === -1)   _DARK_THEMES.push(t.css_key);
+        if (_CUSTOM_THEMES.indexOf(t.css_key) === -1)               _CUSTOM_THEMES.push(t.css_key);
+        if (t.bg_body)                                               _BODY_COLORS[t.css_key] = t.bg_body;
+    });
+}
 
 (function () {
     var html        = document.documentElement;

@@ -54,7 +54,8 @@ def create_app():
     from .core.db_class.site_config import SiteConfig      # noqa: F401
     from .core.db_class.log import Log                     # noqa: F401
     from .core.db_class.user import RolePermission         # noqa: F401
-    from .core.db_class.comment import Comment, CommentReaction  # noqa: F401
+    from .core.db_class.comment import Comment, CommentReaction        # noqa: F401
+    from .core.db_class.custom_theme import CustomTheme               # noqa: F401
 
     @app.context_processor
     def inject_site_config():
@@ -85,6 +86,18 @@ def create_app():
             perms    = []
         nav_items = get_nav_for_user(is_admin, perms)
         return dict(user_is_admin=is_admin, user_perms=perms, nav_items=nav_items)
+
+    @app.context_processor
+    def inject_custom_themes_for_js():
+        from .core.db_class.custom_theme import CustomTheme as CT
+        themes = []
+        try:
+            for t in CT.query.filter_by(is_active=True, is_builtin=False).all():
+                bg_body = (t.css_vars or {}).get('--bg-body', '')
+                themes.append({'css_key': t.css_key, 'is_dark': t.is_dark, 'bg_body': bg_body})
+        except Exception:
+            pass
+        return dict(custom_themes_for_js=themes)
 
     @app.context_processor
     def inject_app_version():
