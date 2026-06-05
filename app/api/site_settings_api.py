@@ -9,11 +9,49 @@ from ..features.site_settings.site_settings_core import (
     get_smtp_config,
     save_smtp_config_core,
     regenerate_session_key_core,
+    get_server_config,
+    save_server_config_core,
+    restart_server,
     list_submodules,
     validate_new_submodule,
 )
 
 site_settings_ns = Namespace('site-settings', description='Server & environment configuration')
+
+
+@site_settings_ns.route('/server')
+class ServerConfig(Resource):
+    method_decorators = [api_require_permission('admin_only')]
+
+    def get(self):
+        return get_server_config(), 200
+
+    def post(self):
+        data = request.get_json(silent=True) or {}
+        host = data.get('host', '').strip()
+        port = data.get('port')
+        if not host:
+            return {'message': 'Host is required'}, 400
+        try:
+            port = int(port)
+        except (TypeError, ValueError):
+            return {'message': 'Port must be a number'}, 400
+
+        ok, msg = save_server_config_core(host, port)
+        if not ok:
+            return {'message': msg}, 400
+
+        log_action(
+            f"Server binding changed to {host}:{port}",
+            "edit",
+            category=api_category('admin'),
+            level="warning",
+            object_type="server_config",
+            is_public=False,
+            meta={'host': host, 'port': port},
+        )
+        restart_server()
+        return {'message': msg, 'host': host, 'port': port}, 200
 
 
 @site_settings_ns.route('/system')

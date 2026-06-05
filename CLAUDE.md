@@ -26,6 +26,8 @@ The app loads `.env` at startup via `python-dotenv`. If `.env` doesn't exist, th
 ```
 .env keys (project root):
   SECRET_KEY         — Flask session secret (auto-generated on first setup)
+  FLASK_HOST         — Bind address (default 127.0.0.1); 0.0.0.0 = all interfaces
+  FLASK_PORT         — Listen port (default 7009)
   SMTP_HOST          — SMTP server hostname
   SMTP_PORT          — SMTP port (default 587)
   SMTP_USER          — SMTP username / sender address
@@ -79,7 +81,7 @@ app/
       comment_core.py        # CRUD + reactions + stats + profanity filter (better-profanity)
     site_settings/           # server settings admin page (/admin/settings)
       site_settings.py       # route — admin_only
-      site_settings_core.py  # .env read/write, system info, SMTP config, session key regen, packages
+        site_settings_core.py  # .env read/write, system info, SMTP/server config, session key regen, packages
                              # git submodule management: list, validate, add/update/remove (all via background jobs)
     config/                  # user preferences + Theme Studio (/settings)
     home/
@@ -96,7 +98,8 @@ app/
   api/
     api.py                   # namespace registry
     comment_api.py           # GET/POST /comments, PUT/DELETE /comments/<uuid>, /react, /restore, /stats/user/<id>
-    site_settings_api.py     # GET /system, GET/POST /smtp, POST /smtp/test, POST /session-key
+    site_settings_api.py     # GET/POST /server (host+port, triggers os.execv restart)
+                             # GET /system, GET/POST /smtp, POST /smtp/test, POST /session-key
                              # GET /packages, POST /packages/update, POST /packages/install
                              # GET/POST /submodules, POST /submodules/update, POST /submodules/remove
     config_api.py            # GET/PATCH /config, GET/POST /config/themes, /themes/vars, /themes/builtin/<key>

@@ -340,3 +340,40 @@
     background: var(--bg-elevated);
     border-radius: 0 0 var(--radius) var(--radius);
 }
+
+
+/*---SERVER_BINDING---*/
+
+.ss-server-current {
+    display: flex;
+    flex-direction: column;
+    gap: .2rem;
+}
+
+.ss-server-url {
+    font-family: var(--font-mono);
+    font-size: .83rem;
+    color: var(--brand);
+    text-decoration: none;
+    word-break: break-all;
+}
+
+.ss-server-url:hover { text-decoration: underline; }
+
+.ss-server-reconnect {
+    background: color-mix(in srgb, #f97316 12%, var(--bg-elevated));
+    border: 1px solid color-mix(in srgb, #f97316 30%, transparent);
+    border-radius: var(--radius-sm);
+    padding: .45rem .65rem;
+    font-size: .78rem;
+    color: var(--text-main);
+}
+
+.ss-server-reconnect-link {
+    color: var(--brand);
+    font-weight: 600;
+    text-decoration: none;
+    word-break: break-all;
+}
+
+.ss-server-reconnect-link:hover { text-decoration: underline; }

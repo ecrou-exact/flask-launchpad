@@ -42,6 +42,50 @@ def _write_env_file(updates: dict) -> None:
             f.write(f"{k}={v}\n")
 
 
+# ── Server binding ────────────────────────────────────────────────────────────
+
+def get_server_config() -> dict:
+    return {
+        'host': os.environ.get('FLASK_HOST', '127.0.0.1'),
+        'port': int(os.environ.get('FLASK_PORT', 7009)),
+    }
+
+
+def save_server_config_core(host: str, port: int) -> tuple[bool, str]:
+    import ipaddress
+    host = host.strip()
+    try:
+        ipaddress.ip_address(host)
+    except ValueError:
+        if host not in ('localhost',):
+            return False, "Invalid host. Use an IP address (e.g. 127.0.0.1, 0.0.0.0) or 'localhost'."
+    if not (1 <= port <= 65535):
+        return False, "Port must be between 1 and 65535."
+    if port < 1024:
+        return False, "Ports below 1024 are reserved — use 1024 or higher."
+
+    _write_env_file({'FLASK_HOST': host, 'FLASK_PORT': str(port)})
+    # Update live env so os.execv inherits the new values
+    os.environ['FLASK_HOST'] = host
+    os.environ['FLASK_PORT'] = str(port)
+    return True, "Server config saved."
+
+
+def restart_server() -> None:
+    """Replace the current process image with a fresh start (picks up new env)."""
+    import sys
+    import threading
+    import time
+
+    def _do():
+        time.sleep(0.8)
+        # os.execv replaces the process image but keeps the PID.
+        # Works whether or not Werkzeug's reloader is active.
+        os.execv(sys.executable, [sys.executable] + sys.argv)
+
+    threading.Thread(target=_do, daemon=True).start()
+
+
 # ── SMTP ──────────────────────────────────────────────────────────────────────
 
 def get_smtp_config() -> dict:

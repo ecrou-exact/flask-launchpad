@@ -183,8 +183,76 @@
                     </div>
                 </div>
 
-                {# ── Right column: System Info ── #}
+                {# ── Right column: Server Binding + System Info ── #}
                 <div class="col-12 col-xl-4">
+
+                    {# ── Server Binding ── #}
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="ss-card-header mb-3">
+                                <div class="ss-card-icon ss-card-icon--warn">
+                                    <i class="fas fa-network-wired"></i>
+                                </div>
+                                <div>
+                                    <h6 class="ss-card-title">Server Binding</h6>
+                                    <p class="ss-card-sub">Saved to <code>.env</code> — app restarts automatically.</p>
+                                </div>
+                            </div>
+
+                            {# Current URL badge #}
+                            <div class="ss-server-current mb-3">
+                                <span class="ss-info-label">Listening at</span>
+                                <a :href="'http://' + srv.host + ':' + srv.port"
+                                   target="_blank" class="ss-server-url">
+                                    [[ 'http://' + srv.host + ':' + srv.port ]]
+                                    <i class="fas fa-arrow-up-right-from-square ms-1" style="font-size:.7em;"></i>
+                                </a>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="ss-label">Host</label>
+                                <select v-model="srv_host" class="form-select form-select-sm">
+                                    <option value="127.0.0.1">127.0.0.1 — localhost only</option>
+                                    <option value="0.0.0.0">0.0.0.0 — all interfaces (LAN / external)</option>
+                                    <option value="localhost">localhost</option>
+                                    <option value="custom">Custom…</option>
+                                </select>
+                                <input v-if="srv_host === 'custom'"
+                                       v-model="srv_host_custom"
+                                       type="text" class="form-control form-control-sm mt-1"
+                                       placeholder="e.g. 192.168.1.100"
+                                       spellcheck="false">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="ss-label">Port</label>
+                                <input v-model.number="srv_port" type="number"
+                                       class="form-control form-control-sm"
+                                       placeholder="7009" min="1024" max="65535">
+                            </div>
+
+                            {# Countdown / reconnect banner #}
+                            <div v-if="srv_countdown > 0" class="ss-server-reconnect mb-2">
+                                <i class="fas fa-rotate fa-spin me-1"></i>
+                                Restarting… reconnecting in [[ srv_countdown ]]s
+                                <a :href="srv_next_url" class="ss-server-reconnect-link ms-1">
+                                    [[ srv_next_url ]]
+                                </a>
+                            </div>
+
+                            <button class="btn btn-warning btn-sm w-100"
+                                    :disabled="srv_saving || srv_countdown > 0"
+                                    @click="saveServer">
+                                <i v-if="srv_saving" class="fas fa-spinner fa-spin me-1"></i>
+                                <i v-else class="fas fa-rotate me-1"></i>
+                                <span v-if="srv_saving">Saving…</span>
+                                <span v-else-if="srv_countdown > 0">Restarting…</span>
+                                <span v-else>Save &amp; Restart</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {# ── System Info ── #}
                     <div class="card">
                         <div class="card-body">
                             <div class="ss-card-header mb-3">
@@ -588,6 +656,59 @@
                 return pkg_all.value.filter(p => p.name.toLowerCase().includes(q))
             })
 
+            // ── Server binding ────────────────────────────────────────────────
+            const KNOWN_HOSTS = ['127.0.0.1', '0.0.0.0', 'localhost']
+            const srv         = reactive({ host: '127.0.0.1', port: 7009 })
+            const srv_host    = ref('127.0.0.1')   // select value (may be 'custom')
+            const srv_host_custom = ref('')
+            const srv_port    = ref(7009)
+            const srv_saving  = ref(false)
+            const srv_countdown   = ref(0)
+            const srv_next_url    = ref('')
+            let   _countdownTimer = null
+
+            async function loadServer() {
+                const res = await apiFetch('/api/site-settings/server')
+                if (res.ok) {
+                    const d = await res.json()
+                    srv.host = d.host
+                    srv.port = d.port
+                    srv_host.value = KNOWN_HOSTS.includes(d.host) ? d.host : 'custom'
+                    srv_host_custom.value = KNOWN_HOSTS.includes(d.host) ? '' : d.host
+                    srv_port.value = d.port
+                }
+            }
+
+            async function saveServer() {
+                const host = srv_host.value === 'custom' ? srv_host_custom.value.trim() : srv_host.value
+                const port = srv_port.value
+                if (!host) { create_message('Host is required', TOAST.ERROR); return }
+                if (!port || port < 1024 || port > 65535) {
+                    create_message('Port must be between 1024 and 65535', TOAST.ERROR); return
+                }
+                srv_saving.value = true
+                const res = await apiFetch('/api/site-settings/server', 'POST', { host, port })
+                const d   = await res.json()
+                srv_saving.value = false
+                if (!res.ok) { create_message(d.message || 'Failed to save', TOAST.ERROR, true); return }
+
+                // Compute the URL the user will reconnect to
+                const displayHost = (host === '0.0.0.0') ? window.location.hostname : host
+                srv_next_url.value = `http://${displayHost}:${port}`
+                srv.host = host
+                srv.port = port
+
+                // Start countdown — app restarts after ~800ms, allow 8s for it to come back
+                srv_countdown.value = 8
+                _countdownTimer = setInterval(() => {
+                    srv_countdown.value--
+                    if (srv_countdown.value <= 0) {
+                        clearInterval(_countdownTimer)
+                        window.location.href = srv_next_url.value + window.location.pathname
+                    }
+                }, 1000)
+            }
+
             // ── Submodules ────────────────────────────────────────────────────
             const submodules        = ref([])
             const sub_loading       = ref(false)
@@ -604,7 +725,7 @@
             const add_path_auto     = ref(true)  // true = path is still auto-derived from URL
 
             onMounted(async () => {
-                await Promise.all([loadSystemInfo(), loadSmtp(), loadPackages(), loadSubmodules()])
+                await Promise.all([loadSystemInfo(), loadSmtp(), loadServer(), loadPackages(), loadSubmodules()])
                 page_is_loading.value = true
             })
 
@@ -896,6 +1017,9 @@
                 sysinfo, smtp, show_smtp_pwd, test_email, smtp_log,
                 smtp_saving, smtp_testing, key_regen_loading,
                 saveSmtp, testSmtp, regenKey,
+                // server binding
+                srv, srv_host, srv_host_custom, srv_port, srv_saving, srv_countdown, srv_next_url,
+                saveServer,
                 // packages
                 pkg_all, pkg_filtered, pkg_loading, pkg_search,
                 pkg_install_name, pkg_install_loading, pkg_install_log,
