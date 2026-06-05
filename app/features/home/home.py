@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template
+from app.core.utils.decorators import require_permission
 
 home_blueprint = Blueprint(
     'home',
@@ -10,3 +11,8 @@ home_blueprint = Blueprint(
 @home_blueprint.route("/")
 def home():
     return render_template("home.html")
+
+@home_blueprint.route("/docs")
+@require_permission()
+def docs():
+    return render_template("docs/docs.html")
