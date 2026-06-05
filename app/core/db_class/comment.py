@@ -119,6 +119,7 @@ class Comment(db.Model):
             'dislike_count':    self.dislike_count,
             'user_reaction':    user_reaction,
             'author':           author_dict,
+            'is_admin':          author.is_admin() if author else False,
         }
 
 

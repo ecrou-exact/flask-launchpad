@@ -24,34 +24,34 @@ const CommentItem = {
     name: 'CommentItem',
     delimiters: ['[[', ']]'],
     props: {
-        comment:       { type: Object,  required: true },
-        canCreate:     { type: Boolean, default: false },
-        canEditOwn:    { type: Boolean, default: false },
-        canDeleteOwn:  { type: Boolean, default: false },
-        canModerate:   { type: Boolean, default: false },
-        currentUserId: { type: Number,  default: 0 },
+        comment: { type: Object, required: true },
+        canCreate: { type: Boolean, default: false },
+        canEditOwn: { type: Boolean, default: false },
+        canDeleteOwn: { type: Boolean, default: false },
+        canModerate: { type: Boolean, default: false },
+        currentUserId: { type: Number, default: 0 },
     },
     setup(props) {
-        const collapsed      = ref(false)
-        const showReplyForm  = ref(false)
-        const showEditForm   = ref(false)
-        const replyContent   = ref('')
-        const editContent    = ref(props.comment.content)
-        const submitting     = ref(false)
+        const collapsed = ref(false)
+        const showReplyForm = ref(false)
+        const showEditForm = ref(false)
+        const replyContent = ref('')
+        const editContent = ref(props.comment.content)
+        const submitting = ref(false)
 
-        const replies        = ref([])
-        const repliesPage    = ref(1)
-        const repliesTotal   = ref(props.comment.reply_count || 0)
-        const repliesLoaded  = ref(false)
+        const replies = ref([])
+        const repliesPage = ref(1)
+        const repliesTotal = ref(props.comment.reply_count || 0)
+        const repliesLoaded = ref(false)
         const repliesLoading = ref(false)
 
         // Local reactive copy of counts/reaction so UI updates immediately
-        const likeCount    = ref(props.comment.like_count    || 0)
+        const likeCount = ref(props.comment.like_count || 0)
         const dislikeCount = ref(props.comment.dislike_count || 0)
         const userReaction = ref(props.comment.user_reaction || null)
-        const isDeleted    = ref(props.comment.is_deleted    || false)
-        const content      = ref(props.comment.content)
-        const isPublic     = ref(props.comment.is_public)
+        const isDeleted = ref(props.comment.is_deleted || false)
+        const content = ref(props.comment.content)
+        const isPublic = ref(props.comment.is_public)
 
         const canEdit = computed(() =>
             !isDeleted.value && (
@@ -70,7 +70,7 @@ const CommentItem = {
         async function loadReplies(reset = false) {
             if (repliesLoading.value) return
             if (reset) {
-                replies.value  = []
+                replies.value = []
                 repliesPage.value = 1
                 repliesLoaded.value = false
             }
@@ -80,7 +80,7 @@ const CommentItem = {
             )
             if (res.ok) {
                 const d = await res.json()
-                replies.value     = [...replies.value, ...d.items]
+                replies.value = [...replies.value, ...d.items]
                 repliesTotal.value = d.total
                 repliesLoaded.value = true
                 repliesPage.value++
@@ -93,15 +93,15 @@ const CommentItem = {
             submitting.value = true
             const res = await apiFetch('/api/comments', 'POST', {
                 object_type: props.comment.object_type,
-                object_id:   props.comment.object_id,
-                content:     replyContent.value,
-                parent_id:   props.comment.id,
+                object_id: props.comment.object_id,
+                content: replyContent.value,
+                parent_id: props.comment.id,
             })
             const d = await res.json()
             if (res.ok) {
-                replyContent.value    = ''
-                showReplyForm.value   = false
-                repliesTotal.value    += 1
+                replyContent.value = ''
+                showReplyForm.value = false
+                repliesTotal.value += 1
                 replies.value.push(d.comment)
                 repliesLoaded.value = true
                 create_message(d.message, TOAST.SUCCESS)
@@ -119,8 +119,8 @@ const CommentItem = {
             })
             const d = await res.json()
             if (res.ok) {
-                content.value       = d.comment.content
-                showEditForm.value  = false
+                content.value = d.comment.content
+                showEditForm.value = false
                 create_message(d.message, TOAST.SUCCESS)
             } else {
                 create_message(d.message || 'Failed', TOAST.ERROR)
@@ -131,10 +131,10 @@ const CommentItem = {
         async function doDelete() {
             if (!confirm('Delete this comment?')) return
             const res = await apiFetch(`/api/comments/${props.comment.uuid}`, 'DELETE')
-            const d   = await res.json()
+            const d = await res.json()
             if (res.ok) {
                 isDeleted.value = true
-                content.value   = '[deleted]'
+                content.value = '[deleted]'
                 create_message(d.message, TOAST.WARNING)
             } else {
                 create_message(d.message || 'Failed', TOAST.ERROR)
@@ -143,10 +143,10 @@ const CommentItem = {
 
         async function doRestore() {
             const res = await apiFetch(`/api/comments/${props.comment.uuid}/restore`, 'POST', {})
-            const d   = await res.json()
+            const d = await res.json()
             if (res.ok) {
                 isDeleted.value = false
-                content.value   = d.comment.content
+                content.value = d.comment.content
                 create_message(d.message, TOAST.SUCCESS)
             } else {
                 create_message(d.message || 'Failed', TOAST.ERROR)
@@ -155,9 +155,9 @@ const CommentItem = {
 
         async function doReact(reaction) {
             const res = await apiFetch(`/api/comments/${props.comment.uuid}/react`, 'POST', { reaction })
-            const d   = await res.json()
+            const d = await res.json()
             if (res.ok) {
-                likeCount.value    = d.like_count
+                likeCount.value = d.like_count
                 dislikeCount.value = d.dislike_count
                 userReaction.value = d.user_reaction
             } else {
@@ -166,7 +166,7 @@ const CommentItem = {
         }
 
         function startEdit() {
-            editContent.value  = content.value
+            editContent.value = content.value
             showEditForm.value = true
         }
 
@@ -202,6 +202,17 @@ const CommentItem = {
         </a>
         <a :href="comment.author?.id ? '/account/profile/' + comment.author.id : '#'"
            class="cm-author">[[ comment.author?.name || 'Unknown' ]]</a>
+
+        <span v-if="comment.is_admin" class="cm-admin-badge" title="This comment was posted by a site administrator">
+            <i class="fas fa-shield-alt"></i>Admin
+        </span>
+
+        <span v-if="comment.created_by === currentUserId" class="cm-you-badge" title="This comment was posted by you">
+            <i class="fas fa-user"></i>You
+        </span>
+
+
+
         <span class="cm-date">[[ fmt_date(comment.created_at) ]]</span>
         <span v-if="!isPublic" class="cm-private-badge">
             <i class="fas fa-lock" style="font-size:.6rem;"></i>Private
@@ -308,30 +319,30 @@ const CommentThread = {
     delimiters: ['[[', ']]'],
     components: { CommentItem },
     props: {
-        objectType:    { type: String,  required: true },
-        objectId:      { type: Number,  required: true },
-        canCreate:     { type: Boolean, default: false },
-        canEditOwn:    { type: Boolean, default: false },
-        canDeleteOwn:  { type: Boolean, default: false },
-        canModerate:   { type: Boolean, default: false },
-        currentUserId: { type: Number,  default: 0 },
+        objectType: { type: String, required: true },
+        objectId: { type: Number, required: true },
+        canCreate: { type: Boolean, default: false },
+        canEditOwn: { type: Boolean, default: false },
+        canDeleteOwn: { type: Boolean, default: false },
+        canModerate: { type: Boolean, default: false },
+        currentUserId: { type: Number, default: 0 },
     },
     setup(props) {
-        const comments     = ref([])
-        const page         = ref(1)
-        const total        = ref(0)
-        const loading      = ref(false)
-        const newContent   = ref('')
-        const submitting   = ref(false)
-        const sentinelRef  = ref(null)
-        const hasNext      = ref(false)
+        const comments = ref([])
+        const page = ref(1)
+        const total = ref(0)
+        const loading = ref(false)
+        const newContent = ref('')
+        const submitting = ref(false)
+        const sentinelRef = ref(null)
+        const hasNext = ref(false)
 
         async function loadComments(reset = false) {
             if (loading.value) return
             if (reset) {
                 comments.value = []
-                page.value     = 1
-                hasNext.value  = false
+                page.value = 1
+                hasNext.value = false
             }
             loading.value = true
             const res = await apiFetch(
@@ -340,8 +351,8 @@ const CommentThread = {
             if (res.ok) {
                 const d = await res.json()
                 comments.value = [...comments.value, ...d.items]
-                total.value    = d.total
-                hasNext.value  = d.has_next
+                total.value = d.total
+                hasNext.value = d.has_next
                 page.value++
             }
             loading.value = false
@@ -352,8 +363,8 @@ const CommentThread = {
             submitting.value = true
             const res = await apiFetch('/api/comments', 'POST', {
                 object_type: props.objectType,
-                object_id:   props.objectId,
-                content:     newContent.value,
+                object_id: props.objectId,
+                content: newContent.value,
             })
             const d = await res.json()
             if (res.ok) {

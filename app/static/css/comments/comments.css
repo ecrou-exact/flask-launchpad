@@ -6,6 +6,37 @@
     gap: .75rem;
 }
 
+/*---BADGES---*/
+.cm-admin-badge {
+    padding: 2px 6px;
+    display: inline-block;
+    padding: 4px 10px;
+    background-color: var(--brand);
+    color: #ffffff;
+    font-family: sans-serif;
+    font-weight: bold;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    letter-spacing: 0.5px;
+}
+
+.cm-you-badge {
+    padding: 2px 6px;
+    display: inline-block;
+    padding: 4px 10px;
+    background-color: var(--brand-glow);
+    color: var(--brand);
+    font-family: sans-serif;
+    font-weight: bold;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    letter-spacing: 0.5px;
+}
+
 /*---ITEM---*/
 
 .cm-item {
@@ -116,7 +147,7 @@
     font-weight: 500;
     padding: .1rem .4rem;
     border-radius: 999px;
-    background: rgba(99,102,241,.12);
+    background: rgba(99, 102, 241, .12);
     color: #6366f1;
     white-space: nowrap;
 }
@@ -189,14 +220,14 @@
 }
 
 .cm-react-btn--active.cm-react-btn--like {
-    background: rgba(34,197,94,.1);
-    border-color: rgba(34,197,94,.4);
+    background: rgba(34, 197, 94, .1);
+    border-color: rgba(34, 197, 94, .4);
     color: #16a34a;
 }
 
 .cm-react-btn--active.cm-react-btn--dislike {
-    background: rgba(239,68,68,.1);
-    border-color: rgba(239,68,68,.4);
+    background: rgba(239, 68, 68, .1);
+    border-color: rgba(239, 68, 68, .4);
     color: #dc2626;
 }
 
