@@ -39,6 +39,19 @@ def edit_user():
     if form.validate_on_submit():
         form_dict = form_to_dict(form)
         user, message = AccountCore.edit_user_core(form_dict, current_user.id)
+        if user and message == "email_change_pending":
+            from ...core.utils.mailer import send_verification_email
+            ok, mail_msg = send_verification_email(
+                user.pending_email, user.first_name, user.pending_email_token
+            )
+            if not ok:
+                log_action(
+                    f"Email change verification send failed: {mail_msg}",
+                    "email_error", category="system", level="warning",
+                    object_type="user", object_id=user.id, is_public=False,
+                )
+            flash('Profile saved. Check your new email address for the verification code.', 'success')
+            return redirect(url_for('account.verify_email_change'))
         flash(message, 'success' if user else 'danger')
         return redirect(url_for('account.index'))
 
@@ -205,6 +218,81 @@ def verify():
         email=user.email,
         expires_at=user.verification_expires_at,
     )
+
+
+# ── Email change verification ─────────────────────────────────────────────────
+
+@account_blueprint.route('/verify-email', methods=['GET', 'POST'])
+@require_permission()
+def verify_email_change():
+    from datetime import datetime
+    user = current_user
+    if not user.pending_email:
+        flash('No pending email change.', 'info')
+        return redirect(url_for('account.index'))
+
+    if user.pending_email_expires_at and datetime.utcnow() > user.pending_email_expires_at:
+        AccountCore.cancel_email_change_core(user.id)
+        log_action(
+            "Email change cancelled — code expired",
+            "cancel", category="user", level="warning",
+            object_type="user", object_id=user.id, is_public=False,
+        )
+        flash('Verification code expired. The email change has been cancelled.', 'danger')
+        return redirect(url_for('account.edit_user'))
+
+    if request.method == 'POST':
+        code = request.form.get('code', '').strip()
+        if code == user.pending_email_token:
+            _, msg = AccountCore.confirm_email_change_core(user.id)
+            log_action(
+                "Email address changed via verification",
+                "edit", category="user", level="success",
+                object_type="user", object_id=user.id,
+                actor_id=user.id, is_public=False,
+            )
+            flash('Email address updated successfully.', 'success')
+            return redirect(url_for('account.index'))
+        flash('Invalid code. Please try again.', 'danger')
+
+    return render_template(
+        'account/verify_email_change.html',
+        new_email=user.pending_email,
+        expires_at=user.pending_email_expires_at,
+    )
+
+
+@account_blueprint.route('/verify-email/resend', methods=['POST'])
+@require_permission()
+def resend_email_change_verification():
+    user = current_user
+    if not user.pending_email:
+        flash('No pending email change.', 'warning')
+        return redirect(url_for('account.index'))
+    u, msg = AccountCore.resend_email_change_core(user.id)
+    if not u:
+        flash(msg, 'danger')
+        return redirect(url_for('account.verify_email_change'))
+    from ...core.utils.mailer import send_verification_email
+    ok, mail_msg = send_verification_email(u.pending_email, u.first_name, u.pending_email_token)
+    if ok:
+        log_action(
+            "Email change code resent",
+            "verify_resend", category="user", level="info",
+            object_type="user", object_id=u.id, is_public=False,
+        )
+        flash('A new code has been sent to your new email address.', 'success')
+    else:
+        flash(f'Could not send email: {mail_msg}', 'danger')
+    return redirect(url_for('account.verify_email_change'))
+
+
+@account_blueprint.route('/verify-email/cancel', methods=['POST'])
+@require_permission()
+def cancel_email_change():
+    AccountCore.cancel_email_change_core(current_user.id)
+    flash('Email change cancelled.', 'info')
+    return redirect(url_for('account.edit_user'))
 
 
 @account_blueprint.route('/verify/resend', methods=['POST'])

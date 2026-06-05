@@ -34,8 +34,11 @@ class User(UserMixin, db.Model):
     force_logout             = db.Column(db.Boolean,  default=False, nullable=False)
     session_version          = db.Column(db.Integer,  default=0,     nullable=False)
     last_seen_at             = db.Column(db.DateTime, nullable=True)
-    verification_token       = db.Column(db.String(8),  nullable=True)
+    verification_token       = db.Column(db.String(8),   nullable=True)
     verification_expires_at  = db.Column(db.DateTime,   nullable=True)
+    pending_email            = db.Column(db.String(128), nullable=True)
+    pending_email_token      = db.Column(db.String(8),   nullable=True)
+    pending_email_expires_at = db.Column(db.DateTime,    nullable=True)
 
     # ── Profile ──────────────────────────────────────────────
     bio             = db.Column(db.String(500), nullable=True)

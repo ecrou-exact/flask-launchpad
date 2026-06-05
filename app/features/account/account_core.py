@@ -149,7 +149,51 @@ def delete_expired_user_core(user_id: int) -> bool:
 
 # ── Edit ──────────────────────────────────────────────────────────────────────
 
+def confirm_email_change_core(user_id: int) -> tuple:
+    try:
+        user = User.query.get(user_id)
+        if not user or not user.pending_email:
+            return None, "No pending email change"
+        user.email                   = user.pending_email
+        user.pending_email           = None
+        user.pending_email_token     = None
+        user.pending_email_expires_at = None
+        db.session.commit()
+        return user, "Email updated"
+    except Exception:
+        db.session.rollback()
+        return None, "Error updating email"
+
+
+def cancel_email_change_core(user_id: int) -> None:
+    try:
+        user = User.query.get(user_id)
+        if user:
+            user.pending_email           = None
+            user.pending_email_token     = None
+            user.pending_email_expires_at = None
+            db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+
+def resend_email_change_core(user_id: int) -> tuple:
+    from datetime import datetime, timedelta
+    try:
+        user = User.query.get(user_id)
+        if not user or not user.pending_email:
+            return None, "No pending email change"
+        user.pending_email_token      = _generate_verification_code()
+        user.pending_email_expires_at = datetime.utcnow() + timedelta(minutes=30)
+        db.session.commit()
+        return user, "New code generated"
+    except Exception:
+        db.session.rollback()
+        return None, "Error generating code"
+
+
 def edit_user_core(form_dict, user_id) -> tuple:
+    from ...core.db_class.site_config import get_site_bool
     try:
         user = get_user(user_id)
         if not user:
@@ -157,7 +201,19 @@ def edit_user_core(form_dict, user_id) -> tuple:
 
         user.first_name = form_dict.get('first_name', user.first_name)
         user.last_name  = form_dict.get('last_name',  user.last_name)
-        user.email      = form_dict.get('email',      user.email)
+
+        # Email — verify if changed and verification is enabled
+        new_email         = form_dict.get('email', user.email)
+        email_change_pending = False
+        if new_email and new_email != user.email:
+            if get_site_bool('email_verification_enabled', False):
+                from datetime import datetime as _dt, timedelta
+                user.pending_email           = new_email
+                user.pending_email_token     = _generate_verification_code()
+                user.pending_email_expires_at = _dt.utcnow() + timedelta(minutes=30)
+                email_change_pending = True
+            else:
+                user.email = new_email
 
         if form_dict.get('password'):
             user.password = form_dict['password']
@@ -184,7 +240,7 @@ def edit_user_core(form_dict, user_id) -> tuple:
         user.social_linkedin= _safe_url(form_dict.get('social_linkedin'))
 
         db.session.commit()
-        return user, "Profile updated"
+        return user, "email_change_pending" if email_change_pending else "Profile updated"
     except Exception:
         db.session.rollback()
         return None, "Error updating profile"
