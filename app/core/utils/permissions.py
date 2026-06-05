@@ -68,6 +68,20 @@ PERMISSIONS: dict[str, dict] = {
         'icon':        'fa-trash',
     },
 
+    # ── Jobs ─────────────────────────────────────────────────────────────────
+    'jobs.view': {
+        'label':       'View jobs',
+        'description': 'View background jobs (own jobs only).',
+        'group':       'Jobs',
+        'icon':        'fa-gears',
+    },
+    'jobs.manage': {
+        'label':       'Manage jobs',
+        'description': 'View all jobs, cancel, pause, resume, retry, and delete.',
+        'group':       'Jobs',
+        'icon':        'fa-sliders',
+    },
+
     # ── Comments ─────────────────────────────────────────────────────────────
     'comments.view': {
         'label':       'View comments',

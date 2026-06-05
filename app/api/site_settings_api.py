@@ -9,6 +9,8 @@ from ..features.site_settings.site_settings_core import (
     get_smtp_config,
     save_smtp_config_core,
     regenerate_session_key_core,
+    list_submodules,
+    validate_new_submodule,
 )
 
 site_settings_ns = Namespace('site-settings', description='Server & environment configuration')
@@ -178,3 +180,134 @@ class PackageInstall(Resource):
                 meta={'name': name},
             )
         return {'message': output, 'ok': ok}, 200 if ok else 400
+
+
+# ── Submodules ─────────────────────────────────────────────────────────────────
+
+@site_settings_ns.route('/submodules')
+class SubmoduleList(Resource):
+    method_decorators = [api_require_permission('admin_only')]
+
+    def get(self):
+        """List all git submodules with their current status."""
+        return {'submodules': list_submodules()}, 200
+
+    def post(self):
+        """
+        Add a new git submodule via a background job.
+
+        Body:
+        - url    (str, required): Git clone URL (https:// or git@)
+        - path   (str, required): Local relative path (e.g. "modules/my-lib")
+        - branch (str, optional): Branch to track
+        """
+        data   = request.get_json(silent=True) or {}
+        url    = data.get('url',    '').strip()
+        path   = data.get('path',   '').strip()
+        branch = data.get('branch', '').strip()
+
+        ok, msg = validate_new_submodule(url, path, branch)
+        if not ok:
+            return {'message': msg}, 400
+
+        from ..core.utils.job_runner import enqueue_job
+        uid = current_user.id if current_user.is_authenticated else None
+        job = enqueue_job(
+            'site_settings.submodule_add',
+            title=f"Add submodule: {path}",
+            meta={'url': url, 'path': path, 'branch': branch},
+            user_id=uid,
+        )
+        log_action(
+            f"Submodule add queued: {path} ({url})",
+            "create",
+            category=api_category('admin'),
+            level="info",
+            object_type="submodule",
+            is_public=False,
+            meta={'url': url, 'path': path, 'branch': branch, 'job_id': job.id},
+        )
+        return {'message': 'Submodule add job queued', 'job': job.to_json()}, 202
+
+
+@site_settings_ns.route('/submodules/update')
+class SubmoduleUpdate(Resource):
+    method_decorators = [api_require_permission('admin_only')]
+
+    def post(self):
+        """
+        Update one or all submodules via a background job.
+
+        Body:
+        - path (str, optional): Submodule path to update. Omit or null for all.
+        """
+        data = request.get_json(silent=True) or {}
+        path = (data.get('path') or '').strip() or None
+
+        from ..core.utils.job_runner import enqueue_job
+        uid   = current_user.id if current_user.is_authenticated else None
+        title = f"Update submodule: {path}" if path else "Update all submodules"
+        job   = enqueue_job(
+            'site_settings.submodule_update',
+            title=title,
+            meta={'path': path},
+            user_id=uid,
+        )
+        log_action(
+            f"Submodule update queued: {path or 'all'}",
+            "edit",
+            category=api_category('admin'),
+            level="info",
+            object_type="submodule",
+            is_public=False,
+            meta={'path': path, 'job_id': job.id},
+        )
+        return {'message': title + ' — job queued', 'job': job.to_json()}, 202
+
+
+@site_settings_ns.route('/submodules/remove')
+class SubmoduleRemove(Resource):
+    method_decorators = [api_require_permission('admin_only')]
+
+    def post(self):
+        """
+        Remove a git submodule via a background job.
+
+        Body:
+        - path (str, required): Submodule relative path (e.g. "modules/my-lib")
+        - name (str, optional): Submodule name (defaults to basename of path)
+        """
+        data = request.get_json(silent=True) or {}
+        path = (data.get('path') or '').strip()
+        if not path:
+            return {'message': 'Submodule path is required'}, 400
+
+        from ..features.site_settings.site_settings_core import _validate_submodule_path
+        if not _validate_submodule_path(path):
+            return {'message': 'Invalid submodule path'}, 400
+
+        # Confirm submodule actually exists before queuing
+        existing = list_submodules()
+        match = next((s for s in existing if s['path'] == path), None)
+        if not match:
+            return {'message': f"No submodule found at '{path}'"}, 404
+
+        name = match.get('name') or path.split('/')[-1]
+        from ..core.utils.job_runner import enqueue_job
+        uid = current_user.id if current_user.is_authenticated else None
+        job = enqueue_job(
+            'site_settings.submodule_remove',
+            title=f"Remove submodule: {name}",
+            meta={'path': path, 'name': name},
+            user_id=uid,
+        )
+        log_action(
+            f"Submodule remove queued: {path}",
+            "delete",
+            category=api_category('admin'),
+            level="warning",
+            object_type="submodule",
+            is_public=False,
+            meta={'path': path, 'name': name, 'job_id': job.id},
+        )
+        return {'message': f"Remove '{name}' — job queued", 'job': job.to_json()}, 202

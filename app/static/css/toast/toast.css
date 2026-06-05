@@ -147,6 +147,15 @@
     word-break: break-word;
 }
 
+.app-toast-link {
+    display: inline-block;
+    margin-top: .25rem;
+    font-size: .78rem;
+    font-weight: 600;
+    color: var(--brand);
+    text-decoration: none;
+}
+
 
 /*---CLOSE_BTN---*/
 

@@ -373,6 +373,165 @@
                     </div>
                 </div>
 
+                {# ── Git Submodules ── #}
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="ss-card-header mb-3">
+                                <div class="ss-card-icon ss-card-icon--info">
+                                    <i class="fas fa-code-branch"></i>
+                                </div>
+                                <div>
+                                    <h6 class="ss-card-title">Git Submodules</h6>
+                                    <p class="ss-card-sub">View and update submodules, or add a new one from GitHub.</p>
+                                </div>
+                                <div class="ms-auto d-flex gap-2 align-items-center flex-wrap">
+                                    <button class="btn btn-sm btn-outline-secondary"
+                                            :disabled="sub_loading"
+                                            @click="loadSubmodules">
+                                        <i class="fas fa-arrows-rotate me-1"></i>Refresh
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-primary"
+                                            :disabled="sub_updating_all"
+                                            @click="updateAllSubmodules"
+                                            v-if="submodules.length > 0">
+                                        <i class="fas fa-cloud-arrow-down me-1"></i>
+                                        <span v-if="sub_updating_all">Queuing…</span>
+                                        <span v-else>Update all</span>
+                                    </button>
+                                    <button class="btn btn-sm btn-success" @click="openAddModal">
+                                        <i class="fas fa-plus me-1"></i>Add submodule
+                                    </button>
+                                </div>
+                            </div>
+
+                            {# ── Table ── #}
+                            <div v-if="sub_loading" class="text-center py-4">
+                                <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+                            </div>
+
+                            <div v-else-if="submodules.length === 0" class="ss-sub-empty">
+                                <i class="fas fa-code-branch"></i>
+                                <p>No submodules found in this repository.</p>
+                            </div>
+
+                            <div v-else style="overflow-x:auto;">
+                                <table class="table table-sm table-hover mb-0" style="font-size:.82rem;">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Path</th>
+                                            <th>URL</th>
+                                            <th>Branch</th>
+                                            <th>Commit</th>
+                                            <th>Status</th>
+                                            <th style="width:160px;">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="sub in submodules" :key="sub.path">
+                                            <td style="font-weight:500; color:var(--text-main);">[[ sub.name ]]</td>
+                                            <td><code style="font-size:.75rem;">[[ sub.path ]]</code></td>
+                                            <td>
+                                                <a :href="sub.url" target="_blank" rel="noopener noreferrer"
+                                                   class="ss-sub-url" :title="sub.url">
+                                                    [[ sub.url.replace('https://github.com/', '').replace('.git', '') || sub.url ]]
+                                                </a>
+                                            </td>
+                                            <td><span v-if="sub.branch" class="ss-sub-branch">[[ sub.branch ]]</span><span v-else class="text-muted">—</span></td>
+                                            <td><code v-if="sub.commit" style="font-size:.72rem;">[[ sub.commit ]]</code><span v-else class="text-muted">—</span></td>
+                                            <td>
+                                                <span class="ss-sub-badge" :class="'ss-sub-badge--' + sub.status">
+                                                    <i :class="subStatusIcon(sub.status)"></i>
+                                                    [[ sub.status ]]
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div class="d-flex gap-1">
+                                                    <button class="btn btn-outline-secondary btn-sm"
+                                                            style="font-size:.7rem; padding:.15rem .5rem;"
+                                                            :disabled="sub_updating_path === sub.path || sub_removing_path === sub.path"
+                                                            @click="updateSubmodule(sub)">
+                                                        <i v-if="sub_updating_path === sub.path" class="fas fa-spinner fa-spin me-1"></i>
+                                                        <i v-else class="fas fa-cloud-arrow-down me-1"></i>
+                                                        Update
+                                                    </button>
+                                                    <button class="btn btn-outline-danger btn-sm"
+                                                            style="font-size:.7rem; padding:.15rem .5rem;"
+                                                            :disabled="sub_updating_path === sub.path || sub_removing_path === sub.path"
+                                                            @click="removeSubmodule(sub)">
+                                                        <i v-if="sub_removing_path === sub.path" class="fas fa-spinner fa-spin"></i>
+                                                        <i v-else class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {# ── Add submodule modal ── #}
+                            <div v-if="show_add_modal" class="ss-modal-backdrop" @click.self="closeAddModal">
+                                <div class="ss-modal">
+                                    <div class="ss-modal-header">
+                                        <h6 class="mb-0"><i class="fas fa-plus me-2"></i>Add Git Submodule</h6>
+                                        <button class="btn-close btn-close-sm" @click="closeAddModal"></button>
+                                    </div>
+                                    <div class="ss-modal-body">
+                                        <div class="mb-3">
+                                            <label class="ss-label">Git URL <span class="text-danger">*</span></label>
+                                            <input v-model="add_url" type="text"
+                                                   class="form-control form-control-sm"
+                                                   :class="add_url_err ? 'is-invalid' : ''"
+                                                   placeholder="https://github.com/owner/repo.git"
+                                                   @input="onAddUrlInput">
+                                            <div v-if="add_url_err" class="invalid-feedback">[[ add_url_err ]]</div>
+                                            <div class="form-text">Supports https:// and git@ URLs.</div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="ss-label">Local path <span class="text-danger">*</span></label>
+                                            <div class="input-group input-group-sm" :class="add_path_err ? 'is-invalid' : ''">
+                                                <span class="input-group-text" style="font-family:var(--font-mono);font-size:.78rem;color:var(--text-muted);">modules/</span>
+                                                <input v-model="add_path" type="text"
+                                                       class="form-control form-control-sm"
+                                                       :class="add_path_err ? 'is-invalid' : ''"
+                                                       placeholder="my-library"
+                                                       @input="onAddPathInput">
+                                            </div>
+                                            <div v-if="add_path_err" class="invalid-feedback d-block">[[ add_path_err ]]</div>
+                                            <div class="form-text">Name of the folder inside <code>modules/</code>.</div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="ss-label">Branch <span class="text-muted">(optional)</span></label>
+                                            <input v-model="add_branch" type="text"
+                                                   class="form-control form-control-sm"
+                                                   placeholder="main">
+                                            <div class="form-text">Leave blank to use the remote's default branch.</div>
+                                        </div>
+                                        <div class="alert alert-info p-2 mb-0" style="font-size:.8rem;">
+                                            <i class="fas fa-circle-info me-1"></i>
+                                            Adding a submodule will clone the repository and commit <code>.gitmodules</code> changes.
+                                            The operation runs as a background job — you can track its progress in the Jobs panel.
+                                        </div>
+                                    </div>
+                                    <div class="ss-modal-footer">
+                                        <button class="btn btn-secondary btn-sm" @click="closeAddModal">Cancel</button>
+                                        <button class="btn btn-primary btn-sm"
+                                                :disabled="sub_adding || !add_url.trim() || !add_path.trim()"
+                                                @click="submitAddSubmodule">
+                                            <i class="fas fa-spinner fa-spin me-1" v-if="sub_adding"></i>
+                                            <i class="fas fa-plus me-1" v-else></i>
+                                            <span v-if="sub_adding">Queuing…</span>
+                                            <span v-else>Add submodule</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -381,7 +540,7 @@
 
 {% block script %}
 <script type="module">
-    const { createApp, ref, reactive, computed, onMounted } = Vue
+    const { createApp, ref, reactive, computed, onMounted, nextTick } = Vue
     import { TOAST, apiFetch } from '/static/js/constants.js'
     import { create_message, message_list } from '/static/js/toaster.js'
     import LoadingBar from '/static/js/components/loading-bar.js'
@@ -429,8 +588,23 @@
                 return pkg_all.value.filter(p => p.name.toLowerCase().includes(q))
             })
 
+            // ── Submodules ────────────────────────────────────────────────────
+            const submodules        = ref([])
+            const sub_loading       = ref(false)
+            const sub_updating_all  = ref(false)
+            const sub_updating_path = ref(null)
+            const sub_removing_path = ref(null)
+            const sub_adding        = ref(false)
+            const show_add_modal    = ref(false)
+            const add_url           = ref('')
+            const add_path          = ref('')
+            const add_branch        = ref('')
+            const add_url_err       = ref('')
+            const add_path_err      = ref('')
+            const add_path_auto     = ref(true)  // true = path is still auto-derived from URL
+
             onMounted(async () => {
-                await Promise.all([loadSystemInfo(), loadSmtp(), loadPackages()])
+                await Promise.all([loadSystemInfo(), loadSmtp(), loadPackages(), loadSubmodules()])
                 page_is_loading.value = true
             })
 
@@ -568,6 +742,132 @@
                 pkg_install_loading.value = false
             }
 
+            // ── Submodule functions ───────────────────────────────────────────
+
+            async function loadSubmodules() {
+                sub_loading.value = true
+                const res = await apiFetch('/api/site-settings/submodules')
+                if (res.ok) {
+                    const d = await res.json()
+                    submodules.value = d.submodules || []
+                }
+                sub_loading.value = false
+            }
+
+            function subStatusIcon(status) {
+                return {
+                    'up-to-date':    'fas fa-circle-check',
+                    'out-of-date':   'fas fa-circle-arrow-up',
+                    'uninitialized': 'fas fa-circle-minus',
+                    'conflict':      'fas fa-circle-exclamation',
+                    'unknown':       'fas fa-circle-question',
+                }[status] || 'fas fa-circle-question'
+            }
+
+            function _jobLink(job) {
+                return { href: '/jobs/' + job.uuid, label: 'View job →', target: '_blank' }
+            }
+
+            async function updateSubmodule(sub) {
+                sub_updating_path.value = sub.path
+                const res = await apiFetch('/api/site-settings/submodules/update', 'POST', { path: sub.path })
+                const d   = await res.json()
+                if (res.ok) {
+                    create_message(d.message, TOAST.SUCCESS, false, _jobLink(d.job))
+                } else {
+                    create_message(d.message || 'Failed to queue update', TOAST.ERROR, true)
+                }
+                sub_updating_path.value = null
+            }
+
+            async function updateAllSubmodules() {
+                if (!confirm('Update all submodules? This will pull the latest commits from each remote.')) return
+                sub_updating_all.value = true
+                const res = await apiFetch('/api/site-settings/submodules/update', 'POST', {})
+                const d   = await res.json()
+                if (res.ok) {
+                    create_message(d.message, TOAST.SUCCESS, false, _jobLink(d.job))
+                } else {
+                    create_message(d.message || 'Failed to queue update', TOAST.ERROR, true)
+                }
+                sub_updating_all.value = false
+            }
+
+            async function removeSubmodule(sub) {
+                if (!confirm(`Remove submodule "${sub.name}" at "${sub.path}"?\n\nThis will deinit and unregister it from .gitmodules. The operation cannot be undone without re-adding it.`)) return
+                sub_removing_path.value = sub.path
+                const res = await apiFetch('/api/site-settings/submodules/remove', 'POST', { path: sub.path })
+                const d   = await res.json()
+                if (res.ok) {
+                    create_message(d.message, TOAST.SUCCESS, false, _jobLink(d.job))
+                    await loadSubmodules()
+                } else {
+                    create_message(d.message || 'Failed to queue remove', TOAST.ERROR, true)
+                }
+                sub_removing_path.value = null
+            }
+
+            function _repoNameFromUrl(url) {
+                try {
+                    const clean = url.trim().replace(/\.git$/, '')
+                    const parts = clean.replace(':', '/').split('/')
+                    return parts[parts.length - 1] || ''
+                } catch { return '' }
+            }
+
+            function onAddUrlInput() {
+                add_url_err.value = ''
+                if (add_path_auto.value) {
+                    add_path.value = _repoNameFromUrl(add_url.value)
+                }
+            }
+
+            function onAddPathInput() {
+                add_path_err.value = ''
+                add_path_auto.value = add_path.value === '' || add_path.value === _repoNameFromUrl(add_url.value)
+            }
+
+            function openAddModal() {
+                add_url.value      = ''
+                add_path.value     = ''
+                add_branch.value   = ''
+                add_url_err.value  = ''
+                add_path_err.value = ''
+                add_path_auto.value = true
+                show_add_modal.value = true
+            }
+
+            function closeAddModal() {
+                show_add_modal.value = false
+            }
+
+            async function submitAddSubmodule() {
+                add_url_err.value  = ''
+                add_path_err.value = ''
+                const url    = add_url.value.trim()
+                const name   = add_path.value.trim()
+                const branch = add_branch.value.trim()
+                const path   = name ? 'modules/' + name : ''
+
+                if (!url)  { add_url_err.value  = 'URL is required'; return }
+                if (!name) { add_path_err.value = 'Folder name is required'; return }
+
+                sub_adding.value = true
+                const res = await apiFetch('/api/site-settings/submodules', 'POST', { url, path, branch })
+                const d   = await res.json()
+
+                if (res.ok) {
+                    closeAddModal()
+                    create_message(d.message, TOAST.SUCCESS, false, _jobLink(d.job))
+                } else {
+                    const msg = d.message || 'Failed to add submodule'
+                    if (msg.toLowerCase().includes('url'))  add_url_err.value  = msg
+                    else if (msg.toLowerCase().includes('path')) add_path_err.value = msg
+                    else create_message(msg, TOAST.ERROR, true)
+                }
+                sub_adding.value = false
+            }
+
             async function updatePackage(name) {
                 pkg_update_log.value = []
                 pkg_updating.value   = name
@@ -601,6 +901,13 @@
                 pkg_install_name, pkg_install_loading, pkg_install_log,
                 pkg_update_log, pkg_updating,
                 installPackage, updatePackage,
+                // submodules
+                submodules, sub_loading, sub_updating_all, sub_updating_path, sub_removing_path, sub_adding,
+                show_add_modal, add_url, add_path, add_branch, add_url_err, add_path_err,
+                loadSubmodules, subStatusIcon,
+                updateSubmodule, updateAllSubmodules, removeSubmodule,
+                openAddModal, closeAddModal, submitAddSubmodule,
+                onAddUrlInput, onAddPathInput,
             }
         },
     }).mount('#main-container')

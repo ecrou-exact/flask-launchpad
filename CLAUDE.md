@@ -80,29 +80,50 @@ app/
     site_settings/           # server settings admin page (/admin/settings)
       site_settings.py       # route — admin_only
       site_settings_core.py  # .env read/write, system info, SMTP config, session key regen, packages
-    config/                  # user preferences
+                             # git submodule management: list, validate, add/update/remove (all via background jobs)
+    config/                  # user preferences + Theme Studio (/settings)
     home/
+    jobs/                    # background jobs (/jobs/, /jobs/<uuid>)
+      jobs.py                # route — jobs.view / jobs.manage
+      jobs_core.py           # CRUD, cancel, pause, resume, retry, bulk operations
   core/
     db_class/
       comment.py             # Comment (threading: parent_id/depth/root_id, soft-delete) + CommentReaction
+      custom_theme.py        # CustomTheme — custom + built-in overrides, is_public visibility
+      job.py                 # Job — status, progress, logs, result, duration
+    utils/
+      job_runner.py          # ThreadPoolExecutor daemon, JobContext, register_handler(), enqueue_job()
   api/
     api.py                   # namespace registry
     comment_api.py           # GET/POST /comments, PUT/DELETE /comments/<uuid>, /react, /restore, /stats/user/<id>
     site_settings_api.py     # GET /system, GET/POST /smtp, POST /smtp/test, POST /session-key
                              # GET /packages, POST /packages/update, POST /packages/install
+                             # GET/POST /submodules, POST /submodules/update, POST /submodules/remove
+    config_api.py            # GET/PATCH /config, GET/POST /config/themes, /themes/vars, /themes/builtin/<key>
+                             # PUT/DELETE /themes/<uuid>, PATCH /themes/<uuid>/visibility
+    jobs_api.py              # GET/POST /jobs, GET /jobs/types, GET/DELETE /jobs/<uuid>
+                             # POST /jobs/<uuid>/cancel|pause|resume|retry, POST /jobs/bulk
   templates/
     comments/forum.html      # Community Forum page using <comment-thread> Vue component
-    site_settings/index.html # includes Python Packages section with searchable table + pip log panel
+    site_settings/index.html # includes Python Packages + Git Submodules (add/update/remove via jobs)
     account/verify.html      # email verification code entry page
     account/verify_email_change.html  # email change confirmation page
+    jobs/index.html          # Job list with data-table, status filter chips, inline actions
+    jobs/detail.html         # Job detail: progress bar, live log panel (2s polling), action buttons
   static/
     css/comments/comments.css
     css/site_settings/site_settings.css
+    css/jobs/jobs.css        # status badges, progress bars, log panel, detail grid
+    css/themes/theme.css     # built-in theme overrides (static)
+    css/themes/custom-themes.css  # auto-generated from DB (regenerated on every theme change)
     js/
       constants.js           # TOAST, CSRF_TOKEN, apiFetch()
-      toaster.js             # create_message()
+      toaster.js             # create_message(text, type, not_hide, link) — link={href,label,target}
+      job-monitor.js         # global floating job widget (separate Vue app on #job-monitor-widget)
       components/            # loading-bar.js, pagination.js, data-table.js
                              # comment-thread.js — recursive Vue component (infinite scroll, reactions, collapse)
+    css/components/
+      job-monitor.css        # floating widget: .jm-panel, .jm-header, .jm-body, .jm-logs
 
 tests/<feature>/test_<feature>.py
 ```
@@ -185,6 +206,36 @@ Every page and feature must define clearly whether the user is read-only or can 
 const can_edit   = hasPerm('items.edit')
 const can_delete = hasPerm('items.delete')
 ```
+
+---
+
+## Background Jobs
+
+Register a new job type from any `*_core.py` file:
+
+```python
+from ...core.utils.job_runner import register_handler, enqueue_job
+
+@register_handler('myfeature.my_task')
+def my_task(ctx, meta):
+    total = meta.get('total', 100)
+    for i in range(total):
+        ctx.checkpoint()                    # pause/cancel point — call frequently
+        ctx.update_progress(int(i / total * 100))
+        ctx.log(f"Processing item {i}")
+    return {'processed': total}             # stored in job.result
+```
+
+Enqueue from a core function:
+
+```python
+job = enqueue_job('myfeature.my_task', title='My Task', meta={'total': 500}, user_id=uid)
+```
+
+`JobContext` methods: `ctx.checkpoint()`, `ctx.update_progress(0-100)`, `ctx.log(msg, level)`,
+`ctx.is_cancelled()`, `ctx.is_paused()`. Raise `JobCancelled` on cancel, pause via DB flag.
+
+Permissions: `jobs.view` (own jobs list), `jobs.manage` (all jobs + actions, admin nav).
 
 ---
 

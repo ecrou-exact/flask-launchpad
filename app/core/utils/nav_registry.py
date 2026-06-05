@@ -74,6 +74,14 @@ NAV: list[dict] = [
         'external':   True,
     },
 
+    {
+        'group':      'Admin',
+        'label':      'Jobs',
+        'icon':       'fa-gears',
+        'href':       '/jobs/',
+        'permission': 'jobs.manage',
+    },
+
     # ── Community ─────────────────────────────────────────────────────────────
     {
         'group':      'Community',

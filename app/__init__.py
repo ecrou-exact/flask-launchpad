@@ -38,12 +38,14 @@ def create_app():
     from .features.admin.admin import admin_blueprint
     from .features.site_settings.site_settings import site_settings_blueprint
     from .features.comments.comment import comment_blueprint
+    from .features.jobs.jobs import jobs_blueprint
     app.register_blueprint(home_blueprint, url_prefix="/")
     app.register_blueprint(account_blueprint, url_prefix="/account")
     app.register_blueprint(config_blueprint, url_prefix="/")
     app.register_blueprint(admin_blueprint, url_prefix="/admin")
     app.register_blueprint(site_settings_blueprint, url_prefix="/admin/settings")
     app.register_blueprint(comment_blueprint, url_prefix="/comments")
+    app.register_blueprint(jobs_blueprint, url_prefix="/jobs")
 
     from .api.api import api_blueprint
     csrf.exempt(api_blueprint)
@@ -56,6 +58,7 @@ def create_app():
     from .core.db_class.user import RolePermission         # noqa: F401
     from .core.db_class.comment import Comment, CommentReaction        # noqa: F401
     from .core.db_class.custom_theme import CustomTheme               # noqa: F401
+    from .core.db_class.job import Job                                 # noqa: F401
 
     @app.context_processor
     def inject_site_config():
@@ -120,6 +123,9 @@ def create_app():
             seed_site_config()
         except Exception:
             pass  # DB not yet created (first migration)
+
+    from .core.utils.job_runner import init_runner
+    init_runner(app)
 
     @app.before_request
     def update_last_seen():

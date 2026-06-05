@@ -30,12 +30,12 @@ export function dismiss_message(msg) {
     if (idx > -1) message_list.value.splice(idx, 1)
 }
 
-export async function create_message(message, type, not_hide = false) {
+export async function create_message(message, type, not_hide = false, link = null) {
     const resolved_type = TYPE_MAP[type] || 'info'
     const duration      = getDuration()
     const id            = Math.random()
     const icon          = ICONS[resolved_type] || 'fa-bell'
-    const msg           = { message, type: resolved_type, id, icon, duration, not_hide }
+    const msg           = { message, type: resolved_type, id, icon, duration, not_hide, link }
 
     message_list.value.push(msg)
 

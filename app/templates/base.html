@@ -28,6 +28,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/themes/custom-themes.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/modal.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/role-badge.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/job-monitor.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/toast/toast.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/nav/nav.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/footer/footer.css') }}">
@@ -123,6 +124,8 @@
                         <div class="app-toast-icon-wrap"><i :class="'fas ' + msg.icon"></i></div>
                         <div class="app-toast-body">
                             <p class="app-toast-message">[[ msg.message ]]</p>
+                            <a v-if="msg.link" :href="msg.link.href" :target="msg.link.target || '_self'"
+                               class="app-toast-link">[[ msg.link.label ]]</a>
                         </div>
                         <button class="app-toast-close-btn"
                                 :data-dismiss-id="msg.id"
@@ -200,6 +203,12 @@ document.addEventListener('DOMContentLoaded', function () {
     }).mount('#main-container')
 </script>
 {% endblock %}
+
+{# ── Global job monitor widget (authenticated users only) ── #}
+{% if current_user.is_authenticated %}
+<div id="job-monitor-widget"></div>
+<script src="{{ url_for('static', filename='js/job-monitor.js') }}" defer></script>
+{% endif %}
 
 </body>
 </html>
