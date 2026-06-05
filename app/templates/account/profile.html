@@ -76,10 +76,11 @@
                     </div>
 
                     <div class="profile-header-actions">
-                        <span class="account-role-chip {% if user.is_admin() %}admin{% endif %}">
+                        <!-- <span class="account-role-chip {% if user.is_admin() %}admin{% endif %}">
                             <i class="fas fa-shield-halved" style="font-size:.6rem;"></i>
                             {{ user.role.name if user.role else 'User' }}
-                        </span>
+                        </span> -->
+                        {{ role_badge(current_user.role) }}
                     </div>
                 </div>
             </div>
