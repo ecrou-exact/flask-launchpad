@@ -30,10 +30,12 @@ class User(UserMixin, db.Model):
     created_at    = db.Column(db.DateTime, default=datetime.utcnow)
 
     # ── Status ───────────────────────────────────────────────
-    is_verified     = db.Column(db.Boolean, default=True,  nullable=False)
-    force_logout    = db.Column(db.Boolean, default=False, nullable=False)
-    session_version = db.Column(db.Integer, default=0,     nullable=False)
-    last_seen_at    = db.Column(db.DateTime, nullable=True)
+    is_verified              = db.Column(db.Boolean,  default=True,  nullable=False)
+    force_logout             = db.Column(db.Boolean,  default=False, nullable=False)
+    session_version          = db.Column(db.Integer,  default=0,     nullable=False)
+    last_seen_at             = db.Column(db.DateTime, nullable=True)
+    verification_token       = db.Column(db.String(8),  nullable=True)
+    verification_expires_at  = db.Column(db.DateTime,   nullable=True)
 
     # ── Profile ──────────────────────────────────────────────
     bio             = db.Column(db.String(500), nullable=True)

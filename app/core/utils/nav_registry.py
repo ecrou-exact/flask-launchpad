@@ -60,6 +60,13 @@ NAV: list[dict] = [
     },
     {
         'group':      'Admin',
+        'label':      'Server Settings',
+        'icon':       'fa-server',
+        'href':       '/admin/settings',
+        'permission': 'admin_only',
+    },
+    {
+        'group':      'Admin',
         'label':      'API Docs',
         'icon':       'fa-code',
         'href':       '/api/',

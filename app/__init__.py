@@ -36,10 +36,12 @@ def create_app():
     from .features.account.account import account_blueprint
     from .features.config.config import config_blueprint
     from .features.admin.admin import admin_blueprint
+    from .features.site_settings.site_settings import site_settings_blueprint
     app.register_blueprint(home_blueprint, url_prefix="/")
     app.register_blueprint(account_blueprint, url_prefix="/account")
     app.register_blueprint(config_blueprint, url_prefix="/")
     app.register_blueprint(admin_blueprint, url_prefix="/admin")
+    app.register_blueprint(site_settings_blueprint, url_prefix="/admin/settings")
 
     from .api.api import api_blueprint
     csrf.exempt(api_blueprint)

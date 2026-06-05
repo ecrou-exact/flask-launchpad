@@ -19,6 +19,23 @@
 
 ---
 
+## Environment
+
+The app loads `.env` at startup via `python-dotenv`. If `.env` doesn't exist, the app still runs with defaults. Admins can edit SMTP config and regenerate the session key live from `/admin/settings` — SMTP takes effect immediately, SECRET_KEY requires a restart.
+
+```
+.env keys (project root):
+  SECRET_KEY         — Flask session secret (auto-generated on first setup)
+  SMTP_HOST          — SMTP server hostname
+  SMTP_PORT          — SMTP port (default 587)
+  SMTP_USER          — SMTP username / sender address
+  SMTP_PASSWORD      — SMTP password (never committed, managed via admin UI)
+  SMTP_SENDER        — Optional override sender address
+  SMTP_USE_TLS       — 1 = STARTTLS (default), 0 = SSL
+```
+
+---
+
 ## Commands
 
 | Command | What it does |
@@ -51,15 +68,25 @@ app/
       decorators.py          # @login_required, @admin_required, @feature_required
       utils.py               # form_to_dict, get_by_id_or_uuid
       logger.py              # log_action()
+      mailer.py              # send_verification_email(), send_test_email() — reads SMTP from os.environ
       permissions.py         # all permission keys
       nav_registry.py        # nav + search (the only two files to edit for nav)
-  features/<feature>/
-    <feature>.py             # routes only — zero DB
-    <feature>_core.py        # all DB logic, returns (obj, msg)
-    form.py
-  templates/<feature>/
+  features/
+    account/                 # login, register, profile, verify (/account/verify)
+    admin/                   # user list, user detail, roles, logs (/admin/*)
+    site_settings/           # server settings admin page (/admin/settings)
+      site_settings.py       # route — admin_only
+      site_settings_core.py  # .env read/write, system info, SMTP config, session key regen
+    config/                  # user preferences
+    home/
+  api/
+    api.py                   # namespace registry
+    site_settings_api.py     # GET /system, GET/POST /smtp, POST /smtp/test, POST /session-key
+  templates/
+    site_settings/index.html
+    account/verify.html      # email verification code entry page
   static/
-    css/<feature>/<feature>.css
+    css/site_settings/site_settings.css
     js/
       constants.js           # TOAST, CSRF_TOKEN, apiFetch()
       toaster.js             # create_message()
@@ -120,6 +147,9 @@ db.session.delete(item)
 ---
 
 ## Feature flags — enable/disable and access control
+
+SiteConfig keys (DB): `allow_registration`, `allow_login`, `email_verification_enabled`.
+Toggle from `/admin/users` or via `POST /api/admin/site-config`.
 
 Every feature must be activatable/deactivatable via a feature flag seeded in the DB.
 Nav and access are controlled from two files only — never touch `_nav.html` or `_search_sections.html`:

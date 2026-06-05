@@ -35,3 +35,6 @@ Thumbs.db
 *.swo
 
 app/static/uploads/
+
+# Environment — contains secrets, never commit
+.env

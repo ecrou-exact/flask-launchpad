@@ -81,6 +81,27 @@
                         </button>
                     </div>
 
+                    <div class="users-setting-row">
+                        <div class="users-setting-info">
+                            <span class="users-setting-label">
+                                <i class="fas fa-envelope-circle-check me-1" style="font-size:.75rem;color:var(--text-muted);"></i>
+                                Email verification
+                            </span>
+                            <span class="text-muted small d-block" style="padding-left:1.25rem;">
+                                Require new accounts to verify their email before logging in.
+                                Requires SMTP to be configured in
+                                <a href="/admin/settings" style="color:var(--brand);">Server Settings</a>.
+                                Unverified accounts are deleted after 30 minutes.
+                            </span>
+                        </div>
+                        <button class="users-setting-toggle"
+                                :class="{ active: email_verification_enabled }"
+                                @click="toggleSetting('email_verification_enabled')"
+                                :title="email_verification_enabled ? 'Enabled — click to disable' : 'Disabled — click to enable'">
+                            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                        </button>
+                    </div>
+
                 </div>
             </div>
 
@@ -302,9 +323,10 @@
                     : null
             }
 
-            const allow_registration = ref({{ 'true' if allow_registration else 'false' }})
-            const allow_login        = ref({{ 'true' if allow_login else 'false' }})
-            const settings_saved     = ref(false)
+            const allow_registration          = ref({{ 'true' if allow_registration else 'false' }})
+            const allow_login                 = ref({{ 'true' if allow_login else 'false' }})
+            const email_verification_enabled  = ref({{ 'true' if email_verification_enabled else 'false' }})
+            const settings_saved              = ref(false)
             let   saved_timer        = null
 
             // ── Modal state ───────────────────────────────────────────────
@@ -346,7 +368,7 @@
 
             // ── Site settings ─────────────────────────────────────────────
             async function toggleSetting(key) {
-                const ref_map = { allow_registration, allow_login }
+                const ref_map = { allow_registration, allow_login, email_verification_enabled }
                 if (key in ref_map) {
                     ref_map[key].value = !ref_map[key].value
                     const res = await apiFetch('/api/admin/site-config', 'POST', {
@@ -509,7 +531,8 @@
             return {
                 message_list, page_is_loading, table_ref,
                 can_create, can_edit, can_delete, can_site_config, roleHref,
-                allow_registration, allow_login, settings_saved, toggleSetting,
+                allow_registration, allow_login, email_verification_enabled,
+                settings_saved, toggleSetting,
                 columns, bulk_actions,
                 toggleVerified, disconnectUser, handleBulkAction, changeRole,
                 handleCreate, handleEdit, handleView, handleDelete,

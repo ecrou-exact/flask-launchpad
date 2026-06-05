@@ -1,5 +1,5 @@
 from flask import (Blueprint, render_template, redirect, url_for,
-                   request, flash, jsonify)
+                   request, flash, jsonify, session as flask_session)
 from flask_login import current_user, login_user, logout_user
 
 from ...core.db_class.user import User
@@ -109,7 +109,6 @@ def create_user():
         if not current_user.is_authenticated or not current_user.is_admin():
             form_dict['role_id'] = 3   # read-only for self-registration
         user, message = AccountCore.create_user_core(form_dict)
-        flash(message, 'success' if user else 'danger')
         if user:
             log_action(
                 "User registered",
@@ -121,8 +120,122 @@ def create_user():
                 is_public=False,
                 meta={"user_id": user.id},
             )
+            if not user.is_verified:
+                flask_session['pending_verification_user_id'] = user.id
+                from ...core.utils.mailer import send_verification_email
+                ok, mail_msg = send_verification_email(
+                    user.email, user.first_name, user.verification_token
+                )
+                if not ok:
+                    log_action(
+                        f"Verification email failed: {mail_msg}",
+                        "email_error",
+                        category="system",
+                        level="warning",
+                        object_type="user",
+                        object_id=user.id,
+                        is_public=False,
+                    )
+                flash('Account created! Check your email for the verification code.', 'success')
+                return redirect(url_for('account.verify'))
+            flash(message, 'success')
             return redirect(url_for('account.index'))
+        flash(message, 'danger')
     return render_template('account/create.html', form=form)
+
+
+# ── Email verification ────────────────────────────────────────────────────────
+
+@account_blueprint.route('/verify', methods=['GET', 'POST'])
+def verify():
+    from datetime import datetime
+    uid = flask_session.get('pending_verification_user_id')
+    if not uid:
+        flash('No pending verification. Please register first.', 'warning')
+        return redirect(url_for('account.create_user'))
+
+    user = User.query.get(uid)
+    if not user:
+        flask_session.pop('pending_verification_user_id', None)
+        flash('Account not found. Please register again.', 'danger')
+        return redirect(url_for('account.create_user'))
+
+    if user.is_verified:
+        flask_session.pop('pending_verification_user_id', None)
+        return redirect(url_for('account.login'))
+
+    # Lazy cleanup of expired token
+    if user.verification_expires_at and datetime.utcnow() > user.verification_expires_at:
+        AccountCore.delete_expired_user_core(user.id)
+        flask_session.pop('pending_verification_user_id', None)
+        log_action(
+            "Unverified account deleted — code expired",
+            "delete",
+            category="user",
+            level="warning",
+            object_type="user",
+            object_id=uid,
+            is_public=False,
+        )
+        flash('Verification code expired. Please register again.', 'danger')
+        return redirect(url_for('account.create_user'))
+
+    if request.method == 'POST':
+        code = request.form.get('code', '').strip()
+        if code == user.verification_token:
+            _, msg = AccountCore.verify_user_core(user.id)
+            flask_session.pop('pending_verification_user_id', None)
+            log_action(
+                "Account verified via email code",
+                "verify",
+                category="user",
+                level="success",
+                object_type="user",
+                object_id=user.id,
+                actor_id=user.id,
+                is_public=False,
+            )
+            login_user(user)
+            flash('Account verified! Welcome.', 'success')
+            return redirect(url_for('home.home'))
+        flash('Invalid code. Please try again.', 'danger')
+
+    return render_template(
+        'account/verify.html',
+        email=user.email,
+        expires_at=user.verification_expires_at,
+    )
+
+
+@account_blueprint.route('/verify/resend', methods=['POST'])
+def resend_verification():
+    uid = flask_session.get('pending_verification_user_id')
+    if not uid:
+        flash('No pending verification found. Please register first.', 'warning')
+        return redirect(url_for('account.create_user'))
+
+    user, msg = AccountCore.resend_verification_core(uid)
+    if not user:
+        flash(msg, 'danger')
+        return redirect(url_for('account.verify'))
+
+    from ...core.utils.mailer import send_verification_email
+    ok, mail_msg = send_verification_email(user.email, user.first_name, user.verification_token)
+    if ok:
+        log_action(
+            "Verification code resent",
+            "verify_resend",
+            category="user",
+            level="info",
+            object_type="user",
+            object_id=user.id,
+            is_public=False,
+        )
+        flash('A new code has been sent to your email.', 'success')
+    else:
+        flash(f'Could not send email: {mail_msg}', 'danger')
+
+    return redirect(url_for('account.verify'))
 
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
@@ -135,7 +248,24 @@ def login():
         user = User.query.filter_by(email=form.email.data).first()
         if user and user.password_hash and user.verify_password(form.password.data):
             if not user.is_verified:
-                flash('Your account is pending verification. Please wait for admin approval.', 'warning')
+                from datetime import datetime
+                # Lazy cleanup: if token expired, delete the account
+                if (user.verification_token
+                        and user.verification_expires_at
+                        and datetime.utcnow() > user.verification_expires_at):
+                    AccountCore.delete_expired_user_core(user.id)
+                    log_action(
+                        "Unverified account deleted — code expired at login",
+                        "delete",
+                        category="user",
+                        level="warning",
+                        object_type="user",
+                        object_id=user.id,
+                        is_public=False,
+                    )
+                    flash('This account was deleted because the verification code expired. Please register again.', 'danger')
+                    return render_template('account/login.html', form=form)
+                flash('Your account is pending email verification.', 'warning')
                 log_action(
                     "Login blocked — account not verified",
                     "login_blocked",

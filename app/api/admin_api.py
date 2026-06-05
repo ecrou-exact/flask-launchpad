@@ -8,7 +8,7 @@ from flask_login import current_user
 
 admin_ns = Namespace('admin', description='Admin-only site configuration')
 
-_ALLOWED_KEYS = {'allow_registration', 'allow_login'}
+_ALLOWED_KEYS = {'allow_registration', 'allow_login', 'email_verification_enabled'}
 
 
 @admin_ns.route('/site-config')

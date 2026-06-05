@@ -1,0 +1,391 @@
+{% extends 'base.html' %}
+{% block page_title %}Server Settings{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/site_settings/site_settings.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper" v-cloak>
+    <loading-bar :active="!page_is_loading"></loading-bar>
+
+    <div v-if="page_is_loading">
+
+        <div class="page-header">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-1">
+                        <li class="breadcrumb-item"><a href="/">Home</a></li>
+                        <li class="breadcrumb-item">Admin</li>
+                        <li class="breadcrumb-item active">Server Settings</li>
+                    </ol>
+                </nav>
+                <h1 class="page-title">Server Settings</h1>
+            </div>
+        </div>
+
+        <div class="page-body">
+            <div class="row g-3">
+
+                {# ── Left column: SMTP + Session Key ── #}
+                <div class="col-12 col-xl-8">
+
+                    {# ── SMTP ── #}
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="ss-card-header">
+                                <div class="ss-card-icon">
+                                    <i class="fas fa-envelope"></i>
+                                </div>
+                                <div>
+                                    <h6 class="ss-card-title">Email (SMTP)</h6>
+                                    <p class="ss-card-sub">Configuration saved to <code>.env</code> — applies immediately without restart.</p>
+                                </div>
+                                <div class="ms-auto d-flex align-items-center gap-2">
+                                    <span v-if="smtp.configured" class="ss-badge ss-badge--ok">
+                                        <i class="fas fa-circle-check me-1"></i>Configured
+                                    </span>
+                                    <span v-else class="ss-badge ss-badge--warn">
+                                        <i class="fas fa-circle-xmark me-1"></i>Not configured
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mt-1">
+                                <div class="col-12 col-md-8">
+                                    <label class="ss-label">SMTP Host</label>
+                                    <input v-model="smtp.smtp_host" type="text" class="form-control form-control-sm"
+                                           placeholder="smtp.example.com">
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <label class="ss-label">Port</label>
+                                    <input v-model="smtp.smtp_port" type="number" class="form-control form-control-sm"
+                                           placeholder="587">
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label class="ss-label">SMTP Username (email)</label>
+                                    <input v-model="smtp.smtp_user" type="email" class="form-control form-control-sm"
+                                           placeholder="you@example.com">
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label class="ss-label">Password</label>
+                                    <div class="ss-password-wrap">
+                                        <input v-model="smtp.smtp_password"
+                                               :type="show_smtp_pwd ? 'text' : 'password'"
+                                               class="form-control form-control-sm"
+                                               placeholder="Leave blank to keep current">
+                                        <button class="ss-eye-btn" type="button"
+                                                @click="show_smtp_pwd = !show_smtp_pwd"
+                                                :title="show_smtp_pwd ? 'Hide' : 'Show'">
+                                            <i :class="show_smtp_pwd ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-8">
+                                    <label class="ss-label">Sender address (optional)</label>
+                                    <input v-model="smtp.smtp_sender" type="email" class="form-control form-control-sm"
+                                           placeholder="noreply@example.com — defaults to username">
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <label class="ss-label">Encryption</label>
+                                    <select v-model="smtp.smtp_use_tls" class="form-select form-select-sm">
+                                        <option :value="true">STARTTLS (port 587)</option>
+                                        <option :value="false">SSL (port 465)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-2 mt-3 flex-wrap align-items-end">
+                                <button class="btn btn-primary btn-sm"
+                                        :disabled="smtp_saving"
+                                        @click="saveSmtp">
+                                    <i class="fas fa-floppy-disk me-1"></i>
+                                    <span v-if="smtp_saving">Saving…</span>
+                                    <span v-else>Save configuration</span>
+                                </button>
+                                <div class="d-flex gap-2 align-items-center flex-wrap">
+                                    <input v-model="test_email"
+                                           type="email"
+                                           class="form-control form-control-sm"
+                                           style="width:220px;"
+                                           placeholder="recipient@example.com"
+                                           :disabled="smtp_testing">
+                                    <button class="btn btn-outline-secondary btn-sm"
+                                            :disabled="smtp_testing || !test_email"
+                                            @click="testSmtp"
+                                            :title="'Send a test email to the address above'">
+                                        <i class="fas fa-paper-plane me-1"></i>
+                                        <span v-if="smtp_testing">Sending…</span>
+                                        <span v-else>Send test</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {# ── Test log panel ── #}
+                            <div v-if="smtp_log.length > 0" class="ss-log-panel mt-3">
+                                <div class="ss-log-header">
+                                    <span><i class="fas fa-terminal me-1"></i>Test output</span>
+                                    <button class="ss-log-clear" @click="smtp_log = []" title="Clear">
+                                        <i class="fas fa-xmark"></i>
+                                    </button>
+                                </div>
+                                <div class="ss-log-body">
+                                    <div v-for="(entry, i) in smtp_log" :key="i"
+                                         class="ss-log-line"
+                                         :class="{
+                                             'ss-log-line--ok':    entry.type === 'ok',
+                                             'ss-log-line--error': entry.type === 'error',
+                                             'ss-log-line--info':  entry.type === 'info',
+                                         }">
+                                        <span class="ss-log-time">[[ entry.time ]]</span>
+                                        <span class="ss-log-text">[[ entry.text ]]</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {# ── Session Key ── #}
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="ss-card-header mb-2">
+                                <div class="ss-card-icon ss-card-icon--warn">
+                                    <i class="fas fa-key"></i>
+                                </div>
+                                <div>
+                                    <h6 class="ss-card-title">Session Key</h6>
+                                    <p class="ss-card-sub">SECRET_KEY stored in <code>.env</code> — restart required to apply.</p>
+                                </div>
+                            </div>
+
+                            <div class="ss-key-display">
+                                <span class="ss-key-value">[[ sysinfo.secret_key_preview || '••••••••' ]]</span>
+                                <span v-if="sysinfo.secret_key_set" class="ss-badge ss-badge--ok ms-2">
+                                    <i class="fas fa-circle-check me-1"></i>Set
+                                </span>
+                                <span v-else class="ss-badge ss-badge--danger ms-2">
+                                    <i class="fas fa-circle-xmark me-1"></i>Not set
+                                </span>
+                            </div>
+
+                            <p class="text-muted small mt-2 mb-3">
+                                Regenerating the key will invalidate all active sessions and force every user to log in again.
+                            </p>
+
+                            <button class="btn btn-outline-warning btn-sm"
+                                    :disabled="key_regen_loading"
+                                    @click="regenKey">
+                                <i class="fas fa-rotate me-1"></i>
+                                <span v-if="key_regen_loading">Regenerating…</span>
+                                <span v-else>Regenerate session key</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {# ── Right column: System Info ── #}
+                <div class="col-12 col-xl-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="ss-card-header mb-3">
+                                <div class="ss-card-icon ss-card-icon--info">
+                                    <i class="fas fa-server"></i>
+                                </div>
+                                <div>
+                                    <h6 class="ss-card-title">System Information</h6>
+                                </div>
+                            </div>
+
+                            <div v-if="info_loading" class="text-center py-3">
+                                <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+                            </div>
+
+                            <div v-else class="ss-info-grid">
+                                <div class="ss-info-row">
+                                    <span class="ss-info-label">Python</span>
+                                    <span class="ss-info-value">[[ sysinfo.python_version ]]</span>
+                                </div>
+                                <div class="ss-info-row">
+                                    <span class="ss-info-label">Flask</span>
+                                    <span class="ss-info-value">[[ sysinfo.flask_version ]]</span>
+                                </div>
+                                <div class="ss-info-row">
+                                    <span class="ss-info-label">Platform</span>
+                                    <span class="ss-info-value">[[ sysinfo.platform ]]</span>
+                                </div>
+                                <div class="ss-info-row">
+                                    <span class="ss-info-label">Environment</span>
+                                    <span class="ss-info-value">
+                                        <span class="ss-badge" :class="sysinfo.debug_mode ? 'ss-badge--warn' : 'ss-badge--ok'">
+                                            [[ sysinfo.env || '—' ]]
+                                        </span>
+                                    </span>
+                                </div>
+                                <div class="ss-info-row" style="align-items:flex-start;">
+                                    <span class="ss-info-label">Database</span>
+                                    <span class="ss-info-value ss-info-mono" style="word-break:break-all;">
+                                        [[ sysinfo.db_uri || '—' ]]
+                                    </span>
+                                </div>
+                                <div class="ss-info-row">
+                                    <span class="ss-info-label">SMTP</span>
+                                    <span class="ss-info-value">
+                                        <span class="ss-badge" :class="sysinfo.smtp_configured ? 'ss-badge--ok' : 'ss-badge--warn'">
+                                            [[ sysinfo.smtp_configured ? 'Configured' : 'Not configured' ]]
+                                        </span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script type="module">
+    const { createApp, ref, reactive, onMounted } = Vue
+    import { TOAST, apiFetch } from '/static/js/constants.js'
+    import { create_message, message_list } from '/static/js/toaster.js'
+    import LoadingBar from '/static/js/components/loading-bar.js'
+
+    createApp({
+        delimiters: ['[[', ']]'],
+        components: { LoadingBar },
+
+        setup() {
+            const page_is_loading = ref(false)
+            const info_loading    = ref(true)
+
+            const sysinfo = reactive({
+                python_version: '', flask_version: '', platform: '',
+                debug_mode: false, env: '', db_uri: '',
+                secret_key_preview: '', secret_key_set: false, smtp_configured: false,
+            })
+
+            const smtp = reactive({
+                smtp_host: '', smtp_port: '587', smtp_user: '',
+                smtp_password: '', smtp_sender: '', smtp_use_tls: true,
+                configured: false,
+            })
+
+            const show_smtp_pwd     = ref(false)
+            const smtp_saving       = ref(false)
+            const smtp_testing      = ref(false)
+            const key_regen_loading = ref(false)
+            const test_email        = ref('{{ current_user.email }}')
+            const smtp_log          = ref([])
+
+            onMounted(async () => {
+                await Promise.all([loadSystemInfo(), loadSmtp()])
+                page_is_loading.value = true
+            })
+
+            async function loadSystemInfo() {
+                info_loading.value = true
+                const res = await apiFetch('/api/site-settings/system')
+                if (res.ok) {
+                    const d = await res.json()
+                    Object.assign(sysinfo, d)
+                }
+                info_loading.value = false
+            }
+
+            async function loadSmtp() {
+                const res = await apiFetch('/api/site-settings/smtp')
+                if (res.ok) {
+                    const d = await res.json()
+                    smtp.smtp_host    = d.smtp_host    || ''
+                    smtp.smtp_port    = d.smtp_port    || '587'
+                    smtp.smtp_user    = d.smtp_user    || ''
+                    smtp.smtp_sender  = d.smtp_sender  || ''
+                    smtp.smtp_use_tls = d.smtp_use_tls !== false
+                    smtp.configured   = d.smtp_configured || false
+                }
+            }
+
+            async function saveSmtp() {
+                smtp_saving.value = true
+                const payload = {
+                    smtp_host:    smtp.smtp_host,
+                    smtp_port:    smtp.smtp_port,
+                    smtp_user:    smtp.smtp_user,
+                    smtp_sender:  smtp.smtp_sender,
+                    smtp_use_tls: smtp.smtp_use_tls ? '1' : '0',
+                }
+                if (smtp.smtp_password) payload.smtp_password = smtp.smtp_password
+                const res = await apiFetch('/api/site-settings/smtp', 'POST', payload)
+                const d   = await res.json()
+                if (res.ok) {
+                    smtp.smtp_password = ''
+                    await loadSmtp()
+                    await loadSystemInfo()
+                    create_message(d.message, TOAST.SUCCESS)
+                } else {
+                    create_message(d.message || 'Save failed', TOAST.ERROR, true)
+                }
+                smtp_saving.value = false
+            }
+
+            function _now() {
+                return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+            }
+
+            function _log(text, type = 'info') {
+                smtp_log.value.push({ time: _now(), text, type })
+            }
+
+            async function testSmtp() {
+                smtp_log.value = []
+                smtp_testing.value = true
+                _log('Starting SMTP test…', 'info')
+
+                const res = await apiFetch('/api/site-settings/smtp/test', 'POST', { to: test_email.value })
+                const d   = await res.json()
+
+                if (d.steps && Array.isArray(d.steps)) {
+                    for (const step of d.steps) {
+                        const isResult = step.startsWith('Result')
+                        const type = isResult ? (d.ok ? 'ok' : 'error') : 'info'
+                        _log(step, type)
+                    }
+                } else {
+                    _log(d.message || (res.ok ? 'Done' : 'Failed'), res.ok ? 'ok' : 'error')
+                }
+
+                if (res.ok) {
+                    create_message(d.message, TOAST.SUCCESS)
+                } else {
+                    create_message(d.message || 'Test failed', TOAST.ERROR, true)
+                }
+                smtp_testing.value = false
+            }
+
+            async function regenKey() {
+                if (!confirm('This will invalidate all active sessions. Everyone will be logged out. Continue?')) return
+                key_regen_loading.value = true
+                const res = await apiFetch('/api/site-settings/session-key', 'POST', {})
+                const d   = await res.json()
+                if (res.ok) {
+                    await loadSystemInfo()
+                    create_message(d.message, TOAST.WARNING, true)
+                } else {
+                    create_message(d.message || 'Failed', TOAST.ERROR, true)
+                }
+                key_regen_loading.value = false
+            }
+
+            return {
+                message_list, page_is_loading, info_loading,
+                sysinfo, smtp, show_smtp_pwd, test_email, smtp_log,
+                smtp_saving, smtp_testing, key_regen_loading,
+                saveSmtp, testSmtp, regenKey,
+            }
+        },
+    }).mount('#main-container')
+</script>
+{% endblock %}

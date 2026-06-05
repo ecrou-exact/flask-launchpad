@@ -70,8 +70,24 @@ def get_user_by_email(email):
 
 # ── Create ────────────────────────────────────────────────────────────────────
 
+def _generate_verification_code() -> str:
+    import secrets
+    return f"{secrets.randbelow(900000) + 100000}"
+
+
 def create_user_core(form_dict) -> tuple:
+    from datetime import timedelta
+    from ...core.db_class.site_config import get_site_bool
     try:
+        verif_enabled = get_site_bool('email_verification_enabled', False)
+        code          = None
+        expires_at    = None
+
+        if verif_enabled:
+            from datetime import datetime as _dt
+            code       = _generate_verification_code()
+            expires_at = _dt.utcnow() + timedelta(minutes=30)
+
         user = User(
             first_name=form_dict['first_name'],
             last_name=form_dict['last_name'],
@@ -79,16 +95,56 @@ def create_user_core(form_dict) -> tuple:
             password=form_dict['password'],
             role_id=form_dict.get('role_id', 2),
             api_key=generate_api_key(),
+            is_verified=not verif_enabled,
+            verification_token=code,
+            verification_expires_at=expires_at,
         )
         db.session.add(user)
         db.session.commit()
         from ...core.db_class.config import UserConfig
-        db.session.add(UserConfig(user_id=user.id, created_by=user.id))
-        db.session.commit()
+        if not UserConfig.query.filter_by(user_id=user.id).first():
+            db.session.add(UserConfig(user_id=user.id, created_by=user.id))
+            db.session.commit()
         return user, "User created successfully"
     except Exception:
         db.session.rollback()
         return None, "Error creating user"
+
+
+def resend_verification_core(user_id: int) -> tuple:
+    from datetime import datetime, timedelta
+    try:
+        user = User.query.get(user_id)
+        if not user:
+            return None, "User not found"
+        if user.is_verified:
+            return user, "Account already verified"
+        user.verification_token      = _generate_verification_code()
+        user.verification_expires_at = datetime.utcnow() + timedelta(minutes=30)
+        db.session.commit()
+        return user, "New code generated"
+    except Exception:
+        db.session.rollback()
+        return None, "Error generating new code"
+
+
+def verify_user_core(user_id: int) -> tuple:
+    try:
+        user = User.query.get(user_id)
+        if not user:
+            return None, "User not found"
+        user.is_verified             = True
+        user.verification_token      = None
+        user.verification_expires_at = None
+        db.session.commit()
+        return user, "Account verified"
+    except Exception:
+        db.session.rollback()
+        return None, "Error verifying account"
+
+
+def delete_expired_user_core(user_id: int) -> bool:
+    return _hard_delete_user(user_id)
 
 
 # ── Edit ──────────────────────────────────────────────────────────────────────
@@ -214,11 +270,14 @@ def reload_api_key_core(user_id) -> tuple:
 
 # ── Delete ────────────────────────────────────────────────────────────────────
 
-def delete_user_core(user_id) -> bool:
+def _hard_delete_user(user_id) -> bool:
+    """Delete a user and its UserConfig. Used by both delete_user_core and delete_expired_user_core."""
     try:
         user = User.query.get(user_id)
         if not user:
             return False
+        from ...core.db_class.config import UserConfig
+        UserConfig.query.filter_by(user_id=user_id).delete()
         if user.avatar_filename:
             path = os.path.join(_AVATAR_DIR, user.avatar_filename)
             if os.path.exists(path):
@@ -229,3 +288,7 @@ def delete_user_core(user_id) -> bool:
     except Exception:
         db.session.rollback()
         return False
+
+
+def delete_user_core(user_id) -> bool:
+    return _hard_delete_user(user_id)
