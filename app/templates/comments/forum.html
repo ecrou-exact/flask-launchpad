@@ -53,7 +53,7 @@
     import { TOAST, apiFetch } from '/static/js/constants.js'
     import { create_message, message_list } from '/static/js/toaster.js'
     import LoadingBar from '/static/js/components/loading-bar.js'
-    import CommentThread from '/static/js/components/comment-thread.js'
+    import CommentThread from '/static/js/components/comments/comment-thread.js'
 
     const can_create  = {{ 'true' if current_user.has_permission('comments.create') else 'false' }}
     const can_edit    = {{ 'true' if current_user.has_permission('comments.edit_own') else 'false' }}

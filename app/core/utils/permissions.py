@@ -77,23 +77,23 @@ PERMISSIONS: dict[str, dict] = {
     'comments.create': {
         'label':       'Post comments',
         'group':       'Comments',
-        'icon':        'fa-comment-plus',
+        'icon':        'fa-comment-medical',
     },
     'comments.edit_own': {
         'label':       'Edit own comments',
         'group':       'Comments',
-        'icon':        'fa-comment-pen',
+        'icon':        'fa-pen-to-square',
     },
     'comments.delete_own': {
         'label':       'Delete own comments',
         'group':       'Comments',
-        'icon':        'fa-comment-minus',
+        'icon':        'fa-trash',
     },
     'comments.moderate': {
         'label':       'Moderate comments',
         'description': 'Delete/restore any comment, see private comments',
         'group':       'Comments',
-        'icon':        'fa-shield-check',
+        'icon':        'fa-shield-halved',
     },
 
 }
