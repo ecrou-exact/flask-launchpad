@@ -37,6 +37,7 @@ from .admin_api import admin_ns
 from .log_api import log_ns
 from .role_api import role_ns
 from .site_settings_api import site_settings_ns
+from .comment_api import comment_ns
 
 api.add_namespace(account_ns, path="/account")
 api.add_namespace(config_ns, path="/config")
@@ -44,6 +45,7 @@ api.add_namespace(admin_ns, path="/admin")
 api.add_namespace(log_ns, path="/log")
 api.add_namespace(role_ns, path="/roles")
 api.add_namespace(site_settings_ns, path="/site-settings")
+api.add_namespace(comment_ns, path="/comments")
 
 
 # ── Automatic API call logging ────────────────────────────────────────────────

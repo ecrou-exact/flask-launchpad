@@ -3,6 +3,7 @@
 
 {% block head_extra %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/user_detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/comments/comments.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -141,7 +142,7 @@
                 <div class="col-12 col-lg-4">
 
                     {# Info card #}
-                    <div class="card">
+                    <div class="card mb-3">
                         <div class="card-body">
                             <p class="ud-section-title">Info</p>
 
@@ -186,6 +187,37 @@
                         </div>
                     </div>
 
+                    {# Comment Activity card #}
+                    <div class="card">
+                        <div class="card-body">
+                            <p class="ud-section-title"><i class="fas fa-comments me-1"></i>Comment Activity</p>
+
+                            <div v-if="stats_loading" class="text-center py-2">
+                                <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+                            </div>
+
+                            <div v-else-if="comment_stats_all_zero" class="cm-stats-empty" style="height:80px;">
+                                No comments yet
+                            </div>
+
+                            <div v-else class="cm-stats-chart">
+                                <div
+                                    v-for="s in comment_stats"
+                                    :key="s.month"
+                                    class="cm-stats-bar"
+                                    :class="{ 'cm-stats-bar-zero': s.count === 0 }"
+                                    :style="{ height: stats_bar_height(s.count) }"
+                                    :title="s.month + ': ' + s.count + ' comment' + (s.count === 1 ? '' : 's')">
+                                    <span class="cm-stats-tooltip">[[ s.month ]]: [[ s.count ]]</span>
+                                </div>
+                            </div>
+
+                            <p v-if="!stats_loading" style="font-size:.72rem; color:var(--text-muted); margin-top:.4rem; margin-bottom:0;">
+                                Last 12 months
+                            </p>
+                        </div>
+                    </div>
+
                 </div>
 
             </div>
@@ -197,17 +229,56 @@
 
 {% block script %}
 <script type="module">
-    const { createApp, ref, onMounted } = Vue
+    const { createApp, ref, computed, onMounted } = Vue
+    import { apiFetch } from '/static/js/constants.js'
     import { message_list } from '/static/js/toaster.js'
     import LoadingBar from '/static/js/components/loading-bar.js'
+
+    const profile_user_id = {{ user.id }}
 
     createApp({
         delimiters: ['[[', ']]'],
         components: { LoadingBar },
         setup() {
             const page_is_loading = ref(false)
-            onMounted(() => { page_is_loading.value = true })
-            return { message_list, page_is_loading }
+            const comment_stats   = ref([])
+            const stats_loading   = ref(true)
+
+            const comment_stats_all_zero = computed(() =>
+                comment_stats.value.every(s => s.count === 0)
+            )
+
+            const stats_max = computed(() => {
+                const max = Math.max(...comment_stats.value.map(s => s.count), 1)
+                return max
+            })
+
+            function stats_bar_height(count) {
+                if (count === 0) return '4px'
+                const pct = Math.max(6, Math.round((count / stats_max.value) * 100))
+                return pct + '%'
+            }
+
+            async function loadStats() {
+                stats_loading.value = true
+                const res = await apiFetch('/api/comments/stats/user/' + profile_user_id)
+                if (res.ok) {
+                    const data = await res.json()
+                    comment_stats.value = data
+                }
+                stats_loading.value = false
+            }
+
+            onMounted(async () => {
+                await loadStats()
+                page_is_loading.value = true
+            })
+
+            return {
+                message_list, page_is_loading,
+                comment_stats, stats_loading,
+                comment_stats_all_zero, stats_bar_height,
+            }
         }
     }).mount('#main-container')
 </script>

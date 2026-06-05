@@ -18,3 +18,4 @@ jsonschema
 requests
 psycopg2-binary
 Pillow
+better-profanity

@@ -87,6 +87,65 @@ def regenerate_session_key_core() -> tuple:
     return key, "Session key regenerated — restart required to apply"
 
 
+# ── Package management ───────────────────────────────────────────────────────
+
+def get_installed_packages() -> list:
+    """Return all installed packages sorted by name (case-insensitive)."""
+    try:
+        import importlib.metadata as meta
+        dists = sorted(meta.distributions(), key=lambda d: (d.metadata.get('Name') or '').lower())
+        result = []
+        for d in dists:
+            name    = d.metadata.get('Name') or ''
+            version = d.metadata.get('Version') or ''
+            if name:
+                result.append({'name': name, 'version': version})
+        return result
+    except Exception:
+        return []
+
+
+def _validate_package_name(name: str) -> bool:
+    """Only allow safe package names: letters, digits, hyphens, underscores, dots."""
+    return bool(re.match(r'^[a-zA-Z0-9][a-zA-Z0-9._\-]{0,99}$', name.strip()))
+
+
+def update_package_core(name: str) -> tuple:
+    """Run pip install --upgrade <name>. Returns (ok, output)."""
+    import subprocess
+    if not _validate_package_name(name):
+        return False, "Invalid package name"
+    try:
+        result = subprocess.run(
+            [sys.executable, '-m', 'pip', 'install', '--upgrade', name],
+            capture_output=True, text=True, timeout=120,
+        )
+        ok     = result.returncode == 0
+        output = (result.stdout.strip() or result.stderr.strip())
+        output = output[-500:] if len(output) > 500 else output
+        return ok, output
+    except Exception as e:
+        return False, str(e)
+
+
+def install_package_core(name: str) -> tuple:
+    """Run pip install <name>. Returns (ok, output)."""
+    import subprocess
+    if not _validate_package_name(name):
+        return False, "Invalid package name"
+    try:
+        result = subprocess.run(
+            [sys.executable, '-m', 'pip', 'install', name],
+            capture_output=True, text=True, timeout=120,
+        )
+        ok     = result.returncode == 0
+        output = (result.stdout.strip() or result.stderr.strip())
+        output = output[-500:] if len(output) > 500 else output
+        return ok, output
+    except Exception as e:
+        return False, str(e)
+
+
 # ── System info ───────────────────────────────────────────────────────────────
 
 def get_system_info() -> dict:

@@ -240,6 +240,139 @@
                     </div>
                 </div>
 
+                {# ── Packages Manager ── #}
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="ss-card-header mb-3">
+                                <div class="ss-card-icon ss-card-icon--info">
+                                    <i class="fas fa-box"></i>
+                                </div>
+                                <div>
+                                    <h6 class="ss-card-title">Python Packages</h6>
+                                    <p class="ss-card-sub">Manage installed packages in the current Python environment.</p>
+                                </div>
+                                <div class="ms-auto">
+                                    <span v-if="pkg_loading" class="text-muted small">
+                                        <i class="fas fa-spinner fa-spin me-1"></i>Loading…
+                                    </span>
+                                    <span v-else class="text-muted small">
+                                        [[ pkg_filtered.length ]] / [[ pkg_all.length ]] packages
+                                    </span>
+                                </div>
+                            </div>
+
+                            {# ── Install form ── #}
+                            <div class="d-flex gap-2 mb-3 flex-wrap align-items-end">
+                                <div style="flex:1; min-width:200px; max-width:320px;">
+                                    <label class="ss-label">Install new package</label>
+                                    <input v-model="pkg_install_name" type="text"
+                                           class="form-control form-control-sm"
+                                           placeholder="e.g. requests, flask-limiter"
+                                           @keyup.enter="installPackage">
+                                </div>
+                                <button class="btn btn-success btn-sm"
+                                        :disabled="pkg_install_loading || !pkg_install_name.trim()"
+                                        @click="installPackage">
+                                    <i class="fas fa-download me-1"></i>
+                                    <span v-if="pkg_install_loading">Installing…</span>
+                                    <span v-else>Install</span>
+                                </button>
+                            </div>
+
+                            {# ── Install log panel ── #}
+                            <div v-if="pkg_install_log.length > 0" class="ss-log-panel mb-3">
+                                <div class="ss-log-header">
+                                    <span><i class="fas fa-terminal me-1"></i>pip output</span>
+                                    <button class="ss-log-clear" @click="pkg_install_log = []" title="Clear">
+                                        <i class="fas fa-xmark"></i>
+                                    </button>
+                                </div>
+                                <div class="ss-log-body">
+                                    <div v-for="(entry, i) in pkg_install_log" :key="i"
+                                         class="ss-log-line"
+                                         :class="{
+                                             'ss-log-line--ok':    entry.type === 'ok',
+                                             'ss-log-line--error': entry.type === 'error',
+                                             'ss-log-line--info':  entry.type === 'info',
+                                         }">
+                                        <span class="ss-log-time">[[ entry.time ]]</span>
+                                        <span class="ss-log-text">[[ entry.text ]]</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {# ── Search ── #}
+                            <div class="mb-2">
+                                <input v-model="pkg_search" type="text"
+                                       class="form-control form-control-sm"
+                                       placeholder="Search packages…"
+                                       style="max-width:300px;">
+                            </div>
+
+                            {# ── Package table ── #}
+                            <div v-if="pkg_loading" class="text-center py-3">
+                                <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+                            </div>
+                            <div v-else style="max-height:420px; overflow-y:auto;">
+                                <table class="table table-sm table-hover mb-0" style="font-size:.82rem;">
+                                    <thead style="position:sticky; top:0; background:var(--bg-card); z-index:1;">
+                                        <tr>
+                                            <th style="width:55%;">Name</th>
+                                            <th style="width:25%;">Version</th>
+                                            <th style="width:20%;">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-if="pkg_filtered.length === 0">
+                                            <td colspan="3" class="text-center text-muted py-3">No packages found</td>
+                                        </tr>
+                                        <tr v-for="pkg in pkg_filtered" :key="pkg.name">
+                                            <td style="font-family:var(--font-mono); color:var(--text-main);">[[ pkg.name ]]</td>
+                                            <td style="color:var(--text-secondary);">[[ pkg.version ]]</td>
+                                            <td>
+                                                <button class="btn btn-outline-secondary btn-sm"
+                                                        style="font-size:.7rem; padding:.15rem .5rem;"
+                                                        :disabled="pkg_updating === pkg.name"
+                                                        @click="updatePackage(pkg.name)">
+                                                    <span v-if="pkg_updating === pkg.name">
+                                                        <i class="fas fa-spinner fa-spin me-1"></i>
+                                                    </span>
+                                                    <span v-else>
+                                                        <i class="fas fa-arrow-up me-1"></i>Update
+                                                    </span>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {# ── Update log panel ── #}
+                            <div v-if="pkg_update_log.length > 0" class="ss-log-panel mt-3">
+                                <div class="ss-log-header">
+                                    <span><i class="fas fa-terminal me-1"></i>Update output</span>
+                                    <button class="ss-log-clear" @click="pkg_update_log = []" title="Clear">
+                                        <i class="fas fa-xmark"></i>
+                                    </button>
+                                </div>
+                                <div class="ss-log-body">
+                                    <div v-for="(entry, i) in pkg_update_log" :key="i"
+                                         class="ss-log-line"
+                                         :class="{
+                                             'ss-log-line--ok':    entry.type === 'ok',
+                                             'ss-log-line--error': entry.type === 'error',
+                                             'ss-log-line--info':  entry.type === 'info',
+                                         }">
+                                        <span class="ss-log-time">[[ entry.time ]]</span>
+                                        <span class="ss-log-text">[[ entry.text ]]</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -248,7 +381,7 @@
 
 {% block script %}
 <script type="module">
-    const { createApp, ref, reactive, onMounted } = Vue
+    const { createApp, ref, reactive, computed, onMounted } = Vue
     import { TOAST, apiFetch } from '/static/js/constants.js'
     import { create_message, message_list } from '/static/js/toaster.js'
     import LoadingBar from '/static/js/components/loading-bar.js'
@@ -280,8 +413,24 @@
             const test_email        = ref('{{ current_user.email }}')
             const smtp_log          = ref([])
 
+            // ── Packages ──────────────────────────────────────────────────────
+            const pkg_all            = ref([])
+            const pkg_loading        = ref(false)
+            const pkg_search         = ref('')
+            const pkg_install_name   = ref('')
+            const pkg_install_loading = ref(false)
+            const pkg_install_log    = ref([])
+            const pkg_update_log     = ref([])
+            const pkg_updating       = ref(null)  // name of package being updated
+
+            const pkg_filtered = computed(() => {
+                const q = pkg_search.value.trim().toLowerCase()
+                if (!q) return pkg_all.value
+                return pkg_all.value.filter(p => p.name.toLowerCase().includes(q))
+            })
+
             onMounted(async () => {
-                await Promise.all([loadSystemInfo(), loadSmtp()])
+                await Promise.all([loadSystemInfo(), loadSmtp(), loadPackages()])
                 page_is_loading.value = true
             })
 
@@ -306,6 +455,16 @@
                     smtp.smtp_use_tls = d.smtp_use_tls !== false
                     smtp.configured   = d.smtp_configured || false
                 }
+            }
+
+            async function loadPackages() {
+                pkg_loading.value = true
+                const res = await apiFetch('/api/site-settings/packages')
+                if (res.ok) {
+                    const d = await res.json()
+                    pkg_all.value = d.items || []
+                }
+                pkg_loading.value = false
             }
 
             async function saveSmtp() {
@@ -337,6 +496,10 @@
 
             function _log(text, type = 'info') {
                 smtp_log.value.push({ time: _now(), text, type })
+            }
+
+            function _pkg_log(log_ref, text, type = 'info') {
+                log_ref.value.push({ time: _now(), text, type })
             }
 
             async function testSmtp() {
@@ -379,11 +542,65 @@
                 key_regen_loading.value = false
             }
 
+            async function installPackage() {
+                const name = pkg_install_name.value.trim()
+                if (!name) return
+                pkg_install_log.value = []
+                pkg_install_loading.value = true
+                _pkg_log(pkg_install_log, `Installing ${name}…`, 'info')
+
+                const res = await apiFetch('/api/site-settings/packages/install', 'POST', { name })
+                const d   = await res.json()
+
+                if (d.message) {
+                    for (const line of d.message.split('\n').filter(l => l.trim())) {
+                        _pkg_log(pkg_install_log, line, res.ok ? 'ok' : 'error')
+                    }
+                }
+
+                if (res.ok) {
+                    pkg_install_name.value = ''
+                    await loadPackages()
+                    create_message(`Package "${name}" installed`, TOAST.SUCCESS)
+                } else {
+                    create_message(d.message || 'Install failed', TOAST.ERROR, true)
+                }
+                pkg_install_loading.value = false
+            }
+
+            async function updatePackage(name) {
+                pkg_update_log.value = []
+                pkg_updating.value   = name
+                _pkg_log(pkg_update_log, `Updating ${name}…`, 'info')
+
+                const res = await apiFetch('/api/site-settings/packages/update', 'POST', { name })
+                const d   = await res.json()
+
+                if (d.message) {
+                    for (const line of d.message.split('\n').filter(l => l.trim())) {
+                        _pkg_log(pkg_update_log, line, res.ok ? 'ok' : 'error')
+                    }
+                }
+
+                if (res.ok) {
+                    await loadPackages()
+                    create_message(`Package "${name}" updated`, TOAST.SUCCESS)
+                } else {
+                    create_message(d.message || 'Update failed', TOAST.ERROR, true)
+                }
+                pkg_updating.value = null
+            }
+
             return {
                 message_list, page_is_loading, info_loading,
                 sysinfo, smtp, show_smtp_pwd, test_email, smtp_log,
                 smtp_saving, smtp_testing, key_regen_loading,
                 saveSmtp, testSmtp, regenKey,
+                // packages
+                pkg_all, pkg_filtered, pkg_loading, pkg_search,
+                pkg_install_name, pkg_install_loading, pkg_install_log,
+                pkg_update_log, pkg_updating,
+                installPackage, updatePackage,
             }
         },
     }).mount('#main-container')

@@ -68,6 +68,34 @@ PERMISSIONS: dict[str, dict] = {
         'icon':        'fa-trash',
     },
 
+    # ── Comments ─────────────────────────────────────────────────────────────
+    'comments.view': {
+        'label':       'View comments',
+        'group':       'Comments',
+        'icon':        'fa-comments',
+    },
+    'comments.create': {
+        'label':       'Post comments',
+        'group':       'Comments',
+        'icon':        'fa-comment-plus',
+    },
+    'comments.edit_own': {
+        'label':       'Edit own comments',
+        'group':       'Comments',
+        'icon':        'fa-comment-pen',
+    },
+    'comments.delete_own': {
+        'label':       'Delete own comments',
+        'group':       'Comments',
+        'icon':        'fa-comment-minus',
+    },
+    'comments.moderate': {
+        'label':       'Moderate comments',
+        'description': 'Delete/restore any comment, see private comments',
+        'group':       'Comments',
+        'icon':        'fa-shield-check',
+    },
+
 }
 
 

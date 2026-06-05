@@ -74,6 +74,15 @@ NAV: list[dict] = [
         'external':   True,
     },
 
+    # ── Community ─────────────────────────────────────────────────────────────
+    {
+        'group':      'Community',
+        'label':      'Forum',
+        'icon':       'fa-comments',
+        'href':       '/comments/',
+        'permission': 'comments.view',
+    },
+
 ]
 
 

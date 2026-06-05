@@ -37,11 +37,13 @@ def create_app():
     from .features.config.config import config_blueprint
     from .features.admin.admin import admin_blueprint
     from .features.site_settings.site_settings import site_settings_blueprint
+    from .features.comments.comment import comment_blueprint
     app.register_blueprint(home_blueprint, url_prefix="/")
     app.register_blueprint(account_blueprint, url_prefix="/account")
     app.register_blueprint(config_blueprint, url_prefix="/")
     app.register_blueprint(admin_blueprint, url_prefix="/admin")
     app.register_blueprint(site_settings_blueprint, url_prefix="/admin/settings")
+    app.register_blueprint(comment_blueprint, url_prefix="/comments")
 
     from .api.api import api_blueprint
     csrf.exempt(api_blueprint)
@@ -52,6 +54,7 @@ def create_app():
     from .core.db_class.site_config import SiteConfig      # noqa: F401
     from .core.db_class.log import Log                     # noqa: F401
     from .core.db_class.user import RolePermission         # noqa: F401
+    from .core.db_class.comment import Comment, CommentReaction  # noqa: F401
 
     @app.context_processor
     def inject_site_config():

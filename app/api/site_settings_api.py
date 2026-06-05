@@ -114,3 +114,67 @@ class SessionKey(Resource):
             is_public=False,
         )
         return {'message': msg}, 200
+
+
+@site_settings_ns.route('/packages')
+class PackageList(Resource):
+    method_decorators = [api_require_permission('admin_only')]
+
+    def get(self):
+        """Return all installed Python packages, with optional ?q= search filter."""
+        from ..features.site_settings.site_settings_core import get_installed_packages
+        pkgs = get_installed_packages()
+        q = request.args.get('q', '').strip().lower()
+        if q:
+            pkgs = [p for p in pkgs if q in p['name'].lower()]
+        return {'items': pkgs, 'total': len(pkgs)}, 200
+
+
+@site_settings_ns.route('/packages/update')
+class PackageUpdate(Resource):
+    method_decorators = [api_require_permission('admin_only')]
+
+    def post(self):
+        """Upgrade an installed package via pip."""
+        data = request.get_json(silent=True) or {}
+        name = data.get('name', '').strip()
+        if not name:
+            return {'message': 'Package name required'}, 400
+        from ..features.site_settings.site_settings_core import update_package_core
+        ok, output = update_package_core(name)
+        if ok:
+            log_action(
+                f"Package updated: {name}",
+                "package_update",
+                category=api_category('admin'),
+                level="success",
+                object_type="package",
+                is_public=False,
+                meta={'name': name},
+            )
+        return {'message': output, 'ok': ok}, 200 if ok else 400
+
+
+@site_settings_ns.route('/packages/install')
+class PackageInstall(Resource):
+    method_decorators = [api_require_permission('admin_only')]
+
+    def post(self):
+        """Install a new package via pip."""
+        data = request.get_json(silent=True) or {}
+        name = data.get('name', '').strip()
+        if not name:
+            return {'message': 'Package name required'}, 400
+        from ..features.site_settings.site_settings_core import install_package_core
+        ok, output = install_package_core(name)
+        if ok:
+            log_action(
+                f"Package installed: {name}",
+                "package_install",
+                category=api_category('admin'),
+                level="success",
+                object_type="package",
+                is_public=False,
+                meta={'name': name},
+            )
+        return {'message': output, 'ok': ok}, 200 if ok else 400
