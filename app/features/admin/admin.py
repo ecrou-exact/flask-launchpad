@@ -1,0 +1,52 @@
+from flask import Blueprint, render_template
+
+from ...core.utils.decorators import require_permission
+from ...core.db_class.site_config import get_site_bool
+from ...core.utils.permissions import get_by_group
+from ...features.account.account_core import get_all_roles
+from .admin_core import get_user_or_404, get_role_or_404
+
+admin_blueprint = Blueprint('admin', __name__)
+
+
+@admin_blueprint.route('/users')
+@require_permission('users.view')
+def users():
+    return render_template(
+        'admin/users.html',
+        allow_registration=get_site_bool('allow_registration', default=True),
+        allow_login=get_site_bool('allow_login', default=True),
+        email_verification_enabled=get_site_bool('email_verification_enabled', default=False),
+    )
+
+
+@admin_blueprint.route('/users/<int:uid>')
+@require_permission('users.view')
+def user_detail(uid):
+    user  = get_user_or_404(uid)
+    roles = get_all_roles()
+    return render_template('admin/user_detail.html', user=user, roles=roles)
+
+
+@admin_blueprint.route('/logs')
+@require_permission('logs.view')
+def logs():
+    return render_template('admin/logs.html')
+
+
+@admin_blueprint.route('/roles')
+@require_permission('admin.roles')
+def roles():
+    return render_template('admin/roles.html')
+
+
+@admin_blueprint.route('/roles/new')
+@admin_blueprint.route('/roles/<int:role_id>')
+@require_permission('admin.roles')
+def role_detail(role_id=None):
+    role = get_role_or_404(role_id) if role_id else None
+    return render_template(
+        'admin/role_detail.html',
+        role=role,
+        permissions_by_group=get_by_group(),
+    )

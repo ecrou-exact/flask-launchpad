@@ -1,3 +1,4 @@
+from datetime import datetime
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import CSRFProtect
@@ -31,25 +32,111 @@ def create_app():
     app.config["SESSION_SQLALCHEMY"] = db
     sess.init_app(app)
 
-    from .home import home_blueprint
-    from .account.account import account_blueprint
+    from .features.home.home import home_blueprint
+    from .features.account.account import account_blueprint
+    from .features.config.config import config_blueprint
+    from .features.admin.admin import admin_blueprint
+    from .features.site_settings.site_settings import site_settings_blueprint
+    from .features.comments.comment import comment_blueprint
+    from .features.jobs.jobs import jobs_blueprint
     app.register_blueprint(home_blueprint, url_prefix="/")
     app.register_blueprint(account_blueprint, url_prefix="/account")
+    app.register_blueprint(config_blueprint, url_prefix="/")
+    app.register_blueprint(admin_blueprint, url_prefix="/admin")
+    app.register_blueprint(site_settings_blueprint, url_prefix="/admin/settings")
+    app.register_blueprint(comment_blueprint, url_prefix="/comments")
+    app.register_blueprint(jobs_blueprint, url_prefix="/jobs")
 
-    from .api import api_blueprint
+    from .api.api import api_blueprint
     csrf.exempt(api_blueprint)
     app.register_blueprint(api_blueprint)
 
+    # Ensure these tables are known to Alembic
+    from .core.db_class.config import UserConfig           # noqa: F401
+    from .core.db_class.site_config import SiteConfig      # noqa: F401
+    from .core.db_class.log import Log                     # noqa: F401
+    from .core.db_class.user import RolePermission         # noqa: F401
+    from .core.db_class.comment import Comment, CommentReaction        # noqa: F401
+    from .core.db_class.custom_theme import CustomTheme               # noqa: F401
+    from .core.db_class.job import Job                                 # noqa: F401
+
     @app.context_processor
-    def inject_layout():
-        from flask import session
-        if session.get('ui_version') == 2:
-            layout = 'base_2.html'
-        elif session.get('ui_version') == 3:
-            layout = 'base_3.html'
+    def inject_site_config():
+        from .core.db_class.site_config import get_site_bool
+        return dict(
+            allow_registration=get_site_bool('allow_registration', True),
+            allow_login=get_site_bool('allow_login', True),
+        )
+
+    @app.context_processor
+    def inject_user_config():
+        from flask_login import current_user
+        from .core.db_class.config import UserConfig as UC
+        config = None
+        if current_user.is_authenticated:
+            config = UC.query.filter_by(user_id=current_user.id, is_active=True).first()
+        return dict(user_config=config)
+
+    @app.context_processor
+    def inject_user_permissions():
+        from flask_login import current_user
+        from .core.utils.nav_registry import get_nav_for_user
+        if current_user.is_authenticated:
+            is_admin = current_user.is_admin()
+            perms    = current_user.role.permission_keys() if current_user.role else []
         else:
-            layout = 'base.html'
-        return dict(base_layout=layout)
+            is_admin = False
+            perms    = []
+        nav_items = get_nav_for_user(is_admin, perms)
+        return dict(user_is_admin=is_admin, user_perms=perms, nav_items=nav_items)
+
+    @app.context_processor
+    def inject_custom_themes_for_js():
+        from .core.db_class.custom_theme import CustomTheme as CT
+        from flask_login import current_user
+        themes = []
+        try:
+            q = CT.query.filter_by(is_active=True, is_builtin=False)
+            if not (current_user.is_authenticated and current_user.is_admin()):
+                q = q.filter_by(is_public=True)
+            for t in q.all():
+                bg_body = (t.css_vars or {}).get('--bg-body', '')
+                themes.append({'css_key': t.css_key, 'is_dark': t.is_dark, 'bg_body': bg_body})
+        except Exception:
+            pass
+        return dict(custom_themes_for_js=themes)
+
+    @app.context_processor
+    def inject_app_version():
+        import os
+        version_path = os.path.join(app.root_path, '..', 'version')
+        try:
+            with open(version_path) as f:
+                version = f.read().strip()
+        except OSError:
+            version = '0.0.0'
+        return dict(app_version=version)
+
+    with app.app_context():
+        from .core.db_class.site_config import seed_site_config
+        try:
+            seed_site_config()
+        except Exception:
+            pass  # DB not yet created (first migration)
+
+    from .core.utils.job_runner import init_runner
+    init_runner(app)
+
+    @app.before_request
+    def update_last_seen():
+        from flask_login import current_user
+        from datetime import timedelta
+        if current_user.is_authenticated:
+            now = datetime.utcnow()
+            if (current_user.last_seen_at is None or
+                    now - current_user.last_seen_at > timedelta(minutes=2)):
+                current_user.last_seen_at = now
+                db.session.commit()
 
     return app
     

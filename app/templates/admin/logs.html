@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block head_extra %}
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/pagination/pagination.css') }}">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/admin/logs.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper" v-cloak>
+    <loading-bar :active="!page_is_loading"></loading-bar>
+
+    <div v-if="page_is_loading">
+
+        <div class="page-header">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-1">
+                        <li class="breadcrumb-item"><a href="/">Home</a></li>
+                        <li class="breadcrumb-item">Admin</li>
+                        <li class="breadcrumb-item active">Logs</li>
+                    </ol>
+                </nav>
+                <h1 class="page-title">Logs</h1>
+            </div>
+        </div>
+
+        <div class="page-body">
+            <log-table
+                ref="log_table_ref"
+                fetch-url="/api/log/"
+                :can-delete="can_delete_logs"
+                @delete="handleDelete"
+                @bulk-delete="handleBulkDelete">
+            </log-table>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script type="module">
+    const { createApp, ref, onMounted } = Vue
+    import { apiFetch, TOAST }          from '/static/js/constants.js'
+    import { message_list, create_message } from '/static/js/toaster.js'
+    import LoadingBar from '/static/js/components/loading-bar.js'
+    import LogTable   from '/static/js/components/table/log-table.js'
+
+    createApp({
+        delimiters: ['[[', ']]'],
+        components: { LoadingBar, LogTable },
+
+        setup() {
+
+            // ── Init ─────────────────────────────────────────────────────────
+            const page_is_loading   = ref(false)
+            const log_table_ref     = ref(null)
+            const can_delete_logs   = hasPerm('logs.delete')
+
+            onMounted(() => {
+                page_is_loading.value = true
+            })
+
+            // ── Delete single log ─────────────────────────────────────────────
+            async function handleDelete(log) {
+                if (!confirm(`Delete this log entry?\n\n"${log.title}"\n\nThis action cannot be undone.`)) return
+
+                const res = await apiFetch('/api/log/' + log.uuid, 'DELETE')
+                if (res.ok) {
+                    await create_message('Log entry deleted', TOAST.SUCCESS, false)
+                    log_table_ref.value?.fetchData()
+                } else {
+                    const data = await res.json()
+                    await create_message(data.message || 'Failed to delete log', TOAST.ERROR, true)
+                }
+            }
+
+            // ── Bulk delete ───────────────────────────────────────────────────
+            async function handleBulkDelete(uuids) {
+                if (!uuids.length) return
+                if (!confirm(`Delete ${uuids.length} selected log entries? This action cannot be undone.`)) return
+
+                const res = await apiFetch('/api/log/bulk-delete', 'POST', { uuids })
+                if (res.ok) {
+                    const data = await res.json()
+                    await create_message(data.message || 'Logs deleted', TOAST.SUCCESS, false)
+                    log_table_ref.value?.fetchData()
+                } else {
+                    const data = await res.json()
+                    await create_message(data.message || 'Failed to delete logs', TOAST.ERROR, true)
+                }
+            }
+
+            // ── Return ────────────────────────────────────────────────────────
+            return {
+                message_list,
+                page_is_loading,
+                log_table_ref,
+                can_delete_logs,
+                handleDelete,
+                handleBulkDelete,
+            }
+        },
+    }).mount('#main-container')
+</script>
+{% endblock %}

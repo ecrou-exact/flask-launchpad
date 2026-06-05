@@ -1,31 +1,29 @@
-
 // Toggle API key visibility.
-(function() {
-    $(function() {
-        var $btn = $('#toggle-api-key');
-        var $key = $('#api-key');
-        if (!$btn.length || !$key.length) return;
+(function () {
+    document.addEventListener('DOMContentLoaded', function () {
+        var btn = document.getElementById('toggle-api-key');
+        var key = document.getElementById('api-key');
+        if (!btn || !key) return;
 
-        $btn.on('click', function() {
-            var visible = $btn.attr('data-visible') === 'true';
+        btn.addEventListener('click', function () {
+            var visible = btn.getAttribute('data-visible') === 'true';
             if (visible) {
-                // hide
-                $key.addClass('blurred');
-                $btn.attr('data-visible', 'false');
-                $btn.attr('aria-pressed', 'false');
-                $btn.attr('aria-label', 'Show API key');
-                $btn.attr('title', 'Show API key');
-                $btn.find('i').removeClass('fa-eye-slash').addClass('fa-eye');
+                key.classList.add('blurred');
+                btn.setAttribute('data-visible', 'false');
+                btn.setAttribute('aria-pressed', 'false');
+                btn.setAttribute('aria-label', 'Show API key');
+                btn.setAttribute('title', 'Show API key');
+                var icon = btn.querySelector('i');
+                if (icon) { icon.classList.remove('fa-eye-slash'); icon.classList.add('fa-eye'); }
             } else {
-                // show
-                $key.removeClass('blurred');
-                $btn.attr('data-visible', 'true');
-                $btn.attr('aria-pressed', 'true');
-                $btn.attr('aria-label', 'Hide API key');
-                $btn.attr('title', 'Hide API key');
-                $btn.find('i').removeClass('fa-eye').addClass('fa-eye-slash');
+                key.classList.remove('blurred');
+                btn.setAttribute('data-visible', 'true');
+                btn.setAttribute('aria-pressed', 'true');
+                btn.setAttribute('aria-label', 'Hide API key');
+                btn.setAttribute('title', 'Hide API key');
+                var icon = btn.querySelector('i');
+                if (icon) { icon.classList.remove('fa-eye'); icon.classList.add('fa-eye-slash'); }
             }
         });
     });
 })();
-
