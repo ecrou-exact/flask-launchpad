@@ -82,6 +82,14 @@ NAV: list[dict] = [
         'permission': 'jobs.manage',
     },
 
+    {
+        'group':      'Admin',
+        'label':      'Template Studio',
+        'icon':       'fa-wand-magic-sparkles',
+        'href':       '/admin/template-studio/',
+        'permission': 'admin_only',
+    },
+
     # ── Community ─────────────────────────────────────────────────────────────
     {
         'group':      'Community',
