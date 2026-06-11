@@ -90,6 +90,15 @@ NAV: list[dict] = [
         'permission': 'admin_only',
     },
 
+    # ── Dev ───────────────────────────────────────────────────────────────────
+    {
+        'group':      'Dev',
+        'label':      'Component Lab',
+        'icon':       'fa-flask',
+        'href':       '/lab/components',
+        'permission': 'admin_only',
+    },
+
     # ── Community ─────────────────────────────────────────────────────────────
     {
         'group':      'Community',
