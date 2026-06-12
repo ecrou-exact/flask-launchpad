@@ -30,6 +30,7 @@ class User(UserMixin, db.Model):
     created_at    = db.Column(db.DateTime, default=datetime.utcnow)
 
     # ── Status ───────────────────────────────────────────────
+    is_superadmin            = db.Column(db.Boolean,  default=False, nullable=False)
     is_verified              = db.Column(db.Boolean,  default=True,  nullable=False)
     force_logout             = db.Column(db.Boolean,  default=False, nullable=False)
     session_version          = db.Column(db.Integer,  default=0,     nullable=False)
@@ -123,6 +124,7 @@ class User(UserMixin, db.Model):
             'created_at':     self.created_at.isoformat() if self.created_at else None,
             'has_avatar':     bool(self.avatar_filename),
             'is_verified':    self.is_verified,
+            'is_superadmin':  self.is_superadmin,
             'last_seen_at':   self.last_seen_at.isoformat() if self.last_seen_at else None,
         }
 

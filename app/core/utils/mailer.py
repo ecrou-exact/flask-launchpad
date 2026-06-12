@@ -246,6 +246,67 @@ def send_db_restore_confirmation(to_email: str, filename: str, code: str) -> tup
     return _send(cfg, sender, to_email, msg)
 
 
+def send_db_action_confirmation(to_email: str, action: str, filename: str, code: str) -> tuple:
+    """Send a backup confirmation code for delete or download actions."""
+    cfg = _smtp_cfg()
+    if not cfg['host']:
+        return False, "SMTP_HOST not configured"
+    if not cfg['user']:
+        return False, "SMTP_USER not configured"
+
+    app_name = _app_name()
+    sender   = cfg['sender'] or cfg['user']
+
+    _meta = {
+        'delete':   {'color': '#f59e0b', 'label': 'Delete Backup',   'warn': 'This will permanently delete the backup file:',    'subject': 'DB Backup Delete'},
+        'download': {'color': '#3b82f6', 'label': 'Download Backup',  'warn': 'A download has been requested for the backup file:', 'subject': 'DB Backup Download'},
+    }
+    m = _meta.get(action, {'color': '#dc2626', 'label': action.title(), 'warn': 'Action requested on:', 'subject': action.title()})
+
+    body = f"""
+      <p style="margin:0 0 6px;font-size:.6875rem;font-weight:700;color:{m['color']};text-transform:uppercase;letter-spacing:.08em;">Action required</p>
+      <h1 style="margin:0 0 20px;font-size:1.375rem;font-weight:700;color:#0f172a;line-height:1.3;">{m['label']} Requested</h1>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:24px;">
+        <tr>
+          <td style="background-color:#fffbeb;border-left:3px solid {m['color']};border-radius:0 8px 8px 0;padding:14px 16px;">
+            <p style="margin:0;font-size:.875rem;font-weight:600;color:#92400e;">
+              {m['warn']}
+              <code style="background:rgba(0,0,0,.06);padding:2px 6px;border-radius:4px;">{filename}</code>
+            </p>
+          </td>
+        </tr>
+      </table>
+      <p style="margin:0 0 28px;font-size:.9375rem;color:#475569;line-height:1.65;">
+        Enter the code below in the admin panel to confirm. Valid for <strong>10 minutes</strong>.
+      </p>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:28px;">
+        <tr>
+          <td align="center" style="background-color:#f8fafc;border:2px dashed {m['color']};border-radius:12px;padding:32px 24px;">
+            <p style="margin:0 0 8px;font-size:.6875rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.12em;">Confirmation code</p>
+            <p style="margin:0;font-size:2.75rem;font-weight:800;letter-spacing:.6rem;color:{m['color']};font-family:'Courier New',Courier,monospace;line-height:1;">{code}</p>
+          </td>
+        </tr>
+      </table>
+      <hr style="border:none;border-top:1px solid #e2e8f0;margin:0 0 24px;">
+      <p style="margin:0;font-size:.8125rem;color:#94a3b8;line-height:1.6;">
+        If you did not initiate this action, contact your administrator immediately.
+      </p>"""
+
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = f'[ACTION REQUIRED] {m["subject"]} confirmation — {app_name}'
+    msg['From']    = f'{app_name} <{sender}>'
+    msg['To']      = to_email
+
+    text = (
+        f"{m['label']} requested.\n\n"
+        f"File: {filename}\nCode: {code}\n\nExpires in 10 minutes.\n\n"
+        f"If you did not initiate this, contact your administrator.\n\n— {app_name}"
+    )
+    msg.attach(MIMEText(text, 'plain'))
+    msg.attach(MIMEText(_base_html(m['color'], f'{m["label"]} Confirmation', body, app_name), 'html'))
+    return _send(cfg, sender, to_email, msg)
+
+
 def send_test_email(to_email: str) -> tuple:
     cfg = _smtp_cfg()
     if not cfg['host']:

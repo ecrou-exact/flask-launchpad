@@ -159,12 +159,14 @@ def delete_backup_core(filename: str, user_id: int) -> tuple:
     return True, "Backup deleted"
 
 
-# ── Restore — two-step: initiate (send code) → confirm (apply) ───────────────
+# ── Generic two-step action helpers ──────────────────────────────────────────
 
-def initiate_restore_core(filename: str, user_id: int) -> tuple:
+def _initiate_action(action: str, filename: str, user_id: int) -> tuple:
+    """Send a confirmation code to the superadmin for any backup action."""
     from ...core.utils.logger import log_action
     from ...core.db_class.site_config import set_site_value
-    from ...core.db_class.user import User, Role
+    from ...features.admin.admin_core import get_restore_email_target
+    from ...core.utils.mailer import is_smtp_configured
 
     p = _safe_backup_path(filename)
     if p is None:
@@ -172,51 +174,54 @@ def initiate_restore_core(filename: str, user_id: int) -> tuple:
     if not p.exists():
         return False, "Backup file not found"
 
+    if not is_smtp_configured():
+        return False, "SMTP is not configured. Configure SMTP in Server Settings before performing this action — the confirmation code must be sent by email."
+
+    target_user = get_restore_email_target(user_id)
+    if not target_user:
+        return False, "No admin account found to receive the confirmation code."
+
     code   = ''.join(secrets.choice('0123456789') for _ in range(6))
     expiry = (datetime.utcnow() + timedelta(minutes=10)).isoformat()
 
-    set_site_value('db_restore_pending_code',     code,          user_id)
-    set_site_value('db_restore_pending_expiry',   expiry,        user_id)
-    set_site_value('db_restore_pending_filename', filename,      user_id)
-    set_site_value('db_restore_pending_user',     str(user_id),  user_id)
+    set_site_value(f'db_{action}_pending_code',     code,     user_id)
+    set_site_value(f'db_{action}_pending_expiry',   expiry,   user_id)
+    set_site_value(f'db_{action}_pending_filename', filename, user_id)
 
-    email_sent = False
-    admin_role = Role.query.filter_by(admin=True).first()
-    if admin_role:
-        admin_user = User.query.filter_by(role_id=admin_role.id, is_active=True).first()
-        if admin_user:
-            from ...core.utils.mailer import send_db_restore_confirmation, is_smtp_configured
-            if is_smtp_configured():
-                ok, _ = send_db_restore_confirmation(admin_user.email, filename, code)
-                email_sent = ok
+    if action == 'restore':
+        from ...core.utils.mailer import send_db_restore_confirmation
+        ok, err = send_db_restore_confirmation(target_user.email, filename, code)
+    else:
+        from ...core.utils.mailer import send_db_action_confirmation
+        ok, err = send_db_action_confirmation(target_user.email, action, filename, code)
+
+    if not ok:
+        return False, f"Failed to send confirmation email: {err}"
 
     log_action(
-        f"DB restore initiated: {filename} — email sent: {email_sent}",
-        'restore_initiate',
+        f"DB {action} initiated for {filename}",
+        f'{action}_initiate',
         category='database',
         level='warning',
         object_type='db_backup',
         is_public=False,
-        meta={'filename': filename, 'email_sent': email_sent, 'code': code},
+        meta={'filename': filename, 'action': action},
         actor_id=user_id,
     )
-
-    if email_sent:
-        return True, "Confirmation code sent by email. Valid for 10 minutes."
-    return True, f"SMTP not configured — code: {code} (check admin logs)"
+    return True, "Confirmation code sent to the superadmin. Valid for 10 minutes."
 
 
-def confirm_restore_core(filename: str, code: str, user_id: int) -> tuple:
-    from ...core.utils.logger import log_action
+def _validate_action_code(action: str, filename: str, code: str, user_id: int) -> tuple:
+    """Validate a pending action code. Returns (True, None) or (False, error_msg)."""
     from ...core.db_class.site_config import get_site_value, set_site_value
-    from app import db
+    from ...core.utils.logger import log_action
 
-    stored_code     = get_site_value('db_restore_pending_code')
-    stored_expiry   = get_site_value('db_restore_pending_expiry')
-    stored_filename = get_site_value('db_restore_pending_filename')
+    stored_code     = get_site_value(f'db_{action}_pending_code')
+    stored_expiry   = get_site_value(f'db_{action}_pending_expiry')
+    stored_filename = get_site_value(f'db_{action}_pending_filename')
 
     if not stored_code:
-        return False, "No restore pending — initiate one first."
+        return False, f"No {action} pending — initiate one first."
     if stored_filename != filename:
         return False, "Filename mismatch — please re-initiate."
 
@@ -228,8 +233,8 @@ def confirm_restore_core(filename: str, code: str, user_id: int) -> tuple:
 
     if code.strip() != stored_code:
         log_action(
-            f"DB restore REJECTED: wrong code for {filename}",
-            'restore_failed',
+            f"DB {action} REJECTED: wrong code for {filename}",
+            f'{action}_failed',
             category='database',
             level='error',
             is_public=False,
@@ -237,23 +242,36 @@ def confirm_restore_core(filename: str, code: str, user_id: int) -> tuple:
         )
         return False, "Invalid confirmation code."
 
+    set_site_value(f'db_{action}_pending_code',     '', user_id)
+    set_site_value(f'db_{action}_pending_filename', '', user_id)
+    return True, None
+
+
+# ── Restore ───────────────────────────────────────────────────────────────────
+
+def initiate_restore_core(filename: str, user_id: int) -> tuple:
+    return _initiate_action('restore', filename, user_id)
+
+
+def confirm_restore_core(filename: str, code: str, user_id: int) -> tuple:
+    from ...core.utils.logger import log_action
+    from app import db
+
+    ok, err = _validate_action_code('restore', filename, code, user_id)
+    if not ok:
+        return False, err
+
     db_path = _db_path()
     p = _safe_backup_path(filename)
     if db_path is None or not p or not p.exists():
         return False, "Backup file or DB path unavailable."
 
-    # Auto-safety-backup before overwrite
     ts          = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
     safety_name = f'pre_restore_{ts}.db'
     shutil.copy2(db_path, _backup_dir() / safety_name)
 
-    # Dispose SQLAlchemy pool then overwrite the file
     db.engine.dispose()
     shutil.copy2(p, db_path)
-
-    # Clear pending state
-    set_site_value('db_restore_pending_code',     '', user_id)
-    set_site_value('db_restore_pending_filename', '', user_id)
 
     log_action(
         f"Database RESTORED from {filename} — safety backup: {safety_name}",
@@ -265,12 +283,73 @@ def confirm_restore_core(filename: str, code: str, user_id: int) -> tuple:
         meta={'filename': filename, 'safety_backup': safety_name},
         actor_id=user_id,
     )
-
     return True, (
         f"Database restored from {filename}. "
         f"Safety backup saved as {safety_name}. "
         f"Restart the server for a clean state."
     )
+
+
+# ── Delete (two-step) ─────────────────────────────────────────────────────────
+
+def initiate_delete_core(filename: str, user_id: int) -> tuple:
+    return _initiate_action('delete', filename, user_id)
+
+
+def confirm_delete_core(filename: str, code: str, user_id: int) -> tuple:
+    from ...core.utils.logger import log_action
+
+    ok, err = _validate_action_code('delete', filename, code, user_id)
+    if not ok:
+        return False, err
+
+    p = _safe_backup_path(filename)
+    if p is None or not p.exists():
+        return False, "Backup not found"
+
+    p.unlink()
+    log_action(
+        f"DB backup deleted: {filename}",
+        'delete',
+        category='database',
+        level='warning',
+        object_type='db_backup',
+        is_public=False,
+        meta={'filename': filename},
+        actor_id=user_id,
+    )
+    return True, "Backup deleted"
+
+
+# ── Download (two-step) ───────────────────────────────────────────────────────
+
+def initiate_download_core(filename: str, user_id: int) -> tuple:
+    return _initiate_action('download', filename, user_id)
+
+
+def confirm_download_core(filename: str, code: str, user_id: int) -> tuple:
+    """Validate the code and return the backup path for the API to stream."""
+    from ...core.utils.logger import log_action
+
+    ok, err = _validate_action_code('download', filename, code, user_id)
+    if not ok:
+        return False, err
+
+    p = _safe_backup_path(filename)
+    if p is None or not p.exists():
+        return False, "Backup not found"
+
+    log_action(
+        f"DB backup downloaded: {filename}",
+        'download',
+        category='database',
+        level='info',
+        object_type='db_backup',
+        is_public=False,
+        meta={'filename': filename},
+        actor_id=user_id,
+    )
+    return True, str(p)
 
 
 # ── SQL Console ───────────────────────────────────────────────────────────────

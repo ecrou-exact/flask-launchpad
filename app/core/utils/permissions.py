@@ -21,12 +21,6 @@ PERMISSIONS: dict[str, dict] = {
         'group':       'Admin',
         'icon':        'fa-sliders',
     },
-    'admin.server_settings': {
-        'label':       'Server settings',
-        'description': 'Access SMTP, session key and system info (admin only by default).',
-        'group':       'Admin',
-        'icon':        'fa-server',
-    },
     'admin.roles': {
         'label':       'Manage roles',
         'description': 'Create, edit and delete roles and their permissions.',

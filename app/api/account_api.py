@@ -135,11 +135,17 @@ class DeleteUser(Resource):
     method_decorators = [api_require_permission("users.delete")]
 
     def delete(self, uid):
+        from ..features.admin.admin_core import is_last_admin
         caller = get_user_api(request.headers.get('X-API-KEY'))
         if caller and caller.id == uid:
             return {'message': 'Cannot delete your own account'}, 403
-        if not AccountCore.get_user(uid):
+        user = AccountCore.get_user(uid)
+        if not user:
             return {'message': 'User not found'}, 404
+        if user.is_admin():
+            return {'message': 'Cannot delete an admin account. Change their role to a non-admin role first.'}, 403
+        if is_last_admin(uid):
+            return {'message': 'Cannot delete the last admin. Assign another admin first.'}, 403
         ok = AccountCore.delete_user_core(uid)
         if ok:
             log_action("User deleted", "delete", category=api_category("admin"), level="warning",
@@ -217,6 +223,7 @@ class ListUsers(Resource):
                 'role_color':      role['color'] if role else 'gray',
                 'role_icon':       role['icon']  if role else 'fa-user',
                 'is_admin':        role['admin'] if role else False,
+                'is_superadmin':   u.is_superadmin,
                 'avatar_filename': u.avatar_filename,
                 'created_at':      u.created_at.isoformat() if u.created_at else None,
                 'bio':             u.bio,
@@ -258,6 +265,42 @@ class ToggleVerified(Resource):
             meta={"user_id": uid, "is_verified": user.is_verified},
         )
         return {'is_verified': user.is_verified, 'message': 'Updated'}, 200
+
+
+@account_ns.route('/<int:uid>/toggle-superadmin')
+class ToggleSuperadmin(Resource):
+    method_decorators = [api_require_permission("admin_only")]
+
+    def post(self, uid):
+        from flask_login import current_user as cu
+        from ..features.admin.admin_core import count_superadmins
+
+        if not cu.is_authenticated or not cu.is_superadmin:
+            return {'message': 'Only superadmins can manage superadmin status'}, 403
+
+        user = User.query.get(uid)
+        if not user:
+            return {'message': 'User not found'}, 404
+        if not user.is_admin():
+            return {'message': 'User must have an admin role to be granted superadmin status'}, 400
+
+        if not user.is_superadmin:
+            if count_superadmins() >= 2:
+                return {'message': 'Maximum 2 superadmins allowed'}, 400
+
+        user.is_superadmin = not user.is_superadmin
+        db.session.commit()
+        log_action(
+            f"Superadmin {'granted to' if user.is_superadmin else 'revoked from'} user #{uid}",
+            "toggle_superadmin",
+            category=api_category("admin"),
+            level="warning",
+            object_type="user",
+            object_id=uid,
+            is_public=False,
+            meta={"user_id": uid, "is_superadmin": user.is_superadmin},
+        )
+        return {'is_superadmin': user.is_superadmin, 'message': 'Updated'}, 200
 
 
 @account_ns.route('/<int:uid>/disconnect')
@@ -394,10 +437,15 @@ class AdminEditUser(Resource):
         if 'role_id' in data:
             rid = data['role_id']
             if rid is not None:
+                from ..features.admin.admin_core import is_last_admin
                 role = Role.query.get(int(rid))
                 if not role:
                     return {'message': 'Role not found'}, 400
+                if user.is_admin() and not role.admin and is_last_admin(uid):
+                    return {'message': 'Cannot downgrade the last admin. Assign another admin first.'}, 403
                 user.role_id = role.id
+                if not role.admin:
+                    user.is_superadmin = False
 
         # is_verified
         if 'is_verified' in data:
@@ -437,6 +485,7 @@ class AdminEditUser(Resource):
             'role_color':      role_obj.color or 'gray'  if role_obj else 'gray',
             'role_icon':       role_obj.icon  or 'fa-user' if role_obj else 'fa-user',
             'is_admin':        role_obj.admin             if role_obj else False,
+            'is_superadmin':   user.is_superadmin,
             'is_verified':     user.is_verified,
             'avatar_filename': user.avatar_filename,
             'bio':             user.bio,

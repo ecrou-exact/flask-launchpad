@@ -7,15 +7,17 @@ from ..features.site_settings.database_core import (
     get_db_info,
     list_backups,
     create_backup_core,
-    delete_backup_core,
     initiate_restore_core,
     confirm_restore_core,
+    initiate_delete_core,
+    confirm_delete_core,
+    initiate_download_core,
+    confirm_download_core,
     execute_sql_core,
     get_db_history,
-    _safe_backup_path,
 )
 
-database_ns = Namespace('database', description='Database management (admin only)')
+database_ns = Namespace('database', description='Database management (superadmin only)')
 
 
 @database_ns.route('/info')
@@ -40,25 +42,7 @@ class DBBackups(Resource):
         return {'message': msg}, 400
 
 
-@database_ns.route('/backups/<string:filename>')
-class DBBackup(Resource):
-    method_decorators = [api_require_permission('admin_only')]
-
-    def delete(self, filename):
-        ok, msg = delete_backup_core(filename, current_user.id)
-        return {'message': msg}, 200 if ok else 400
-
-
-@database_ns.route('/backups/<string:filename>/download')
-class DBBackupDownload(Resource):
-    method_decorators = [api_require_permission('admin_only')]
-
-    def get(self, filename):
-        p = _safe_backup_path(filename)
-        if p is None or not p.exists():
-            return {'message': 'Backup not found'}, 404
-        return send_file(str(p), as_attachment=True, download_name=filename)
-
+# ── Restore ───────────────────────────────────────────────────────────────────
 
 @database_ns.route('/restore/initiate')
 class DBRestoreInitiate(Resource):
@@ -86,6 +70,58 @@ class DBRestoreConfirm(Resource):
         ok, msg = confirm_restore_core(filename, code, current_user.id)
         return {'message': msg}, 200 if ok else 400
 
+
+# ── Delete (two-step) ─────────────────────────────────────────────────────────
+
+@database_ns.route('/backups/<string:filename>/delete/initiate')
+class DBDeleteInitiate(Resource):
+    method_decorators = [api_require_permission('admin_only')]
+
+    def post(self, filename):
+        ok, msg = initiate_delete_core(filename, current_user.id)
+        return {'message': msg}, 200 if ok else 400
+
+
+@database_ns.route('/backups/<string:filename>/delete/confirm')
+class DBDeleteConfirm(Resource):
+    method_decorators = [api_require_permission('admin_only')]
+
+    def post(self, filename):
+        data = request.get_json(silent=True) or {}
+        code = (data.get('code') or '').strip()
+        if not code:
+            return {'message': 'code required'}, 400
+        ok, msg = confirm_delete_core(filename, code, current_user.id)
+        return {'message': msg}, 200 if ok else 400
+
+
+# ── Download (two-step) ───────────────────────────────────────────────────────
+
+@database_ns.route('/backups/<string:filename>/download/initiate')
+class DBDownloadInitiate(Resource):
+    method_decorators = [api_require_permission('admin_only')]
+
+    def post(self, filename):
+        ok, msg = initiate_download_core(filename, current_user.id)
+        return {'message': msg}, 200 if ok else 400
+
+
+@database_ns.route('/backups/<string:filename>/download/confirm')
+class DBDownloadConfirm(Resource):
+    method_decorators = [api_require_permission('admin_only')]
+
+    def post(self, filename):
+        data = request.get_json(silent=True) or {}
+        code = (data.get('code') or '').strip()
+        if not code:
+            return {'message': 'code required'}, 400
+        ok, result = confirm_download_core(filename, code, current_user.id)
+        if not ok:
+            return {'message': result}, 400
+        return send_file(result, as_attachment=True, download_name=filename)
+
+
+# ── SQL Console ───────────────────────────────────────────────────────────────
 
 @database_ns.route('/sql')
 class DBSql(Resource):

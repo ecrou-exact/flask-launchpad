@@ -63,6 +63,7 @@ def create_admin():
         password='admin',
         role_id=admin_role.id,
         api_key=generate_api_key(),
+        is_superadmin=True,
     )
     db.session.add(user)
     db.session.commit()
@@ -76,6 +77,7 @@ def create_user_test():
         first_name='admin', last_name='admin',
         email='admin@admin.admin', password='admin',
         role_id=admin_role.id, api_key='admin_api_key',
+        is_superadmin=True,
     )
     db.session.add(admin)
     db.session.commit()
