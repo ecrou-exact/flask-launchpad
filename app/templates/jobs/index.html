@@ -45,6 +45,8 @@
                 :can-delete="can_manage"
                 :can-view="true"
                 :bulk-actions="bulk_actions"
+                initial-sort="created_at"
+                initial-dir="desc"
                 @delete="handleDelete"
                 @view="handleView"
                 @bulk-action="handleBulk">

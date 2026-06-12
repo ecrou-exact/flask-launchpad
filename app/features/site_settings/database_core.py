@@ -458,3 +458,104 @@ def get_db_history(limit: int = 100) -> list:
         }
         for e in entries
     ]
+
+
+# ── Migrations ────────────────────────────────────────────────────────────────
+
+def _alembic_cfg():
+    from flask import current_app
+    from alembic.config import Config
+    import os
+    migrations_dir = os.path.normpath(os.path.join(current_app.root_path, '..', 'migrations'))
+    cfg = Config()
+    cfg.set_main_option('script_location', migrations_dir)
+    cfg.set_main_option('sqlalchemy.url', current_app.config['SQLALCHEMY_DATABASE_URI'])
+    return cfg
+
+
+def get_migration_info() -> dict:
+    from flask import current_app
+    from app import db
+    from alembic.runtime.migration import MigrationContext
+    from alembic.script import ScriptDirectory
+
+    with db.engine.connect() as conn:
+        ctx = MigrationContext.configure(conn)
+        current_heads = ctx.get_current_heads()
+
+    script = ScriptDirectory.from_config(_alembic_cfg())
+
+    applied = set(current_heads)
+    for head in current_heads:
+        for rev in script.iterate_revisions(head, 'base'):
+            applied.add(rev.revision)
+
+    revisions = []
+    for rev in script.walk_revisions():
+        revisions.append({
+            'revision':      rev.revision,
+            'down_revision': rev.down_revision if isinstance(rev.down_revision, str) else (list(rev.down_revision) if rev.down_revision else None),
+            'description':   rev.doc or '',
+            'applied':       rev.revision in applied,
+        })
+
+    return {
+        'current_heads': list(current_heads),
+        'revisions':     revisions,
+        'pending_count': sum(1 for r in revisions if not r['applied']),
+    }
+
+
+def run_upgrade_core(user_id: int) -> tuple:
+    from ...core.utils.job_runner import enqueue_job
+    from ...core.utils.logger import log_action
+    log_action('DB migration upgrade initiated', 'upgrade_initiate', category='database',
+               level='warning', is_public=False, actor_id=user_id)
+    job = enqueue_job('database.migrate_upgrade', title='DB Migration — Upgrade to head',
+                      meta={}, user_id=user_id)
+    return job, 'Upgrade queued'
+
+
+def run_downgrade_core(revision: str, user_id: int) -> tuple:
+    from ...core.utils.job_runner import enqueue_job
+    from ...core.utils.logger import log_action
+    if not revision or not revision.strip():
+        return None, 'revision required'
+    log_action(f'DB migration downgrade to {revision} initiated', 'downgrade_initiate',
+               category='database', level='warning', is_public=False,
+               meta={'revision': revision}, actor_id=user_id)
+    job = enqueue_job('database.migrate_downgrade', title=f'DB Migration — Downgrade to {revision}',
+                      meta={'revision': revision}, user_id=user_id)
+    return job, f'Downgrade to {revision} queued'
+
+
+# ── Migration job handlers ────────────────────────────────────────────────────
+
+from ...core.utils.job_runner import register_handler
+
+
+@register_handler('database.migrate_upgrade')
+def _handle_upgrade(ctx, meta):
+    from flask_migrate import upgrade as fm_upgrade
+    from ...core.utils.logger import log_action
+    ctx.log('Starting database upgrade to head...')
+    fm_upgrade()
+    ctx.log('Upgrade complete. Restart the server to reload models.')
+    log_action('DB migration upgraded to head', 'upgrade', category='database',
+               level='success', is_public=False)
+    ctx.update_progress(100)
+    return {'status': 'upgraded'}
+
+
+@register_handler('database.migrate_downgrade')
+def _handle_downgrade(ctx, meta):
+    from flask_migrate import downgrade as fm_downgrade
+    from ...core.utils.logger import log_action
+    revision = meta.get('revision', '-1')
+    ctx.log(f'Starting database downgrade to {revision}...')
+    fm_downgrade(revision=revision)
+    ctx.log(f'Downgrade to {revision} complete. Restart the server to reload models.')
+    log_action(f'DB migration downgraded to {revision}', 'downgrade', category='database',
+               level='warning', is_public=False, meta={'revision': revision})
+    ctx.update_progress(100)
+    return {'status': 'downgraded', 'revision': revision}

@@ -313,6 +313,102 @@
                         </div>
                     </div>
 
+                    <!-- Migrations -->
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="ss-card-header mb-3">
+                                <div class="ss-card-icon"><i class="fas fa-code-branch"></i></div>
+                                <div>
+                                    <h6 class="ss-card-title">Migrations</h6>
+                                    <p class="ss-card-sub">Schema version history — upgrade or downgrade.</p>
+                                </div>
+                                <div class="ms-auto d-flex gap-2 align-items-center">
+                                    <span v-if="migrations.pending_count > 0" class="badge" style="background:var(--brand);font-size:.7rem;">
+                                        [[ migrations.pending_count ]] pending
+                                    </span>
+                                    <button v-if="migrations.pending_count > 0"
+                                            class="db-btn db-btn--primary"
+                                            @click="run_upgrade"
+                                            :disabled="migration_running">
+                                        <i class="fas fa-arrow-up" v-if="!migration_running"></i>
+                                        <i class="fas fa-spinner fa-spin" v-else></i>
+                                        Upgrade
+                                    </button>
+                                    <span v-else-if="migrations.revisions" style="font-size:.72rem;color:#22c55e;">
+                                        <i class="fas fa-circle-check"></i> Up to date
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div v-if="!migrations.revisions" class="db-empty">
+                                <i class="fas fa-code-branch"></i> Loading…
+                            </div>
+                            <div v-else style="max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-sm);">
+                                <table class="db-table-list">
+                                    <thead>
+                                        <tr>
+                                            <th style="width:20px;"></th>
+                                            <th>Revision</th>
+                                            <th>Description</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="rev in migrations.revisions" :key="rev.revision"
+                                            :class="migrations.current_heads.includes(rev.revision) ? 'db-migration-current' : ''">
+                                            <td>
+                                                <span v-if="migrations.current_heads.includes(rev.revision)"
+                                                      title="Current HEAD"
+                                                      style="color:var(--brand);font-size:.8rem;">
+                                                    <i class="fas fa-location-dot"></i>
+                                                </span>
+                                                <span v-else-if="rev.applied" style="color:#22c55e;font-size:.75rem;">
+                                                    <i class="fas fa-check"></i>
+                                                </span>
+                                                <span v-else style="color:var(--text-muted);font-size:.75rem;">
+                                                    <i class="fas fa-clock"></i>
+                                                </span>
+                                            </td>
+                                            <td style="font-family:var(--font-mono);font-size:.75rem;color:var(--text-muted);">
+                                                [[ rev.revision.slice(0, 8) ]]
+                                            </td>
+                                            <td style="font-size:.78rem;color:var(--text-main);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                                                [[ rev.description || '—' ]]
+                                            </td>
+                                            <td style="text-align:right;">
+                                                <button v-if="rev.applied && !migrations.current_heads.includes(rev.revision)"
+                                                        class="db-btn db-btn--sm"
+                                                        style="color:#f59e0b;border-color:rgba(245,158,11,.3);"
+                                                        @click="run_downgrade(rev.revision)"
+                                                        title="Downgrade to this revision"
+                                                        :disabled="migration_running">
+                                                    <i class="fas fa-arrow-down"></i>
+                                                </button>
+                                                <button v-else-if="migrations.current_heads.includes(rev.revision)"
+                                                        class="db-btn db-btn--sm"
+                                                        style="color:#f59e0b;border-color:rgba(245,158,11,.3);"
+                                                        @click="run_downgrade('-1')"
+                                                        title="Downgrade one step back"
+                                                        :disabled="migration_running">
+                                                    <i class="fas fa-arrow-down"></i> −1
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Job link after upgrade/downgrade -->
+                            <div v-if="migration_job_uuid" class="mt-2" style="font-size:.78rem;color:var(--text-muted);">
+                                <i class="fas fa-gears"></i>
+                                Migration running —
+                                <a :href="'/jobs/' + migration_job_uuid" target="_blank" style="color:var(--brand);">
+                                    View job progress
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Event History -->
                     <div class="card">
                         <div class="card-body">
@@ -523,6 +619,49 @@ createApp({
             sql_running.value = false
         }
 
+        // ── Migrations ───────────────────────────────────────
+        const migrations        = ref({})
+        const migration_running = ref(false)
+        const migration_job_uuid = ref(null)
+
+        async function load_migrations() {
+            const res = await apiFetch('/api/database/migrations')
+            if (res.ok) migrations.value = await res.json()
+        }
+
+        async function run_upgrade() {
+            if (!confirm('Run database upgrade to head?\n\nAll pending migrations will be applied. Restart the server after completion.')) return
+            migration_running.value  = true
+            migration_job_uuid.value = null
+            const res = await apiFetch('/api/database/migrations/upgrade', 'POST')
+            const d   = await res.json()
+            if (res.ok) {
+                migration_job_uuid.value = d.job_uuid
+                create_message(d.message + ' — see job for progress', TOAST.WARNING, true)
+                setTimeout(() => { load_migrations(); load_history(); migration_running.value = false }, 3000)
+            } else {
+                create_message(d.message, TOAST.ERROR)
+                migration_running.value = false
+            }
+        }
+
+        async function run_downgrade(revision) {
+            const label = revision === '-1' ? 'one step back' : `to revision ${revision}`
+            if (!confirm(`Downgrade database ${label}?\n\nThis may remove columns or tables. Create a backup first. Restart the server after completion.`)) return
+            migration_running.value  = true
+            migration_job_uuid.value = null
+            const res = await apiFetch('/api/database/migrations/downgrade', 'POST', { revision })
+            const d   = await res.json()
+            if (res.ok) {
+                migration_job_uuid.value = d.job_uuid
+                create_message(d.message + ' — see job for progress', TOAST.WARNING, true)
+                setTimeout(() => { load_migrations(); load_history(); migration_running.value = false }, 3000)
+            } else {
+                create_message(d.message, TOAST.ERROR)
+                migration_running.value = false
+            }
+        }
+
         // ── History ──────────────────────────────────────────
         const history = ref([])
 
@@ -544,7 +683,7 @@ createApp({
 
         async function refresh_all() {
             loading.value = true
-            await Promise.all([load_db_info(), load_backups(), load_history()])
+            await Promise.all([load_db_info(), load_backups(), load_migrations(), load_history()])
             loading.value = false
         }
 
@@ -561,6 +700,7 @@ createApp({
             action_label, action_icon, action_color, action_btn_class,
             create_backup, initiate_action, confirm_action, cancel_action,
             sql_query, sql_running, sql_result, sql_error, sql_is_dml, sql_is_destructive, run_sql,
+            migrations, migration_running, migration_job_uuid, run_upgrade, run_downgrade,
             history,
             fmt_date, refresh_all,
         }

@@ -15,6 +15,9 @@ from ..features.site_settings.database_core import (
     confirm_download_core,
     execute_sql_core,
     get_db_history,
+    get_migration_info,
+    run_upgrade_core,
+    run_downgrade_core,
 )
 
 database_ns = Namespace('database', description='Database management (superadmin only)')
@@ -144,3 +147,42 @@ class DBHistory(Resource):
 
     def get(self):
         return get_db_history(100), 200
+
+
+# ── Migrations ────────────────────────────────────────────────────────────────
+
+@database_ns.route('/migrations')
+class DBMigrations(Resource):
+    method_decorators = [api_require_permission('admin_only')]
+
+    def get(self):
+        try:
+            return get_migration_info(), 200
+        except Exception as exc:
+            return {'message': str(exc)}, 500
+
+
+@database_ns.route('/migrations/upgrade')
+class DBMigrateUpgrade(Resource):
+    method_decorators = [api_require_permission('admin_only')]
+
+    def post(self):
+        job, msg = run_upgrade_core(current_user.id)
+        if job:
+            return {'message': msg, 'job_uuid': job.uuid}, 202
+        return {'message': msg}, 400
+
+
+@database_ns.route('/migrations/downgrade')
+class DBMigrateDowngrade(Resource):
+    method_decorators = [api_require_permission('admin_only')]
+
+    def post(self):
+        data     = request.get_json(silent=True) or {}
+        revision = (data.get('revision') or '').strip()
+        if not revision:
+            return {'message': 'revision required'}, 400
+        job, msg = run_downgrade_core(revision, current_user.id)
+        if job:
+            return {'message': msg, 'job_uuid': job.uuid}, 202
+        return {'message': msg}, 400
