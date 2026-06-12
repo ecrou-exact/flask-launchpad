@@ -80,6 +80,25 @@
                 </button>
                 {{ role_badge(current_user.role) }}
                 {% endif %}
+
+                {# ── Language picker ── #}
+                <div class="lang-picker" id="langPicker">
+                    <button class="btn-icon lang-picker-btn" id="langPickerBtn"
+                            onclick="lpToggle()" title="Translate page"
+                            aria-haspopup="true" aria-expanded="false">
+                        <i class="fas fa-globe" style="font-size:.78rem;"></i>
+                        <span class="lang-picker-active" id="langPickerActive"></span>
+                    </button>
+                    <div class="lang-picker-dropdown" id="langPickerDropdown" role="menu">
+                        <div class="lang-picker-header">
+                            <span><i class="fas fa-globe"></i> Translate</span>
+                            <button class="lang-picker-reset" onclick="lpReset()" title="Show original">
+                                <i class="fas fa-rotate-left"></i> Original
+                            </button>
+                        </div>
+                        <div class="lang-picker-list" id="langPickerList"></div>
+                    </div>
+                </div>
             </div>
         </header>
         {% endif %}
@@ -211,6 +230,11 @@ document.addEventListener('DOMContentLoaded', function () {
 <div id="job-monitor-widget"></div>
 <script src="{{ url_for('static', filename='js/job-monitor.js') }}" defer></script>
 {% endif %}
+
+{# ── Google Translate (hidden widget + custom picker) ── #}
+<div id="google_translate_element" style="display:none;visibility:hidden;"></div>
+<script src="{{ url_for('static', filename='js/lang-picker.js') }}"></script>
+<script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" async></script>
 
 </body>
 </html>
