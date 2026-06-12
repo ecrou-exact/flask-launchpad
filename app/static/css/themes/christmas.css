@@ -1,7 +1,8 @@
 /*
-  christmas.css — Visual effects overlay for the Christmas theme.
+  christmas.css — Visual effects for the Christmas theme.
   All rules scoped to [data-theme="christmas"] — zero impact on other themes.
-  Special DOM (#xmas-lights, #xmas-snow) is injected by christmas-effects.js.
+  Light theme: warm cream background, deep red sidebar, gold accents.
+  Special DOM (#xmas-lights, #xmas-snow) injected by christmas-effects.js.
 */
 
 /*---LIGHT_STRING---*/
@@ -11,7 +12,7 @@
     top: 0;
     left: 0;
     right: 0;
-    height: 40px;
+    height: 42px;
     z-index: 10000;
     pointer-events: none;
     overflow: visible;
@@ -26,10 +27,10 @@
     height: 2px;
     background: linear-gradient(90deg, #3a2010, #5c3218, #3a2010);
     border-radius: 1px;
-    box-shadow: 0 0 3px rgba(0,0,0,.6);
+    box-shadow: 0 0 3px rgba(0,0,0,.3);
 }
 
-/* Each light bulb */
+/* Each light bulb container */
 .xmas-bulb {
     position: absolute;
     top: 0;
@@ -82,16 +83,20 @@
     overflow: hidden;
 }
 
+/* On dark background, snowflakes are soft white */
+[data-theme="christmas"] .xmas-flake {
+    color: rgba(220, 240, 225, 0.75);
+    filter: drop-shadow(0 0 3px rgba(200, 240, 210, .30));
+}
+
 .xmas-flake {
     position: absolute;
     top: -20px;
-    color: rgba(255, 255, 255, 0.85);
     font-style: normal;
     line-height: 1;
     animation: xmas-fall linear infinite;
     animation-duration: var(--dur, 12s);
     animation-delay: var(--delay, 0s);
-    filter: drop-shadow(0 0 3px rgba(255,255,255,.5));
     user-select: none;
 }
 
@@ -101,8 +106,8 @@
         top: -20px;
         opacity: 0;
     }
-    5% { opacity: 1; }
-    90% { opacity: 0.7; }
+    5%  { opacity: 1; }
+    90% { opacity: 0.6; }
     100% {
         transform: translateX(var(--drift, 30px)) rotate(360deg);
         top: 105vh;
@@ -110,84 +115,84 @@
     }
 }
 
-/*---TOPBAR_GLOW---*/
+/*---TOPBAR---*/
 
 [data-theme="christmas"] .app-topbar {
-    background: linear-gradient(
-        180deg,
-        rgba(14, 28, 16, 1) 0%,
-        rgba(11, 22, 13, 1) 100%
-    );
-    border-bottom-color: rgba(90, 200, 110, 0.18);
-    box-shadow:
-        0 1px 0 rgba(90, 200, 110, 0.08),
-        0 2px 12px rgba(0, 8, 2, 0.5);
+    background: #111E16;
+    border-bottom: 1px solid rgba(90, 180, 110, 0.12);
+    box-shadow: 0 1px 8px rgba(0, 8, 2, 0.4);
 }
 
-/* Subtle gold shimmer on topbar top edge */
-[data-theme="christmas"] .app-topbar::before {
+/* Gold shimmer stripe at the very bottom of topbar */
+[data-theme="christmas"] .app-topbar::after {
     content: '';
     position: absolute;
-    top: 0;
+    bottom: 0;
     left: 0;
     right: 0;
-    height: 1px;
+    height: 2px;
     background: linear-gradient(
         90deg,
         transparent 0%,
-        rgba(255, 215, 0, 0.3) 20%,
-        rgba(232, 55, 42, 0.4) 40%,
-        rgba(47, 204, 106, 0.3) 60%,
-        rgba(255, 215, 0, 0.3) 80%,
+        rgba(212, 160, 23, 0.55) 15%,
+        rgba(200, 35, 26, 0.50) 35%,
+        rgba(212, 160, 23, 0.55) 55%,
+        rgba(200, 35, 26, 0.45) 75%,
+        rgba(212, 160, 23, 0.55) 90%,
         transparent 100%
     );
-    animation: xmas-shimmer 4s ease-in-out infinite;
+    animation: xmas-shimmer 5s ease-in-out infinite;
 }
 
 @keyframes xmas-shimmer {
-    0%, 100% { opacity: 0.6; }
-    50%       { opacity: 1.0; }
+    0%, 100% { opacity: 0.55; }
+    50%       { opacity: 1.00; }
 }
 
 /*---SIDEBAR---*/
 
-[data-theme="christmas"] .nav-sidebar,
-[data-theme="christmas"] .nav-topbar {
-    background: var(--xmas-bg-sidebar, #040A06);
-    background-image:
-        radial-gradient(ellipse at 50% 0%, rgba(47,204,106,0.04) 0%, transparent 70%),
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Ctext x='40' y='45' font-size='18' text-anchor='middle' fill='rgba(255,255,255,0.022)'%3E%E2%9D%84%3C/text%3E%3C/svg%3E");
+/* Deep pine green sidebar with a subtle snowflake watermark */
+[data-theme="christmas"] .nav-sidebar {
+    background: #1C3A28;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Ctext x='40' y='48' font-size='22' text-anchor='middle' fill='rgba(255,255,255,0.04)'%3E%E2%9D%84%3C/text%3E%3C/svg%3E");
     background-repeat: repeat;
 }
 
-/* Brand/logo area glows red on Christmas */
+/* Logo glows gold in sidebar */
 [data-theme="christmas"] .nav-logo-text,
 [data-theme="christmas"] .nav-logo-icon {
-    color: var(--xmas-red) !important;
-    text-shadow: 0 0 12px rgba(232, 55, 42, 0.6);
+    color: #FFD700 !important;
+    text-shadow: 0 0 10px rgba(212, 160, 23, 0.7);
+}
+
+/* Nav active item: warm white highlight */
+[data-theme="christmas"] .nav-item--active,
+[data-theme="christmas"] .nav-link.is-active {
+    background: rgba(255, 255, 255, 0.17) !important;
+    box-shadow: inset 2px 0 0 #FFD700;
 }
 
 /*---PAGE_TITLE---*/
 
+/* Red → gold gradient on dark background */
 [data-theme="christmas"] .page-title {
     background: linear-gradient(
         120deg,
-        var(--xmas-gold)   0%,
-        var(--xmas-red)    30%,
-        var(--xmas-white)  55%,
-        var(--xmas-green)  75%,
-        var(--xmas-gold)   100%
+        #E8372A 0%,
+        #D4A017 35%,
+        #EDF6EF 60%,
+        #E8372A 100%
     );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    animation: xmas-title-shift 8s ease-in-out infinite;
     background-size: 200% 100%;
+    animation: xmas-title-shift 7s ease-in-out infinite;
 }
 
 [data-theme="christmas"] .page-title::after {
-    background: linear-gradient(90deg, var(--xmas-red), var(--xmas-gold));
-    opacity: 0.8;
+    background: linear-gradient(90deg, #E8372A, #D4A017);
+    opacity: 0.7;
 }
 
 @keyframes xmas-title-shift {
@@ -198,109 +203,96 @@
 /*---CARDS---*/
 
 [data-theme="christmas"] .card:hover {
-    border-color: rgba(232, 55, 42, 0.22) !important;
+    border-color: rgba(200, 35, 26, 0.20) !important;
     box-shadow:
-        0 0 0 1px rgba(232, 55, 42, 0.12),
-        0 4px 20px rgba(0, 8, 2, 0.7),
-        0 0 20px rgba(232, 55, 42, 0.06) !important;
+        0 0 0 1px rgba(200, 35, 26, 0.10),
+        0 6px 24px rgba(100, 20, 15, 0.10) !important;
 }
 
-/* Subtle top-edge ribbon on cards */
-[data-theme="christmas"] .card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    background: linear-gradient(90deg,
-        var(--xmas-red) 0%,
-        var(--xmas-gold) 33%,
-        var(--xmas-green) 66%,
-        var(--xmas-red) 100%
-    );
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-[data-theme="christmas"] .card:hover::before {
-    opacity: 0.6;
-}
-
+/* Red/gold top ribbon appears on hover */
 [data-theme="christmas"] .card {
     position: relative;
     overflow: hidden;
+}
+
+[data-theme="christmas"] .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    background: linear-gradient(90deg, #C8231A 0%, #D4A017 50%, #C8231A 100%);
+    opacity: 0;
+    transition: opacity 0.28s ease;
+}
+
+[data-theme="christmas"] .card:hover::before {
+    opacity: 0.75;
 }
 
 /*---BRAND_ELEMENTS---*/
 
 [data-theme="christmas"] .btn-primary,
 [data-theme="christmas"] .btn-primary:hover {
-    background-color: var(--xmas-red) !important;
-    border-color: var(--xmas-red) !important;
-    box-shadow: 0 0 12px rgba(232, 55, 42, 0.45) !important;
+    background-color: #C8231A !important;
+    border-color: #C8231A !important;
+    box-shadow: 0 2px 10px rgba(200, 35, 26, 0.35) !important;
 }
 
 [data-theme="christmas"] .btn-primary:hover {
-    background-color: #C42B1F !important;
-    box-shadow: 0 0 20px rgba(232, 55, 42, 0.6) !important;
-}
-
-/* Active nav items get a Christmas red glow */
-[data-theme="christmas"] .nav-item--active,
-[data-theme="christmas"] .nav-link.is-active {
-    background: var(--sidebar-active) !important;
-    box-shadow: 0 0 8px rgba(232, 55, 42, 0.2) inset;
-}
-
-/*---BREADCRUMB---*/
-
-[data-theme="christmas"] .breadcrumb-item.active { color: var(--xmas-gold); }
-
-/*---SCROLLBAR---*/
-
-[data-theme="christmas"] ::-webkit-scrollbar { width: 7px; }
-[data-theme="christmas"] ::-webkit-scrollbar-track { background: rgba(4, 10, 6, 0.8); }
-[data-theme="christmas"] ::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, var(--xmas-red), var(--xmas-green));
-    border-radius: 4px;
-}
-[data-theme="christmas"] ::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, #ff4433, var(--xmas-gold));
-}
-
-/*---SCROLL_TOP_BTN---*/
-
-[data-theme="christmas"] #scrollTopBtn {
-    background: var(--xmas-red);
-    border-color: rgba(232, 55, 42, 0.4);
-    box-shadow: 0 4px 16px rgba(232, 55, 42, 0.5);
-    animation: xmas-star-pulse 2s ease-in-out infinite;
-}
-
-@keyframes xmas-star-pulse {
-    0%, 100% { box-shadow: 0 4px 16px rgba(232, 55, 42, 0.5); }
-    50%       { box-shadow: 0 4px 24px rgba(232, 55, 42, 0.8), 0 0 10px rgba(255, 215, 0, 0.3); }
+    background-color: #A81D15 !important;
+    box-shadow: 0 4px 16px rgba(200, 35, 26, 0.5) !important;
 }
 
 /*---FORMS---*/
 
 [data-theme="christmas"] .form-control:focus,
 [data-theme="christmas"] .form-select:focus {
-    border-color: var(--xmas-red);
+    border-color: #E8372A;
     box-shadow: 0 0 0 3px rgba(232, 55, 42, 0.18);
+}
+
+/*---BREADCRUMB---*/
+
+[data-theme="christmas"] .breadcrumb-item.active {
+    color: #C8231A;
+    font-weight: 500;
+}
+
+/*---SCROLLBAR---*/
+
+[data-theme="christmas"] ::-webkit-scrollbar { width: 7px; }
+[data-theme="christmas"] ::-webkit-scrollbar-track { background: rgba(11, 22, 16, 0.8); }
+[data-theme="christmas"] ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #C8231A, #D4A017);
+    border-radius: 4px;
+}
+[data-theme="christmas"] ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #A81D15, #C8231A);
+}
+
+/*---SCROLL_TOP_BTN---*/
+
+[data-theme="christmas"] #scrollTopBtn {
+    background: #C8231A;
+    border-color: rgba(200, 35, 26, 0.35);
+    box-shadow: 0 4px 16px rgba(200, 35, 26, 0.4);
+    animation: xmas-star-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes xmas-star-pulse {
+    0%, 100% { box-shadow: 0 4px 16px rgba(200, 35, 26, 0.4); }
+    50%       { box-shadow: 0 4px 22px rgba(200, 35, 26, 0.65), 0 0 8px rgba(212, 160, 23, 0.3); }
 }
 
 /*---LOADING_BAR---*/
 
 [data-theme="christmas"] .progress-bar-value {
-    background: linear-gradient(90deg, var(--xmas-red), var(--xmas-gold), var(--xmas-green));
+    background: linear-gradient(90deg, #C8231A, #D4A017, #C8231A);
 }
 
-/*---FOOTER---*/
+/*---PAGINATION---*/
 
-[data-theme="christmas"] .app-footer {
-    background: rgba(4, 10, 6, 0.95) !important;
-    border-top-color: rgba(90, 200, 110, 0.12) !important;
+[data-theme="christmas"] .pagination .page-item.active .page-link {
+    background-color: #C8231A;
 }

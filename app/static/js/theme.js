@@ -19,7 +19,7 @@ var _BODY_COLORS    = {
     forest:    '#020704',
     midnight:  '#030108',
     slate:     '#0C1422',
-    christmas: '#07100A',
+    christmas: '#0B1610',
 };
 
 // Extend with server-injected custom themes (window.__CUSTOM_THEMES__ set in base.html)
