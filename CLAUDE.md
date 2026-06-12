@@ -67,7 +67,7 @@ app/
   core/
     db_class/                # models: user.py, log.py, config.py, site_config.py
     utils/
-      decorators.py          # @login_required, @admin_required, @feature_required
+      decorators.py          # require_permission(key, public=False) — public=True bypasses all auth/perms
       utils.py               # form_to_dict, get_by_id_or_uuid
       logger.py              # log_action()
       mailer.py              # send_verification_email(), send_test_email() — reads SMTP from os.environ
@@ -88,11 +88,18 @@ app/
     jobs/                    # background jobs (/jobs/, /jobs/<uuid>)
       jobs.py                # route — jobs.view / jobs.manage
       jobs_core.py           # CRUD, cancel, pause, resume, retry, bulk operations
+    tags/                    # tag management (/tags/)
+      tags.py                # route — tags.view
+      tags_core.py           # CRUD, taxonomy import, galaxy import, bulk actions
+                             # Job handlers: tags.import_taxonomy, tags.import_galaxy
+                             #               tags.import_all_taxonomies, tags.import_all_galaxies
+                             # Sources: modules/misp-taxonomies/, modules/misp-galaxy/clusters/
   core/
     db_class/
       comment.py             # Comment (threading: parent_id/depth/root_id, soft-delete) + CommentReaction
       custom_theme.py        # CustomTheme — custom + built-in overrides, is_public visibility
       job.py                 # Job — status, progress, logs, result, duration
+      tag.py                 # Tag — source(custom|taxonomy|galaxy|vulnerability), color, icon, is_public
     utils/
       job_runner.py          # ThreadPoolExecutor daemon, JobContext, register_handler(), enqueue_job()
   api/
@@ -106,7 +113,11 @@ app/
                              # PUT/DELETE /themes/<uuid>, PATCH /themes/<uuid>/visibility
     jobs_api.py              # GET/POST /jobs, GET /jobs/types, GET/DELETE /jobs/<uuid>
                              # POST /jobs/<uuid>/cancel|pause|resume|retry, POST /jobs/bulk
+    tags_api.py              # GET/POST /tags/, GET/PUT/DELETE /tags/<uuid>, POST /tags/bulk
+                             # GET /tags/namespaces, GET /tags/import/sources
+                             # POST /tags/import/taxonomy, POST /tags/import/galaxy
   templates/
+    tags/index.html          # Tag admin page: data-table, source filter chips, import panel, create modal
     comments/forum.html      # Community Forum page using <comment-thread> Vue component
     site_settings/index.html # includes Python Packages + Git Submodules (add/update/remove via jobs)
     account/verify.html      # email verification code entry page
@@ -117,14 +128,17 @@ app/
     css/comments/comments.css
     css/site_settings/site_settings.css
     css/jobs/jobs.css        # status badges, progress bars, log panel, detail grid
+    css/tags/tags.css        # split pill, source chips, import panel, create modal
     css/themes/theme.css     # built-in theme overrides (static)
     css/themes/custom-themes.css  # auto-generated from DB (regenerated on every theme change)
+    css/core.css             # includes .admin-tabs-bar / .admin-tab (inner nav for all admin pages)
     js/
       constants.js           # TOAST, CSRF_TOKEN, apiFetch()
       toaster.js             # create_message(text, type, not_hide, link) — link={href,label,target}
       job-monitor.js         # global floating job widget (separate Vue app on #job-monitor-widget)
       components/            # loading-bar.js, pagination.js, data-table.js
                              # comment-thread.js — recursive Vue component (infinite scroll, reactions, collapse)
+                             # tag-pill.js — split pill display (left: dark icon+namespace, right: colored label, YIQ contrast)
     css/components/
       job-monitor.css        # floating widget: .jm-panel, .jm-header, .jm-body, .jm-logs
 

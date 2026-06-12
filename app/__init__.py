@@ -97,7 +97,7 @@ def create_app():
         else:
             is_admin = False
             perms    = []
-        nav_items = get_nav_for_user(is_admin, perms)
+        nav_items = get_nav_for_user(is_admin, perms, is_authenticated=current_user.is_authenticated)
         # Inject dynamic pages (Template Studio published pages) into the nav
         try:
             for page in PD.query.filter_by(is_active=True, is_published=True).all():

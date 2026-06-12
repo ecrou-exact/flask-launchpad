@@ -18,15 +18,20 @@ from .utils import get_user_api, verif_api_key
 
 # ── HTML routes ───────────────────────────────────────────────────────────────
 
-def require_permission(key=None):
+def require_permission(key=None, public=False):
     """Universal decorator for HTML routes.
 
     Replaces @login_required, @admin_required, and the old @feature_required.
-    Always redirects to login when unauthenticated (never 403 on public forms).
+    Always redirects to login when unauthenticated (never 403 on public forms),
+    unless public=True in which case anonymous users are served without redirect.
     """
     def decorator(f):
         @wraps(f)
         def decorated(*args, **kwargs):
+            # Public pages — no auth or permission check at all
+            if public:
+                return f(*args, **kwargs)
+
             if not current_user.is_authenticated:
                 return redirect(url_for('account.login', next=request.url))
 

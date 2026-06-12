@@ -80,7 +80,10 @@ def test_api_list_bad_key_403(client):
 def test_api_list_admin_ok(client):
     res = client.get('/api/tags/', headers={'X-API-KEY': 'admin_api_key'})
     assert res.status_code == 200
-    assert isinstance(res.get_json(), list)
+    d = res.get_json()
+    assert 'items' in d
+    assert 'total' in d
+    assert isinstance(d['items'], list)
 
 
 def test_api_list_reader_no_perm(client):
@@ -92,6 +95,7 @@ def test_api_list_editor_with_perm(client, app):
     _grant_permission(app, 'Editor', 'tags.view')
     res = client.get('/api/tags/', headers={'X-API-KEY': 'editor_api_key'})
     assert res.status_code == 200
+    assert 'items' in res.get_json()
 
 
 # ── API POST create ───────────────────────────────────────────────────────────
@@ -229,7 +233,7 @@ def test_private_tag_not_visible_to_others(client, app):
     # Editor should not see it
     res = client.get('/api/tags/', headers={'X-API-KEY': 'editor_api_key'})
     assert res.status_code == 200
-    names = [t['name'] for t in res.get_json()]
+    names = [t['name'] for t in res.get_json()['items']]
     assert 'private:secret' not in names
 
 
@@ -239,14 +243,14 @@ def test_public_tag_visible_to_all(client, app):
     _create_tag(app, name='tlp:green', is_public=True, source='taxonomy')
     res = client.get('/api/tags/', headers={'X-API-KEY': 'editor_api_key'})
     assert res.status_code == 200
-    names = [t['name'] for t in res.get_json()]
+    names = [t['name'] for t in res.get_json()['items']]
     assert 'tlp:green' in names
 
 
 # ── Namespaces endpoint ───────────────────────────────────────────────────────
 
 def test_api_namespaces_admin(client, app):
-    _create_tag(app, name='alpha:one')
+    _create_tag(app, name='alpha:one', source='taxonomy', is_public=True)
     res = client.get('/api/tags/namespaces', headers={'X-API-KEY': 'admin_api_key'})
     assert res.status_code == 200
     assert 'alpha' in res.get_json()['namespaces']

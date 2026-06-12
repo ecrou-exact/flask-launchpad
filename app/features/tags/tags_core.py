@@ -26,7 +26,7 @@ SOURCE_ICONS = {
 
 def _galaxy_color(value: str) -> str:
     """Generate a deterministic HSL color from a string (MD5 hash)."""
-    h = hashlib.md5(value.encode()).hexdigest()
+    h = hashlib.md5(value.encode(), usedforsecurity=False).hexdigest()
     hue = int(h[:2], 16) / 255 * 360
     return f"hsl({hue:.0f}, 72%, 52%)"
 
@@ -103,6 +103,52 @@ def list_tags(source=None, namespace=None, is_active=None, is_public=None,
             )
         )
     return q.order_by(Tag.namespace, Tag.name).all()
+
+
+def list_tags_paginated(source=None, namespace=None, is_active=None, is_public=None,
+                        viewer_id=None, is_admin=False,
+                        page=1, per_page=25, search='', sort='name', direction='asc'):
+    """Return (items, total, total_pages) with pagination, search, and sort."""
+    q = Tag.query
+
+    if source:
+        q = q.filter_by(source=source)
+    if namespace:
+        q = q.filter_by(namespace=namespace)
+    if is_active is not None:
+        q = q.filter_by(is_active=is_active)
+    if is_public is not None:
+        q = q.filter_by(is_public=is_public)
+    if not is_admin and viewer_id:
+        q = q.filter(
+            db.or_(
+                Tag.is_public == True,
+                db.and_(Tag.source == 'custom', Tag.created_by == viewer_id)
+            )
+        )
+    if search:
+        pattern = f'%{search}%'
+        q = q.filter(
+            db.or_(Tag.name.ilike(pattern), Tag.description.ilike(pattern))
+        )
+
+    sort_col = {
+        'name':       Tag.name,
+        'namespace':  Tag.namespace,
+        'source':     Tag.source,
+        'created_at': Tag.created_at,
+        'is_active':  Tag.is_active,
+    }.get(sort, Tag.name)
+
+    if direction == 'desc':
+        q = q.order_by(sort_col.desc())
+    else:
+        q = q.order_by(sort_col.asc())
+
+    total = q.count()
+    total_pages = max(1, (total + per_page - 1) // per_page)
+    items = q.offset((page - 1) * per_page).limit(per_page).all()
+    return items, total, total_pages
 
 
 def get_tag_by_uuid(uuid: str) -> Tag | None:

@@ -9,7 +9,7 @@ from ..core.utils.decorators import api_require_permission
 from ..core.utils.utils import get_user_api
 from ..core.db_class.tag import Tag
 from ..features.tags.tags_core import (
-    list_tags, get_tag_by_uuid, create_tag_core, update_tag_core,
+    list_tags, list_tags_paginated, get_tag_by_uuid, create_tag_core, update_tag_core,
     delete_tag_core, bulk_action_core, get_import_sources,
     enqueue_taxonomy_import, enqueue_galaxy_import,
     enqueue_all_taxonomies_import, enqueue_all_galaxies_import,
@@ -39,8 +39,9 @@ class TagList(Resource):
 
     @api_require_permission('tags.view')
     def get(self):
-        """List tags with optional filters."""
+        """List tags with pagination, search, sort, and source filter."""
         user, is_admin = _get_caller()
+
         source    = request.args.get('source')
         namespace = request.args.get('namespace')
         is_active_str = request.args.get('is_active')
@@ -50,15 +51,24 @@ class TagList(Resource):
         elif is_active_str == '0':
             is_active = False
 
-        tags = list_tags(
-            source=source,
-            namespace=namespace,
-            is_active=is_active,
-            viewer_id=user.id if user else None,
-            is_admin=is_admin,
+        page     = max(1, int(request.args.get('page', 1)))
+        per_page = min(200, max(1, int(request.args.get('per_page', 25))))
+        search   = request.args.get('search', '').strip()
+        sort     = request.args.get('sort', 'name')
+        direction = request.args.get('dir', 'asc')
+
+        items, total, total_pages = list_tags_paginated(
+            source=source, namespace=namespace, is_active=is_active,
+            viewer_id=user.id if user else None, is_admin=is_admin,
+            page=page, per_page=per_page, search=search,
+            sort=sort, direction=direction,
         )
         vid = user.id if user else None
-        return [t.to_json(viewer_id=vid, is_admin=is_admin) for t in tags], 200
+        return {
+            'items':       [t.to_json(viewer_id=vid, is_admin=is_admin) for t in items],
+            'total':       total,
+            'total_pages': total_pages,
+        }, 200
 
     @api_require_permission('tags.manage')
     def post(self):

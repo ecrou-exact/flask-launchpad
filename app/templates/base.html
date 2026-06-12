@@ -183,6 +183,16 @@
                 </template>
             </div>
 
+            {# ── Admin inner tabs — auto-injected on admin/jobs/tags paths ── #}
+            {% set _is_admin_path = (
+                request.path.startswith('/admin') or
+                request.path.startswith('/jobs') or
+                request.path.startswith('/tags')
+            ) %}
+            {% if _is_admin_path %}
+            {% include 'macros/_admin_tabs.html' %}
+            {% endif %}
+
             {% block content %}{% endblock %}
         </main>
 

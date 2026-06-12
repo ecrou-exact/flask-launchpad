@@ -130,9 +130,13 @@ class User(UserMixin, db.Model):
 
 
 class AnonymousUser(AnonymousUserMixin):
-    def is_admin(self):  return False
-    def read_only(self): return True
-    def initials(self):  return '?'
+    id   = None
+    role = None
+    def is_admin(self):           return False
+    def read_only(self):          return True
+    def initials(self):           return '?'
+    def full_name(self):          return 'Anonymous'
+    def has_permission(self, k):  return False
 
 
 login_manager.anonymous_user = AnonymousUser

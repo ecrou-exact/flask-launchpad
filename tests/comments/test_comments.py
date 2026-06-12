@@ -29,10 +29,10 @@ def _grant_permission(app, role_name, perm_key):
 
 # ── Forum HTML route ──────────────────────────────────────────────────────────
 
-def test_forum_requires_login(client):
-    """Anonymous user is redirected to login."""
+def test_forum_public_access(client):
+    """Anonymous user can access the forum (public page)."""
     res = client.get('/comments/', follow_redirects=False)
-    assert res.status_code == 302
+    assert res.status_code == 200
 
 
 def test_forum_admin_can_access(client, app):
@@ -42,11 +42,11 @@ def test_forum_admin_can_access(client, app):
     assert res.status_code == 200
 
 
-def test_forum_no_permission_forbidden(client):
-    """Editor without comments.view is forbidden."""
+def test_forum_no_permission_still_viewable(client):
+    """Editor without comments.view can still view the forum (public page)."""
     login_as(client, 'editor@editor.editor', 'editor')
     res = client.get('/comments/')
-    assert res.status_code == 403
+    assert res.status_code == 200
 
 
 def test_forum_with_view_permission(client, app):

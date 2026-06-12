@@ -552,7 +552,8 @@ export default {
                     sort:     sort_key.value,
                     dir:      sort_dir.value,
                 })
-                const res = await apiFetch(`${props.fetchUrl}?${params}`)
+                const sep = props.fetchUrl.includes('?') ? '&' : '?'
+                const res = await apiFetch(`${props.fetchUrl}${sep}${params}`)
                 if (!res.ok) {
                     loading.value = false
                     return
