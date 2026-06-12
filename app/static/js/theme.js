@@ -10,15 +10,16 @@
   - localStorage mirrors DB for instant no-flash behaviour
 */
 
-var _DARK_THEMES    = ['dark', 'forest', 'midnight', 'slate'];
-var _CUSTOM_THEMES  = ['ocean', 'forest', 'midnight', 'slate'];
+var _DARK_THEMES    = ['dark', 'forest', 'midnight', 'slate', 'christmas'];
+var _CUSTOM_THEMES  = ['ocean', 'forest', 'midnight', 'slate', 'christmas'];
 var _BODY_COLORS    = {
-    light:    '#F5F1EC',
-    dark:     '#0E0C10',
-    ocean:    '#E8F4FD',
-    forest:   '#020704',
-    midnight: '#030108',
-    slate:    '#0C1422',
+    light:     '#F5F1EC',
+    dark:      '#0E0C10',
+    ocean:     '#E8F4FD',
+    forest:    '#020704',
+    midnight:  '#030108',
+    slate:     '#0C1422',
+    christmas: '#0B1610',
 };
 
 // Extend with server-injected custom themes (window.__CUSTOM_THEMES__ set in base.html)

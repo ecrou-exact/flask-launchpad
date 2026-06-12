@@ -1,0 +1,613 @@
+{% extends 'base.html' %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/lab/lab.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/diff-viewer.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/code-viewer.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/smart-editor.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/pivotick.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/graph-viewer.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper" v-cloak>
+    <loading-bar :active="!ready"></loading-bar>
+
+    <div v-if="ready">
+
+        <div class="page-header">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-1">
+                        <li class="breadcrumb-item"><a href="/">Home</a></li>
+                        <li class="breadcrumb-item active">Component Lab</li>
+                    </ol>
+                </nav>
+                <h1 class="page-title">Component Lab</h1>
+            </div>
+        </div>
+
+        <div class="page-body">
+            <div class="lab-layout">
+
+                <!-- ── Sidebar nav ───────────────────────────────── -->
+                <aside class="lab-nav">
+                    <p class="lab-nav-title">Components</p>
+                    <a
+                        v-for="c in components"
+                        :key="c.id"
+                        :href="'#' + c.id"
+                        class="lab-nav-link"
+                        :class="{ 'is-active': active_section === c.id }"
+                        @click.prevent="scroll_to(c.id)">
+                        <i :class="'fas ' + c.icon"></i>
+                        [[ c.label ]]
+                    </a>
+                </aside>
+
+                <!-- ── Component sections ────────────────────────── -->
+                <div class="lab-content">
+
+                    <!-- DIFF VIEWER -->
+                    <section class="lab-card" id="diff-viewer">
+                        <div class="lab-card-header">
+                            <div class="lab-card-meta">
+                                <span class="lab-card-icon"><i class="fas fa-code-compare"></i></span>
+                                <div>
+                                    <h2 class="lab-card-title">Diff Viewer</h2>
+                                    <p class="lab-card-desc">
+                                        Side-by-side or unified diff — intraline highlights,
+                                        synchronized scroll, hunk navigation, custom colors.
+                                    </p>
+                                </div>
+                            </div>
+                            <code class="lab-file-badge">diff-viewer.js</code>
+                        </div>
+                        <div class="lab-card-body">
+                            <diff-viewer
+                                left-label="v1 · config.json"
+                                right-label="v2 · config.json"
+                                :initial-left="diff_left"
+                                :initial-right="diff_right"
+                                mode="input">
+                            </diff-viewer>
+                        </div>
+                        <details class="lab-usage">
+                            <summary><i class="fas fa-code"></i> Usage</summary>
+                            <pre class="lab-usage-code">import DiffViewer from '/static/js/components/diff-viewer.js'
+
+&lt;diff-viewer
+    left-label="Original"
+    right-label="Modified"
+    :initial-left="old_text"
+    :initial-right="new_text"&gt;
+    mode: 'read' | 'input' (default: 'read') — if 'input', both sides are editable and emit update events
+&lt;/diff-viewer&gt;</pre>
+                        </details>
+                    </section>
+
+                    <!-- CODE VIEWER -->
+                    <section class="lab-card" id="code-viewer">
+                        <div class="lab-card-header">
+                            <div class="lab-card-meta">
+                                <span class="lab-card-icon"><i class="fas fa-file-code"></i></span>
+                                <div>
+                                    <h2 class="lab-card-title">Code Viewer</h2>
+                                    <p class="lab-card-desc">
+                                        Syntax highlighting via highlight.js — JSON fold tree,
+                                        integrated search, line numbers, copy.
+                                    </p>
+                                </div>
+                            </div>
+                            <code class="lab-file-badge">code-viewer.js</code>
+                        </div>
+
+                        <div class="lab-demo-tabs">
+                            <button
+                                v-for="d in code_demos"
+                                :key="d.id"
+                                class="lab-demo-tab"
+                                :class="{ 'is-active': active_demo === d.id }"
+                                @click="active_demo = d.id">
+                                [[ d.label ]]
+                            </button>
+                        </div>
+
+                        <div class="lab-card-body">
+                            <code-viewer
+                                :code="current_demo.code"
+                                :language="current_demo.lang"
+                                :title="current_demo.title"
+                                max-height="460px">
+                            </code-viewer>
+                        </div>
+                        <details class="lab-usage">
+                            <summary><i class="fas fa-code"></i> Usage</summary>
+                            <pre class="lab-usage-code">import CodeViewer from '/static/js/components/code-viewer.js'
+
+&lt;!-- JSON with fold tree (auto-detected) --&gt;
+&lt;code-viewer :code="json_str" title="config.json"&gt;&lt;/code-viewer&gt;
+
+&lt;!-- Explicit language --&gt;
+&lt;code-viewer :code="source" language="python" title="app.py"&gt;&lt;/code-viewer&gt;</pre>
+                        </details>
+                    </section>
+
+                    <!-- SMART EDITOR -->
+                    <section class="lab-card" id="smart-editor">
+                        <div class="lab-card-header">
+                            <div class="lab-card-meta">
+                                <span class="lab-card-icon"><i class="fas fa-pen-to-square"></i></span>
+                                <div>
+                                    <h2 class="lab-card-title">Smart Editor</h2>
+                                    <p class="lab-card-desc">
+                                        Rich form field — plain text, Markdown, or code with syntax highlighting.
+                                        Mode and language are fixed by props. Auto-close brackets, smart indent,
+                                        v-model and form-name compatible.
+                                    </p>
+                                </div>
+                            </div>
+                            <code class="lab-file-badge">smart-editor.js</code>
+                        </div>
+
+                        <div class="lab-demo-tabs">
+                            <button
+                                v-for="d in editor_demos"
+                                :key="d.id"
+                                class="lab-demo-tab"
+                                :class="{ 'is-active': active_editor_demo === d.id }"
+                                @click="active_editor_demo = d.id">
+                                [[ d.label ]]
+                            </button>
+                        </div>
+
+                        <div class="lab-card-body">
+                            <template v-for="d in editor_demos" :key="d.id">
+                                <smart-editor
+                                    v-if="active_editor_demo === d.id"
+                                    v-model="editor_values[d.id]"
+                                    :mode="d.mode"
+                                    :language="d.language"
+                                    :placeholder="d.placeholder"
+                                    min-height="260px"
+                                    max-height="520px">
+                                </smart-editor>
+                            </template>
+                            <div class="lab-editor-output">
+                                <span class="lab-editor-output-label">Current value</span>
+                                <code class="lab-editor-output-val">[[ editor_values[active_editor_demo].slice(0, 200) || '(empty)' ]]</code>
+                            </div>
+                        </div>
+
+                        <details class="lab-usage">
+                            <summary><i class="fas fa-code"></i> Usage</summary>
+                            <pre class="lab-usage-code">import SmartEditor from '/static/js/components/smart-editor.js'
+
+&lt;!-- v-model, markdown mode --&gt;
+&lt;smart-editor v-model="body" mode="markdown"&gt;&lt;/smart-editor&gt;
+
+&lt;!-- Plain form field (no Vue) — submits with the form --&gt;
+&lt;smart-editor name="content" mode="code" language="python"&gt;&lt;/smart-editor&gt;
+
+&lt;!-- Props --&gt;
+mode        'text' | 'markdown' | 'code'     (default: 'text')
+language    'javascript' | 'python' | ...    (code mode)
+name        HTML name → hidden input for form submit
+min-height  CSS string   (default: '220px')
+max-height  CSS string   (default: '600px')</pre>
+                        </details>
+                    </section>
+
+                    <!-- ── Graph Viewer ── -->
+                    <section class="lab-card" id="graph-viewer">
+                        <div class="lab-card-header">
+                            <div class="lab-card-meta">
+                                <span class="lab-card-icon"><i class="fas fa-diagram-project"></i></span>
+                                <div>
+                                    <h2 class="lab-card-title">Graph Viewer</h2>
+                                    <p class="lab-card-desc">
+                                        Network graph powered by <a href="https://github.com/Pivotick/Pivotick" target="_blank">Pivotick</a>.
+                                        JSON config maps node/edge types to shapes and colors.
+                                        Two modes: <code>simple</code> (viewer) and <code>dev</code> (full UI + filters).
+                                        Use the <i class="fas fa-code"></i> button to edit the config/data live.
+                                    </p>
+                                </div>
+                            </div>
+                            <code class="lab-file-badge">graph-viewer.js</code>
+                        </div>
+
+                        <!-- Mode tabs -->
+                        <div class="lab-tabs">
+                            <button
+                                v-for="d in graph_demos" :key="d.id"
+                                class="lab-tab"
+                                :class="{ 'is-active': active_graph_demo === d.id }"
+                                @click="active_graph_demo = d.id"
+                            >[[ d.label ]]</button>
+                        </div>
+
+                        <graph-viewer
+                            :config="graph_config"
+                            :data="graph_data"
+                            :mode="active_graph_demo"
+                            :editable="true"
+                            height="520px"
+                        ></graph-viewer>
+
+                        <details class="lab-usage">
+                            <summary>Usage</summary>
+                            <pre class="lab-usage-code">import GraphViewer from '/static/js/components/graph-viewer.js'
+
+&lt;!-- Simple mode: pan/zoom only --&gt;
+&lt;graph-viewer :config="cfg" :data="dat" mode="simple" height="400px"&gt;&lt;/graph-viewer&gt;
+
+&lt;!-- Dev mode: full UI + node type filters + search --&gt;
+&lt;graph-viewer :config="cfg" :data="dat" mode="dev" height="500px"&gt;&lt;/graph-viewer&gt;
+
+&lt;!-- Editable: live JSON editor panel for config + data --&gt;
+&lt;graph-viewer :config="cfg" :data="dat" :editable="true" height="600px"&gt;&lt;/graph-viewer&gt;
+
+/* Config JSON schema */
+{
+  "graph": { "directed": true },
+  "nodes": {
+    "id_field": "id",
+    "label_field": "label",
+    "type_field": "type",
+    "default": { "color": "#888", "shape": "circle", "size": 16 },
+    "types": {
+      "person": { "color": "#4e79a7", "shape": "circle", "size": 22, "label_field": "name" },
+      "company": { "color": "#f28e2b", "shape": "hexagon", "size": 28 }
+    }
+  },
+  "edges": {
+    "from_field": "from",
+    "to_field": "to",
+    "label_field": "label",
+    "type_field": "type",
+    "default": { "color": "#aaa" },
+    "types": {
+      "works_at":  { "color": "#4e79a7", "dashed": false },
+      "founded":   { "color": "#f28e2b", "dashed": true  }
+    }
+  }
+}
+
+/* Data JSON schema */
+{
+  "nodes": [
+    { "id": "1", "type": "person",  "name": "Alice" },
+    { "id": "2", "type": "company", "label": "Acme Corp" }
+  ],
+  "edges": [
+    { "from": "1", "to": "2", "type": "works_at", "label": "Employee" }
+  ]
+}</pre>
+                        </details>
+                    </section>
+
+                    <!-- ── New components go here ── -->
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script type="module">
+    const { createApp, ref, computed, onMounted, onUnmounted } = Vue
+    import { message_list } from '/static/js/toaster.js'
+    import LoadingBar  from '/static/js/components/loading-bar.js'
+    import DiffViewer   from '/static/js/components/diff-viewer.js'
+    import CodeViewer   from '/static/js/components/code-viewer.js'
+    import SmartEditor  from '/static/js/components/smart-editor.js'
+    import GraphViewer  from '/static/js/components/graph-viewer.js'
+
+    const DIFF_LEFT = `{
+  "app": "flask-launchpad",
+  "version": "1.4.0",
+  "debug": false,
+  "database": {
+    "engine": "sqlite",
+    "path": "instance/ptitcrolle.sqlite",
+    "pool_size": 5
+  },
+  "features": {
+    "registration": true,
+    "email_verification": false,
+    "comments": true,
+    "jobs": true
+  },
+  "smtp": { "host": "smtp.example.com", "port": 587, "use_tls": true },
+  "log_level": "INFO"
+}`
+
+    const DIFF_RIGHT = `{
+  "app": "flask-launchpad",
+  "version": "1.5.0",
+  "debug": true,
+  "database": {
+    "engine": "postgres",
+    "url": "postgresql://user:pass@localhost/launchpad",
+    "pool_size": 10,
+    "pool_timeout": 30
+  },
+  "features": {
+    "registration": true,
+    "email_verification": true,
+    "comments": true,
+    "jobs": true,
+    "code_viewer": true
+  },
+  "smtp": { "host": "smtp.mailgun.org", "port": 587, "use_tls": true },
+  "log_level": "WARNING",
+  "sentry_dsn": "https://abc@sentry.io/123"
+}`
+
+    const PYTHON_CODE = [
+        'from datetime import datetime',
+        'from app import db',
+        'from app.core.utils.logger import log_action',
+        'from app.core.utils.job_runner import enqueue_job',
+        '',
+        '',
+        'def create_item_core(data: dict, user_id: int):',
+        '    """Create a new Item and queue an async processing job."""',
+        '    item = Item(',
+        "        title=data.get('title', '').strip(),",
+        "        description=data.get('description', ''),",
+        '        created_by=user_id,',
+        '        is_active=True,',
+        '        created_at=datetime.utcnow(),',
+        '    )',
+        '    db.session.add(item)',
+        '    db.session.commit()',
+        '',
+        '    job = enqueue_job(',
+        "        'items.process',",
+        "        title=f'Process item: {item.title}',",
+        "        meta={'item_id': item.id},",
+        '        user_id=user_id,',
+        '    )',
+        '',
+        '    log_action(',
+        "        title=f'Item created: {item.title}',",
+        "        action='create', category='items',",
+        "        level='success', object_type='item',",
+        '        object_id=item.id, is_public=True,',
+        '    )',
+        "    return item, job, 'Item created successfully'",
+    ].join('\n')
+
+    const JS_CODE = [
+        '// constants.js — Global helpers for Vue pages',
+        '',
+        'export const TOAST = {',
+        "    SUCCESS: 'success',",
+        "    ERROR:   'error',",
+        "    WARNING: 'warning',",
+        "    INFO:    'info',",
+        '}',
+        '',
+        'export const CSRF_TOKEN = document',
+        '    .querySelector(\'meta[name="csrf-token"]\')',
+        "    ?.getAttribute('content') ?? ''",
+        '',
+        '/**',
+        ' * Thin fetch wrapper — always sends CSRF + JSON headers.',
+        ' */',
+        "export async function apiFetch(url, method = 'GET', body = null) {",
+        '    const opts = {',
+        '        method,',
+        '        headers: {',
+        "            'Content-Type': 'application/json',",
+        "            'X-CSRFToken': CSRF_TOKEN,",
+        '        },',
+        "        credentials: 'same-origin',",
+        '    }',
+        '    if (body !== null) opts.body = JSON.stringify(body)',
+        '    return fetch(url, opts)',
+        '}',
+    ].join('\n')
+
+    const BASH_CODE = [
+        '#!/bin/bash',
+        '# launch.sh — Flask Launchpad management',
+        '',
+        "RED='\\033[0;31m'; GREEN='\\033[0;32m'",
+        "CYAN='\\033[0;36m'; NC='\\033[0m'",
+        '',
+        'info() { echo -e "${CYAN}[INFO]${NC}  $*"; }',
+        'ok()   { echo -e "${GREEN}[ OK ]${NC}  $*"; }',
+        '',
+        'require_venv() {',
+        '    [ -z "$VIRTUAL_ENV" ] || return 0',
+        '    [ -d "venv" ] && source venv/bin/activate && return 0',
+        '    echo "No venv found. Run --setup first." && exit 1',
+        '}',
+        '',
+        'case "$1" in',
+        '    --start)   require_venv; python3 app.py ;;',
+        '    --test)    shift; require_venv; pytest "$@" ;;',
+        '    --migrate) shift; require_venv; flask db migrate -m "$1" ;;',
+        '    --upgrade) require_venv; flask db upgrade ;;',
+        '    *)         echo "Unknown: $1"; exit 1 ;;',
+        'esac',
+    ].join('\n')
+
+    const CODE_DEMOS = [
+        { id: 'json',   label: 'JSON',       lang: 'json',       title: 'config.json', code: DIFF_RIGHT   },
+        { id: 'python', label: 'Python',     lang: 'python',     title: 'core.py',     code: PYTHON_CODE  },
+        { id: 'js',     label: 'JavaScript', lang: 'javascript', title: 'constants.js',code: JS_CODE      },
+        { id: 'bash',   label: 'Bash',       lang: 'bash',       title: 'launch.sh',   code: BASH_CODE    },
+    ]
+
+    createApp({
+        delimiters: ['[[', ']]'],
+        components: { LoadingBar, DiffViewer, CodeViewer, SmartEditor, GraphViewer },
+
+        setup() {
+            const ready          = ref(false)
+            const diff_left      = ref(DIFF_LEFT)
+            const diff_right     = ref(DIFF_RIGHT)
+            const active_demo    = ref('json')
+            const active_section = ref('diff-viewer')
+
+            const components = [
+                { id: 'diff-viewer',   label: 'Diff Viewer',    icon: 'fa-code-compare'  },
+                { id: 'code-viewer',   label: 'Code Viewer',    icon: 'fa-file-code'     },
+                { id: 'smart-editor',  label: 'Smart Editor',   icon: 'fa-pen-to-square' },
+                { id: 'graph-viewer',  label: 'Graph Viewer',   icon: 'fa-diagram-project' },
+            ]
+
+            // ── Smart Editor demo state ───────────────────────────────
+            const MD_SAMPLE = [
+                '# Hello from Smart Editor',
+                '',
+                'This is a **Markdown** editor with _live preview_.',
+                '',
+                '## Features',
+                '- Auto-close brackets: type `{` and `}` appears',
+                '- Tab / Shift+Tab indent',
+                '- Bold, italic, headings from the toolbar',
+                '',
+                '> Try the **Split** view to write and preview side by side.',
+                '',
+                '```python',
+                'def greet(name):',
+                '    return f"Hello, {name}!"',
+                '```',
+            ].join('\n')
+
+            const PY_SAMPLE = [
+                'from app.core.utils.job_runner import register_handler, enqueue_job',
+                '',
+                '',
+                '@register_handler("demo.task")',
+                'def my_task(ctx, meta):',
+                '    total = meta.get("total", 50)',
+                '    for i in range(total):',
+                '        ctx.checkpoint()',
+                '        ctx.update_progress(int(i / total * 100))',
+                '        ctx.log(f"Step {i}")',
+                '    return {"done": total}',
+            ].join('\n')
+
+            const editor_demos = [
+                { id: 'text',     label: 'Plain text', mode: 'text',     language: null,         placeholder: 'Type anything…' },
+                { id: 'markdown', label: 'Markdown',   mode: 'markdown', language: null,         placeholder: '## Hello world' },
+                { id: 'code',     label: 'Code',       mode: 'code',     language: 'python',     placeholder: '# Python code…' },
+            ]
+
+            const editor_values = ref({
+                text:     'Hello, world! Try typing { or [ to see auto-close.',
+                markdown: MD_SAMPLE,
+                code:     PY_SAMPLE,
+            })
+            const active_editor_demo = ref('text')
+
+            // ── Graph Viewer demo state ───────────────────────────────
+            const graph_demos = [
+                { id: 'simple', label: 'Simple (viewer)' },
+                { id: 'dev',    label: 'Dev (full UI)'   },
+            ]
+            const active_graph_demo = ref('simple')
+
+            const graph_config = {
+                graph: { directed: true },
+                nodes: {
+                    id_field:    'id',
+                    label_field: 'label',
+                    type_field:  'type',
+                    default: { color: '#888', shape: 'circle', size: 16 },
+                    types: {
+                        person:  { color: '#4e79a7', shape: 'circle',  size: 22, label_field: 'name' },
+                        company: { color: '#f28e2b', shape: 'hexagon', size: 28 },
+                        tool:    { color: '#76b7b2', shape: 'square',  size: 18 },
+                        project: { color: '#e15759', shape: 'circle',  size: 20 },
+                    }
+                },
+                edges: {
+                    from_field:  'from',
+                    to_field:    'to',
+                    label_field: 'label',
+                    type_field:  'type',
+                    default: { color: '#aaa' },
+                    types: {
+                        works_at:  { color: '#4e79a7', dashed: false },
+                        founded:   { color: '#f28e2b', dashed: true  },
+                        uses:      { color: '#76b7b2', dashed: false },
+                        leads:     { color: '#e15759', dashed: false },
+                    }
+                }
+            }
+
+            const graph_data = {
+                nodes: [
+                    { id: '1', type: 'person',  name: 'Alice',          label: 'Alice'          },
+                    { id: '2', type: 'person',  name: 'Bob',            label: 'Bob'            },
+                    { id: '3', type: 'person',  name: 'Carol',          label: 'Carol'          },
+                    { id: '4', type: 'company', label: 'Acme Corp',     name: 'Acme Corp'       },
+                    { id: '5', type: 'company', label: 'DevHouse',      name: 'DevHouse'        },
+                    { id: '6', type: 'tool',    label: 'Flask',         name: 'Flask'           },
+                    { id: '7', type: 'tool',    label: 'Vue 3',         name: 'Vue 3'           },
+                    { id: '8', type: 'project', label: 'Launchpad',     name: 'Launchpad'       },
+                ],
+                edges: [
+                    { from: '1', to: '4', type: 'works_at', label: 'Employee'  },
+                    { from: '2', to: '4', type: 'works_at', label: 'Employee'  },
+                    { from: '3', to: '5', type: 'works_at', label: 'Employee'  },
+                    { from: '2', to: '5', type: 'founded',  label: 'Founder'   },
+                    { from: '1', to: '8', type: 'leads',    label: 'Tech Lead' },
+                    { from: '3', to: '8', type: 'leads',    label: 'Contributes' },
+                    { from: '8', to: '6', type: 'uses',     label: 'Backend'   },
+                    { from: '8', to: '7', type: 'uses',     label: 'Frontend'  },
+                ]
+            }
+
+            const code_demos = CODE_DEMOS
+
+            const current_demo = computed(() =>
+                code_demos.find(d => d.id === active_demo.value) ?? code_demos[0]
+            )
+
+            // ── Intersection observer for active nav link ─────────────
+            let observer = null
+
+            function setup_observer() {
+                const sections = document.querySelectorAll('.lab-card[id]')
+                observer = new IntersectionObserver(entries => {
+                    entries.forEach(e => {
+                        if (e.isIntersecting) active_section.value = e.target.id
+                    })
+                }, { threshold: 0.3, rootMargin: '-60px 0px -40% 0px' })
+                sections.forEach(s => observer.observe(s))
+            }
+
+            function scroll_to(id) {
+                const el = document.getElementById(id)
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                active_section.value = id
+            }
+
+            onMounted(() => {
+                ready.value = true
+                setTimeout(setup_observer, 200)
+            })
+            onUnmounted(() => observer?.disconnect())
+
+            return {
+                message_list, ready,
+                diff_left, diff_right,
+                active_demo, active_section,
+                components, code_demos, current_demo,
+                editor_demos, editor_values, active_editor_demo,
+                graph_demos, active_graph_demo, graph_config, graph_data,
+                scroll_to,
+            }
+        }
+    }).mount('#main-container')
+</script>
+{% endblock %}

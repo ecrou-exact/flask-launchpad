@@ -444,6 +444,63 @@
 .theme-preview--slate .tp-line--short { width: 40%; }
 
 
+/*---THEME_PREVIEW_CHRISTMAS---*/
+
+.theme-preview--christmas { background: #0B1610; position: relative; overflow: hidden; }
+
+/* Coloured light-strip across the top of the preview card */
+.theme-preview--christmas::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg,
+        #C8231A 0%,  #C8231A 20%,
+        #D4A017 20%, #D4A017 40%,
+        #4A90D9 40%, #4A90D9 60%,
+        #C8231A 60%, #C8231A 80%,
+        #D4A017 80%, #D4A017 100%
+    );
+    animation: xmas-preview-glow 1.6s ease-in-out infinite alternate;
+    z-index: 2;
+}
+
+@keyframes xmas-preview-glow {
+    0%   { opacity: 0.65; }
+    100% { opacity: 1; box-shadow: 0 0 4px 1px rgba(212,160,23,.4); }
+}
+
+.theme-preview--christmas .tp-sidebar {
+    background: #1C3A28;
+    width: 28px; padding: 5px 4px;
+    display: flex; flex-direction: column; gap: 3px; flex-shrink: 0;
+}
+.theme-preview--christmas .tp-logo {
+    width: 14px; height: 8px;
+    background: rgba(255, 215, 0, 0.75);
+    border-radius: 2px; margin-bottom: 3px;
+    box-shadow: 0 0 3px rgba(212,160,23,.5);
+}
+.theme-preview--christmas .tp-nav-item {
+    height: 5px; background: rgba(255, 255, 255, 0.12); border-radius: 2px;
+}
+.theme-preview--christmas .tp-nav-item--active { background: rgba(255, 255, 255, 0.28); }
+.theme-preview--christmas .tp-main { flex: 1; display: flex; flex-direction: column; }
+.theme-preview--christmas .tp-topbar {
+    height: 14px; background: #111E16;
+    border-bottom: 1px solid rgba(90,180,110,0.12); flex-shrink: 0;
+}
+.theme-preview--christmas .tp-content { flex: 1; padding: 5px; display: flex; flex-direction: column; gap: 3px; }
+.theme-preview--christmas .tp-card {
+    background: #111E16; border-radius: 4px; padding: 4px 5px;
+    display: flex; flex-direction: column; gap: 2px;
+    border: 1px solid rgba(90,180,110,0.10);
+}
+.theme-preview--christmas .tp-line { height: 4px; background: rgba(90,180,110,0.10); border-radius: 2px; }
+.theme-preview--christmas .tp-line--title { height: 5px; background: linear-gradient(90deg, rgba(232,55,42,.4), rgba(212,160,23,.35)); width: 60%; }
+.theme-preview--christmas .tp-line--short { width: 40%; }
+
+
 /*---THEME_PREVIEW_CUSTOM---*/
 /* Dynamic preview for custom themes — colors injected as inline CSS vars via Vue :style */
 

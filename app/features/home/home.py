@@ -16,3 +16,9 @@ def home():
 @require_permission()
 def docs():
     return render_template("docs/docs.html")
+
+
+@home_blueprint.route("/lab/components")
+@require_permission('admin_only')
+def lab_components():
+    return render_template("lab/components.html")

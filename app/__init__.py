@@ -39,6 +39,8 @@ def create_app():
     from .features.site_settings.site_settings import site_settings_blueprint
     from .features.comments.comment import comment_blueprint
     from .features.jobs.jobs import jobs_blueprint
+    from .features.template_studio.template_studio import template_studio_blueprint
+    from .features.dynamic_pages.dynamic_pages import dynamic_pages_blueprint
     app.register_blueprint(home_blueprint, url_prefix="/")
     app.register_blueprint(account_blueprint, url_prefix="/account")
     app.register_blueprint(config_blueprint, url_prefix="/")
@@ -46,6 +48,8 @@ def create_app():
     app.register_blueprint(site_settings_blueprint, url_prefix="/admin/settings")
     app.register_blueprint(comment_blueprint, url_prefix="/comments")
     app.register_blueprint(jobs_blueprint, url_prefix="/jobs")
+    app.register_blueprint(template_studio_blueprint, url_prefix="/admin/template-studio")
+    app.register_blueprint(dynamic_pages_blueprint, url_prefix="/pages")
 
     from .api.api import api_blueprint
     csrf.exempt(api_blueprint)
@@ -59,6 +63,7 @@ def create_app():
     from .core.db_class.comment import Comment, CommentReaction        # noqa: F401
     from .core.db_class.custom_theme import CustomTheme               # noqa: F401
     from .core.db_class.job import Job                                 # noqa: F401
+    from .core.db_class.page_definition import PageDefinition         # noqa: F401
 
     @app.context_processor
     def inject_site_config():
@@ -81,6 +86,7 @@ def create_app():
     def inject_user_permissions():
         from flask_login import current_user
         from .core.utils.nav_registry import get_nav_for_user
+        from .core.db_class.page_definition import PageDefinition as PD
         if current_user.is_authenticated:
             is_admin = current_user.is_admin()
             perms    = current_user.role.permission_keys() if current_user.role else []
@@ -88,6 +94,23 @@ def create_app():
             is_admin = False
             perms    = []
         nav_items = get_nav_for_user(is_admin, perms)
+        # Inject dynamic pages (Template Studio published pages) into the nav
+        try:
+            for page in PD.query.filter_by(is_active=True, is_published=True).all():
+                if not page.nav_group:
+                    continue
+                p = page.required_permission
+                visible = (p is None or is_admin or (p != 'admin_only' and p in perms))
+                if visible:
+                    nav_items.append({
+                        'group':      page.nav_group,
+                        'label':      page.nav_label or page.name,
+                        'icon':       page.nav_icon or 'fa-file',
+                        'href':       f'/pages/{page.slug}',
+                        'permission': p,
+                    })
+        except Exception:
+            pass
         return dict(user_is_admin=is_admin, user_perms=perms, nav_items=nav_items)
 
     @app.context_processor

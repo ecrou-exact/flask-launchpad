@@ -123,6 +123,49 @@
     --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.6);
 }
 
+/*---THEME_CHRISTMAS---*/
+/* Festive light — warm snow-white canvas, Christmas red sidebar, gold accents */
+
+[data-theme="christmas"] {
+    /* ── Backgrounds — near-black dark green ── */
+    --bg-body:     #0B1610;
+    --bg-surface:  #111E16;
+    --bg-elevated: #162419;
+    --bg-sidebar:  #1C3A28;
+
+    /* ── Brand — Christmas red ─────────────── */
+    --brand:      #E8372A;
+    --brand-dim:  rgba(232, 55, 42, 0.15);
+    --brand-glow: rgba(232, 55, 42, 0.32);
+
+    /* ── Text ──────────────────────────────── */
+    --text-main:      #EDF6EF;
+    --text-secondary: #9ABFA2;
+    --text-muted:     #527858;
+
+    /* ── Sidebar text (on pine green) ─────── */
+    --text-sidebar:       rgba(237, 246, 239, 0.90);
+    --text-sidebar-muted: rgba(154, 191, 162, 0.46);
+
+    /* ── Borders ───────────────────────────── */
+    --border:         rgba(90, 180, 110, 0.12);
+    --border-subtle:  rgba(90, 180, 110, 0.06);
+    --border-sidebar: rgba(90, 180, 110, 0.14);
+
+    /* ── Sidebar interactions ──────────────── */
+    --sidebar-hover:  rgba(255, 255, 255, 0.07);
+    --sidebar-active: rgba(232, 55, 42, 0.22);
+
+    /* ── Shadows ───────────────────────────── */
+    --shadow-sm: 0 1px 3px rgba(0, 8, 2, 0.50);
+    --shadow-md: 0 4px 16px rgba(0, 8, 2, 0.60);
+    --shadow-lg: 0 12px 40px rgba(0, 8, 2, 0.78);
+
+    /* ── Christmas extras ──────────────────── */
+    --xmas-red:  #E8372A;
+    --xmas-gold: #D4A017;
+}
+
 /*---THEME_SLATE---*/
 /* Blue-grey dark — between dark and light, cool steel tones */
 

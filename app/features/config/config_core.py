@@ -17,7 +17,7 @@ THEME_VAR_KEYS = [
     '--shadow-sm', '--shadow-md', '--shadow-lg',
 ]
 
-BUILTIN_STATIC_THEMES = {'system', 'light', 'dark', 'ocean', 'forest', 'midnight', 'slate'}
+BUILTIN_STATIC_THEMES = {'system', 'light', 'dark', 'ocean', 'forest', 'midnight', 'slate', 'christmas'}
 BUILTIN_OVERRIDABLE = {'dark', 'ocean', 'forest', 'midnight', 'slate'}
 
 _BUILTIN_META = {
