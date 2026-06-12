@@ -48,6 +48,7 @@ DEFAULTS = {
     'allow_registration':          ('1', 'Allow public registration'),
     'allow_login':                 ('1', 'Allow non-admin login'),
     'email_verification_enabled':  ('0', 'Require email verification for new accounts'),
+    'weather_widget_enabled':      ('0', 'Show weather & local time widget in topbar'),
 }
 
 

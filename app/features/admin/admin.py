@@ -17,6 +17,7 @@ def users():
         allow_registration=get_site_bool('allow_registration', default=True),
         allow_login=get_site_bool('allow_login', default=True),
         email_verification_enabled=get_site_bool('email_verification_enabled', default=False),
+        weather_widget_enabled=get_site_bool('weather_widget_enabled', default=False),
     )
 
 

@@ -28,6 +28,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/themes/custom-themes.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/themes/christmas.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/modal.css') }}">
+    {% if weather_widget_enabled %}<link rel="stylesheet" href="{{ url_for('static', filename='css/components/weather-widget.css') }}">{% endif %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/role-badge.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/job-monitor.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/toast/toast.css') }}">
@@ -79,6 +80,30 @@
                     <i class="fas fa-magnifying-glass"></i>
                 </button>
                 {{ role_badge(current_user.role) }}
+                {% endif %}
+
+                {# ── Weather & time widget ── #}
+                {% if weather_widget_enabled %}
+                <div class="ww-chip" id="ww-chip" onclick="wwToggle()" title="Weather & local time">
+                    <span class="ww-icon" id="ww-icon">🌡️</span>
+                    <span class="ww-temp" id="ww-temp"></span>
+                    <span class="ww-sep">·</span>
+                    <span class="ww-time" id="ww-time">--:--</span>
+                    <div class="ww-tooltip" id="ww-tooltip">
+                        <div class="ww-tooltip-header">
+                            <span class="ww-tooltip-icon" id="ww-icon-lg">🌡️</span>
+                            <div>
+                                <div class="ww-tooltip-city" id="ww-city">Detecting…</div>
+                                <div class="ww-tooltip-time-local" id="ww-time-local">--:--</div>
+                            </div>
+                        </div>
+                        <div class="ww-tooltip-body">
+                            <span class="ww-tooltip-desc" id="ww-desc">Loading weather…</span>
+                            <span id="ww-wind"></span>
+                            <span class="ww-tooltip-source">Open-Meteo · OpenStreetMap</span>
+                        </div>
+                    </div>
+                </div>
                 {% endif %}
 
                 {# ── Language picker ── #}
@@ -195,6 +220,7 @@ document.addEventListener('DOMContentLoaded', function () {
 </button>
 <script src="{{ url_for('static', filename='js/scroll-top.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/christmas-effects.js') }}" defer></script>
+{% if weather_widget_enabled %}<script src="{{ url_for('static', filename='js/weather-widget.js') }}" defer></script>{% endif %}
 
 {# ── Global search panel ── #}
 {% if current_user.is_authenticated %}

@@ -71,6 +71,7 @@ def create_app():
         return dict(
             allow_registration=get_site_bool('allow_registration', True),
             allow_login=get_site_bool('allow_login', True),
+            weather_widget_enabled=get_site_bool('weather_widget_enabled', False),
         )
 
     @app.context_processor
