@@ -229,6 +229,7 @@ export default {
         initialRight: { type: String, default: '' },
         leftLabel: { type: String, default: 'Original' },
         rightLabel: { type: String, default: 'Modified' },
+        mode: { type: String, default: 'read' },
     },
 
     template: `
@@ -322,79 +323,80 @@ export default {
 
             </div>
         </div>
-
-        <!-- ── Input panes ──────────────────────────────────────────────── -->
-        <div class="dv-inputs" v-show="show_input">
-            <!-- Left -->
-            <div class="dv-input-pane">
-                <div class="dv-input-header">
-                    <span class="dv-input-label">
-                        <i class="fas fa-circle dv-dot dv-dot--del"></i>
-                        {{ leftLabel }}
-                    </span>
-                    <div class="dv-input-actions">
-                        <button class="dv-btn dv-btn--sm" @click="format_json('left')" title="Format as JSON">
-                            <i class="fa-solid fa-code"></i>
-                        </button>
-                        <label class="dv-btn dv-btn--sm" title="Import file">
-                            <i class="fas fa-file-import"></i>
-                            <input type="file" style="display:none" @change="load_file('left', $event)" />
-                        </label>
-                        <button class="dv-btn dv-btn--sm" @click="left_text = ''" title="Clear">
-                            <i class="fas fa-xmark"></i>
-                        </button>
+        <template v-if="modes.includes('input')">
+            <!-- ── Input panes ──────────────────────────────────────────────── -->
+            <div class="dv-inputs" v-show="show_input">
+                <!-- Left -->
+                <div class="dv-input-pane">
+                    <div class="dv-input-header">
+                        <span class="dv-input-label">
+                            <i class="fas fa-circle dv-dot dv-dot--del"></i>
+                            {{ leftLabel }}
+                        </span>
+                        <div class="dv-input-actions">
+                            <button class="dv-btn dv-btn--sm" @click="format_json('left')" title="Format as JSON">
+                                <i class="fa-solid fa-code"></i>
+                            </button>
+                            <label class="dv-btn dv-btn--sm" title="Import file">
+                                <i class="fas fa-file-import"></i>
+                                <input type="file" style="display:none" @change="load_file('left', $event)" />
+                            </label>
+                            <button class="dv-btn dv-btn--sm" @click="left_text = ''" title="Clear">
+                                <i class="fas fa-xmark"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <textarea class="dv-textarea"
+                        v-model="left_text"
+                        :placeholder="'Paste ' + leftLabel + ' here or drop a file…'"
+                        spellcheck="false"
+                        @dragover.prevent="drag_left = true"
+                        @dragleave.prevent="drag_left = false"
+                        @drop.prevent="drop_file('left', $event)"
+                        :class="{ 'dv-textarea--drag': drag_left }">
+                    </textarea>
+                    <div class="dv-input-footer">
+                        <span>{{ line_count(left_text) }} lines</span>
+                        <span>{{ left_text.length.toLocaleString() }} chars</span>
                     </div>
                 </div>
-                <textarea class="dv-textarea"
-                    v-model="left_text"
-                    :placeholder="'Paste ' + leftLabel + ' here or drop a file…'"
-                    spellcheck="false"
-                    @dragover.prevent="drag_left = true"
-                    @dragleave.prevent="drag_left = false"
-                    @drop.prevent="drop_file('left', $event)"
-                    :class="{ 'dv-textarea--drag': drag_left }">
-                </textarea>
-                <div class="dv-input-footer">
-                    <span>{{ line_count(left_text) }} lines</span>
-                    <span>{{ left_text.length.toLocaleString() }} chars</span>
-                </div>
-            </div>
 
-            <!-- Right -->
-            <div class="dv-input-pane">
-                <div class="dv-input-header">
-                    <span class="dv-input-label">
-                        <i class="fas fa-circle dv-dot dv-dot--add"></i>
-                        {{ rightLabel }}
-                    </span>
-                    <div class="dv-input-actions">
-                        <button class="dv-btn dv-btn--sm" @click="format_json('right')" title="Format as JSON">
-                            <i class="fas fa-code"></i>
-                        </button>
-                        <label class="dv-btn dv-btn--sm" title="Import file">
-                            <i class="fas fa-file-import"></i>
-                            <input type="file" style="display:none" @change="load_file('right', $event)" />
-                        </label>
-                        <button class="dv-btn dv-btn--sm" @click="right_text = ''" title="Clear">
-                            <i class="fas fa-xmark"></i>
-                        </button>
+                <!-- Right -->
+                <div class="dv-input-pane">
+                    <div class="dv-input-header">
+                        <span class="dv-input-label">
+                            <i class="fas fa-circle dv-dot dv-dot--add"></i>
+                            {{ rightLabel }}
+                        </span>
+                        <div class="dv-input-actions">
+                            <button class="dv-btn dv-btn--sm" @click="format_json('right')" title="Format as JSON">
+                                <i class="fas fa-code"></i>
+                            </button>
+                            <label class="dv-btn dv-btn--sm" title="Import file">
+                                <i class="fas fa-file-import"></i>
+                                <input type="file" style="display:none" @change="load_file('right', $event)" />
+                            </label>
+                            <button class="dv-btn dv-btn--sm" @click="right_text = ''" title="Clear">
+                                <i class="fas fa-xmark"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <textarea class="dv-textarea"
+                        v-model="right_text"
+                        :placeholder="'Paste ' + rightLabel + ' here or drop a file…'"
+                        spellcheck="false"
+                        @dragover.prevent="drag_right = true"
+                        @dragleave.prevent="drag_right = false"
+                        @drop.prevent="drop_file('right', $event)"
+                        :class="{ 'dv-textarea--drag': drag_right }">
+                    </textarea>
+                    <div class="dv-input-footer">
+                        <span>{{ line_count(right_text) }} lines</span>
+                        <span>{{ right_text.length.toLocaleString() }} chars</span>
                     </div>
                 </div>
-                <textarea class="dv-textarea"
-                    v-model="right_text"
-                    :placeholder="'Paste ' + rightLabel + ' here or drop a file…'"
-                    spellcheck="false"
-                    @dragover.prevent="drag_right = true"
-                    @dragleave.prevent="drag_right = false"
-                    @drop.prevent="drop_file('right', $event)"
-                    :class="{ 'dv-textarea--drag': drag_right }">
-                </textarea>
-                <div class="dv-input-footer">
-                    <span>{{ line_count(right_text) }} lines</span>
-                    <span>{{ right_text.length.toLocaleString() }} chars</span>
-                </div>
             </div>
-        </div>
+        </template>
 
         <!-- ── Empty states ─────────────────────────────────────────────── -->
         <div v-if="is_empty" class="dv-empty">
@@ -464,6 +466,12 @@ export default {
     `,
 
     setup(props) {
+
+        // Mode
+        // modes can be read only or input editable
+
+        const modes = ref(props.mode)
+        console.log('modes:', modes.value)
 
         // ── Text state ────────────────────────────────────────────────────
         const left_text = ref(props.initialLeft)
@@ -646,7 +654,7 @@ export default {
 
         return {
             left_text, right_text, drag_left, drag_right,
-            view_mode, ignore_ws, show_input, show_settings,
+            view_mode, ignore_ws, show_input, show_settings, modes,
             add_hex, del_hex, bg_opacity, inline_opacity, color_vars,
             raw_ops, split_rows, unified_rows, stats,
             hunk_positions, cur_hunk,

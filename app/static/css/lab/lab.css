@@ -182,6 +182,45 @@
     font-weight: 600;
 }
 
+/*---INLINE_TABS (used by SmartEditor and GraphViewer demos)---*/
+
+.lab-tabs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-elevated);
+    flex-wrap: wrap;
+}
+
+.lab-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-surface);
+    color: var(--text-muted);
+    font-size: .72rem;
+    font-family: var(--font-sans);
+    font-weight: 500;
+    cursor: pointer;
+    transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+
+.lab-tab:hover { background: var(--bg-body); color: var(--text-main); }
+
+.lab-tab.is-active {
+    background: var(--brand-dim);
+    color: var(--brand);
+    border-color: var(--brand-glow);
+    font-weight: 600;
+}
+
+.lab-tab i { font-size: .65rem; }
+
 /*---USAGE_BLOCK---*/
 
 .lab-usage {

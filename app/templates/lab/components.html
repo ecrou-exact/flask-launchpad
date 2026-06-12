@@ -5,6 +5,8 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/diff-viewer.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/code-viewer.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/smart-editor.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/pivotick.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/graph-viewer.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -66,7 +68,8 @@
                                 left-label="v1 · config.json"
                                 right-label="v2 · config.json"
                                 :initial-left="diff_left"
-                                :initial-right="diff_right">
+                                :initial-right="diff_right"
+                                mode="input">
                             </diff-viewer>
                         </div>
                         <details class="lab-usage">
@@ -78,6 +81,7 @@
     right-label="Modified"
     :initial-left="old_text"
     :initial-right="new_text"&gt;
+    mode: 'read' | 'input' (default: 'read') — if 'input', both sides are editable and emit update events
 &lt;/diff-viewer&gt;</pre>
                         </details>
                     </section>
@@ -194,6 +198,94 @@ max-height  CSS string   (default: '600px')</pre>
                         </details>
                     </section>
 
+                    <!-- ── Graph Viewer ── -->
+                    <section class="lab-card" id="graph-viewer">
+                        <div class="lab-card-header">
+                            <div class="lab-card-meta">
+                                <span class="lab-card-icon"><i class="fas fa-diagram-project"></i></span>
+                                <div>
+                                    <h2 class="lab-card-title">Graph Viewer</h2>
+                                    <p class="lab-card-desc">
+                                        Network graph powered by <a href="https://github.com/Pivotick/Pivotick" target="_blank">Pivotick</a>.
+                                        JSON config maps node/edge types to shapes and colors.
+                                        Two modes: <code>simple</code> (viewer) and <code>dev</code> (full UI + filters).
+                                        Use the <i class="fas fa-code"></i> button to edit the config/data live.
+                                    </p>
+                                </div>
+                            </div>
+                            <code class="lab-file-badge">graph-viewer.js</code>
+                        </div>
+
+                        <!-- Mode tabs -->
+                        <div class="lab-tabs">
+                            <button
+                                v-for="d in graph_demos" :key="d.id"
+                                class="lab-tab"
+                                :class="{ 'is-active': active_graph_demo === d.id }"
+                                @click="active_graph_demo = d.id"
+                            >[[ d.label ]]</button>
+                        </div>
+
+                        <graph-viewer
+                            :config="graph_config"
+                            :data="graph_data"
+                            :mode="active_graph_demo"
+                            :editable="true"
+                            height="520px"
+                        ></graph-viewer>
+
+                        <details class="lab-usage">
+                            <summary>Usage</summary>
+                            <pre class="lab-usage-code">import GraphViewer from '/static/js/components/graph-viewer.js'
+
+&lt;!-- Simple mode: pan/zoom only --&gt;
+&lt;graph-viewer :config="cfg" :data="dat" mode="simple" height="400px"&gt;&lt;/graph-viewer&gt;
+
+&lt;!-- Dev mode: full UI + node type filters + search --&gt;
+&lt;graph-viewer :config="cfg" :data="dat" mode="dev" height="500px"&gt;&lt;/graph-viewer&gt;
+
+&lt;!-- Editable: live JSON editor panel for config + data --&gt;
+&lt;graph-viewer :config="cfg" :data="dat" :editable="true" height="600px"&gt;&lt;/graph-viewer&gt;
+
+/* Config JSON schema */
+{
+  "graph": { "directed": true },
+  "nodes": {
+    "id_field": "id",
+    "label_field": "label",
+    "type_field": "type",
+    "default": { "color": "#888", "shape": "circle", "size": 16 },
+    "types": {
+      "person": { "color": "#4e79a7", "shape": "circle", "size": 22, "label_field": "name" },
+      "company": { "color": "#f28e2b", "shape": "hexagon", "size": 28 }
+    }
+  },
+  "edges": {
+    "from_field": "from",
+    "to_field": "to",
+    "label_field": "label",
+    "type_field": "type",
+    "default": { "color": "#aaa" },
+    "types": {
+      "works_at":  { "color": "#4e79a7", "dashed": false },
+      "founded":   { "color": "#f28e2b", "dashed": true  }
+    }
+  }
+}
+
+/* Data JSON schema */
+{
+  "nodes": [
+    { "id": "1", "type": "person",  "name": "Alice" },
+    { "id": "2", "type": "company", "label": "Acme Corp" }
+  ],
+  "edges": [
+    { "from": "1", "to": "2", "type": "works_at", "label": "Employee" }
+  ]
+}</pre>
+                        </details>
+                    </section>
+
                     <!-- ── New components go here ── -->
 
                 </div>
@@ -211,6 +303,7 @@ max-height  CSS string   (default: '600px')</pre>
     import DiffViewer   from '/static/js/components/diff-viewer.js'
     import CodeViewer   from '/static/js/components/code-viewer.js'
     import SmartEditor  from '/static/js/components/smart-editor.js'
+    import GraphViewer  from '/static/js/components/graph-viewer.js'
 
     const DIFF_LEFT = `{
   "app": "flask-launchpad",
@@ -353,7 +446,7 @@ max-height  CSS string   (default: '600px')</pre>
 
     createApp({
         delimiters: ['[[', ']]'],
-        components: { LoadingBar, DiffViewer, CodeViewer, SmartEditor },
+        components: { LoadingBar, DiffViewer, CodeViewer, SmartEditor, GraphViewer },
 
         setup() {
             const ready          = ref(false)
@@ -363,9 +456,10 @@ max-height  CSS string   (default: '600px')</pre>
             const active_section = ref('diff-viewer')
 
             const components = [
-                { id: 'diff-viewer',  label: 'Diff Viewer',   icon: 'fa-code-compare'  },
-                { id: 'code-viewer',  label: 'Code Viewer',   icon: 'fa-file-code'     },
-                { id: 'smart-editor', label: 'Smart Editor',  icon: 'fa-pen-to-square' },
+                { id: 'diff-viewer',   label: 'Diff Viewer',    icon: 'fa-code-compare'  },
+                { id: 'code-viewer',   label: 'Code Viewer',    icon: 'fa-file-code'     },
+                { id: 'smart-editor',  label: 'Smart Editor',   icon: 'fa-pen-to-square' },
+                { id: 'graph-viewer',  label: 'Graph Viewer',   icon: 'fa-diagram-project' },
             ]
 
             // ── Smart Editor demo state ───────────────────────────────
@@ -414,6 +508,65 @@ max-height  CSS string   (default: '600px')</pre>
             })
             const active_editor_demo = ref('text')
 
+            // ── Graph Viewer demo state ───────────────────────────────
+            const graph_demos = [
+                { id: 'simple', label: 'Simple (viewer)' },
+                { id: 'dev',    label: 'Dev (full UI)'   },
+            ]
+            const active_graph_demo = ref('simple')
+
+            const graph_config = {
+                graph: { directed: true },
+                nodes: {
+                    id_field:    'id',
+                    label_field: 'label',
+                    type_field:  'type',
+                    default: { color: '#888', shape: 'circle', size: 16 },
+                    types: {
+                        person:  { color: '#4e79a7', shape: 'circle',  size: 22, label_field: 'name' },
+                        company: { color: '#f28e2b', shape: 'hexagon', size: 28 },
+                        tool:    { color: '#76b7b2', shape: 'square',  size: 18 },
+                        project: { color: '#e15759', shape: 'circle',  size: 20 },
+                    }
+                },
+                edges: {
+                    from_field:  'from',
+                    to_field:    'to',
+                    label_field: 'label',
+                    type_field:  'type',
+                    default: { color: '#aaa' },
+                    types: {
+                        works_at:  { color: '#4e79a7', dashed: false },
+                        founded:   { color: '#f28e2b', dashed: true  },
+                        uses:      { color: '#76b7b2', dashed: false },
+                        leads:     { color: '#e15759', dashed: false },
+                    }
+                }
+            }
+
+            const graph_data = {
+                nodes: [
+                    { id: '1', type: 'person',  name: 'Alice',          label: 'Alice'          },
+                    { id: '2', type: 'person',  name: 'Bob',            label: 'Bob'            },
+                    { id: '3', type: 'person',  name: 'Carol',          label: 'Carol'          },
+                    { id: '4', type: 'company', label: 'Acme Corp',     name: 'Acme Corp'       },
+                    { id: '5', type: 'company', label: 'DevHouse',      name: 'DevHouse'        },
+                    { id: '6', type: 'tool',    label: 'Flask',         name: 'Flask'           },
+                    { id: '7', type: 'tool',    label: 'Vue 3',         name: 'Vue 3'           },
+                    { id: '8', type: 'project', label: 'Launchpad',     name: 'Launchpad'       },
+                ],
+                edges: [
+                    { from: '1', to: '4', type: 'works_at', label: 'Employee'  },
+                    { from: '2', to: '4', type: 'works_at', label: 'Employee'  },
+                    { from: '3', to: '5', type: 'works_at', label: 'Employee'  },
+                    { from: '2', to: '5', type: 'founded',  label: 'Founder'   },
+                    { from: '1', to: '8', type: 'leads',    label: 'Tech Lead' },
+                    { from: '3', to: '8', type: 'leads',    label: 'Contributes' },
+                    { from: '8', to: '6', type: 'uses',     label: 'Backend'   },
+                    { from: '8', to: '7', type: 'uses',     label: 'Frontend'  },
+                ]
+            }
+
             const code_demos = CODE_DEMOS
 
             const current_demo = computed(() =>
@@ -451,6 +604,7 @@ max-height  CSS string   (default: '600px')</pre>
                 active_demo, active_section,
                 components, code_demos, current_demo,
                 editor_demos, editor_values, active_editor_demo,
+                graph_demos, active_graph_demo, graph_config, graph_data,
                 scroll_to,
             }
         }
