@@ -123,6 +123,51 @@
     --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.6);
 }
 
+/*---THEME_CHRISTMAS---*/
+/* Dark festive forest — deep green-black canvas, Christmas red accent, gold highlights */
+
+[data-theme="christmas"] {
+    --bg-body:     #07100A;
+    --bg-surface:  #0C1A0F;
+    --bg-elevated: #112014;
+    --bg-sidebar:  #04090606;
+
+    --brand:      #E8372A;
+    --brand-dim:  rgba(232, 55, 42, 0.16);
+    --brand-glow: rgba(232, 55, 42, 0.38);
+
+    --text-main:      #EDF8F0;
+    --text-secondary: #9EC4A2;
+    --text-muted:     #4E7652;
+
+    --text-sidebar:       rgba(237, 248, 240, 0.88);
+    --text-sidebar-muted: rgba(100, 180, 108, 0.45);
+
+    --border:         rgba(90, 200, 110, 0.11);
+    --border-subtle:  rgba(90, 200, 110, 0.06);
+    --border-sidebar: rgba(90, 200, 110, 0.09);
+
+    --sidebar-hover:  rgba(232, 55, 42, 0.14);
+    --sidebar-active: rgba(232, 55, 42, 0.26);
+
+    --shadow-sm: 0 1px 3px rgba(0, 8, 2, 0.55);
+    --shadow-md: 0 4px 16px rgba(0, 8, 2, 0.65);
+    --shadow-lg: 0 12px 40px rgba(0, 8, 2, 0.82);
+
+    /* Christmas-specific extras */
+    --xmas-red:    #E8372A;
+    --xmas-green:  #2FCC6A;
+    --xmas-gold:   #FFD700;
+    --xmas-blue:   #4A90D9;
+    --xmas-pink:   #FF88CC;
+    --xmas-white:  #F4FFF6;
+    --xmas-bg-sidebar: #040A06;
+}
+
+[data-theme="christmas"] body {
+    --bg-sidebar: var(--xmas-bg-sidebar);
+}
+
 /*---THEME_SLATE---*/
 /* Blue-grey dark — between dark and light, cool steel tones */
 

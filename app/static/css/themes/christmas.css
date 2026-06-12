@@ -1,0 +1,306 @@
+/*
+  christmas.css — Visual effects overlay for the Christmas theme.
+  All rules scoped to [data-theme="christmas"] — zero impact on other themes.
+  Special DOM (#xmas-lights, #xmas-snow) is injected by christmas-effects.js.
+*/
+
+/*---LIGHT_STRING---*/
+
+#xmas-lights {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    z-index: 10000;
+    pointer-events: none;
+    overflow: visible;
+}
+
+/* The wire */
+.xmas-wire {
+    position: absolute;
+    top: 4px;
+    left: -4px;
+    right: -4px;
+    height: 2px;
+    background: linear-gradient(90deg, #3a2010, #5c3218, #3a2010);
+    border-radius: 1px;
+    box-shadow: 0 0 3px rgba(0,0,0,.6);
+}
+
+/* Each light bulb */
+.xmas-bulb {
+    position: absolute;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Bulb cap (socket) */
+.xmas-bulb::before {
+    content: '';
+    display: block;
+    width: 7px;
+    height: 5px;
+    background: #5a3820;
+    border-radius: 1px 1px 0 0;
+    flex-shrink: 0;
+}
+
+/* Bulb glass */
+.xmas-bulb-glass {
+    width: 10px;
+    height: 14px;
+    border-radius: 50% 50% 58% 58% / 40% 40% 60% 60%;
+    background: var(--bc, #ff3030);
+    box-shadow:
+        0 0 5px 2px var(--bc, #ff3030),
+        0 0 14px 5px var(--bc, #ff3030),
+        0 0 28px 8px color-mix(in srgb, var(--bc, #ff3030) 40%, transparent);
+    animation: xmas-blink var(--dur, 2s) ease-in-out infinite alternate;
+    animation-delay: var(--delay, 0s);
+    flex-shrink: 0;
+}
+
+@keyframes xmas-blink {
+    0%   { opacity: 1;    filter: brightness(1.1); }
+    45%  { opacity: 1;    filter: brightness(1.0); }
+    50%  { opacity: 0.18; filter: brightness(0.4); }
+    55%  { opacity: 1;    filter: brightness(1.0); }
+    100% { opacity: 1;    filter: brightness(1.2); }
+}
+
+/*---SNOW---*/
+
+#xmas-snow {
+    position: fixed;
+    inset: 0;
+    z-index: 9990;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.xmas-flake {
+    position: absolute;
+    top: -20px;
+    color: rgba(255, 255, 255, 0.85);
+    font-style: normal;
+    line-height: 1;
+    animation: xmas-fall linear infinite;
+    animation-duration: var(--dur, 12s);
+    animation-delay: var(--delay, 0s);
+    filter: drop-shadow(0 0 3px rgba(255,255,255,.5));
+    user-select: none;
+}
+
+@keyframes xmas-fall {
+    0% {
+        transform: translateX(0) rotate(0deg);
+        top: -20px;
+        opacity: 0;
+    }
+    5% { opacity: 1; }
+    90% { opacity: 0.7; }
+    100% {
+        transform: translateX(var(--drift, 30px)) rotate(360deg);
+        top: 105vh;
+        opacity: 0;
+    }
+}
+
+/*---TOPBAR_GLOW---*/
+
+[data-theme="christmas"] .app-topbar {
+    background: linear-gradient(
+        180deg,
+        rgba(14, 28, 16, 1) 0%,
+        rgba(11, 22, 13, 1) 100%
+    );
+    border-bottom-color: rgba(90, 200, 110, 0.18);
+    box-shadow:
+        0 1px 0 rgba(90, 200, 110, 0.08),
+        0 2px 12px rgba(0, 8, 2, 0.5);
+}
+
+/* Subtle gold shimmer on topbar top edge */
+[data-theme="christmas"] .app-topbar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 215, 0, 0.3) 20%,
+        rgba(232, 55, 42, 0.4) 40%,
+        rgba(47, 204, 106, 0.3) 60%,
+        rgba(255, 215, 0, 0.3) 80%,
+        transparent 100%
+    );
+    animation: xmas-shimmer 4s ease-in-out infinite;
+}
+
+@keyframes xmas-shimmer {
+    0%, 100% { opacity: 0.6; }
+    50%       { opacity: 1.0; }
+}
+
+/*---SIDEBAR---*/
+
+[data-theme="christmas"] .nav-sidebar,
+[data-theme="christmas"] .nav-topbar {
+    background: var(--xmas-bg-sidebar, #040A06);
+    background-image:
+        radial-gradient(ellipse at 50% 0%, rgba(47,204,106,0.04) 0%, transparent 70%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Ctext x='40' y='45' font-size='18' text-anchor='middle' fill='rgba(255,255,255,0.022)'%3E%E2%9D%84%3C/text%3E%3C/svg%3E");
+    background-repeat: repeat;
+}
+
+/* Brand/logo area glows red on Christmas */
+[data-theme="christmas"] .nav-logo-text,
+[data-theme="christmas"] .nav-logo-icon {
+    color: var(--xmas-red) !important;
+    text-shadow: 0 0 12px rgba(232, 55, 42, 0.6);
+}
+
+/*---PAGE_TITLE---*/
+
+[data-theme="christmas"] .page-title {
+    background: linear-gradient(
+        120deg,
+        var(--xmas-gold)   0%,
+        var(--xmas-red)    30%,
+        var(--xmas-white)  55%,
+        var(--xmas-green)  75%,
+        var(--xmas-gold)   100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: xmas-title-shift 8s ease-in-out infinite;
+    background-size: 200% 100%;
+}
+
+[data-theme="christmas"] .page-title::after {
+    background: linear-gradient(90deg, var(--xmas-red), var(--xmas-gold));
+    opacity: 0.8;
+}
+
+@keyframes xmas-title-shift {
+    0%, 100% { background-position: 0% 50%;   }
+    50%       { background-position: 100% 50%; }
+}
+
+/*---CARDS---*/
+
+[data-theme="christmas"] .card:hover {
+    border-color: rgba(232, 55, 42, 0.22) !important;
+    box-shadow:
+        0 0 0 1px rgba(232, 55, 42, 0.12),
+        0 4px 20px rgba(0, 8, 2, 0.7),
+        0 0 20px rgba(232, 55, 42, 0.06) !important;
+}
+
+/* Subtle top-edge ribbon on cards */
+[data-theme="christmas"] .card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    background: linear-gradient(90deg,
+        var(--xmas-red) 0%,
+        var(--xmas-gold) 33%,
+        var(--xmas-green) 66%,
+        var(--xmas-red) 100%
+    );
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+[data-theme="christmas"] .card:hover::before {
+    opacity: 0.6;
+}
+
+[data-theme="christmas"] .card {
+    position: relative;
+    overflow: hidden;
+}
+
+/*---BRAND_ELEMENTS---*/
+
+[data-theme="christmas"] .btn-primary,
+[data-theme="christmas"] .btn-primary:hover {
+    background-color: var(--xmas-red) !important;
+    border-color: var(--xmas-red) !important;
+    box-shadow: 0 0 12px rgba(232, 55, 42, 0.45) !important;
+}
+
+[data-theme="christmas"] .btn-primary:hover {
+    background-color: #C42B1F !important;
+    box-shadow: 0 0 20px rgba(232, 55, 42, 0.6) !important;
+}
+
+/* Active nav items get a Christmas red glow */
+[data-theme="christmas"] .nav-item--active,
+[data-theme="christmas"] .nav-link.is-active {
+    background: var(--sidebar-active) !important;
+    box-shadow: 0 0 8px rgba(232, 55, 42, 0.2) inset;
+}
+
+/*---BREADCRUMB---*/
+
+[data-theme="christmas"] .breadcrumb-item.active { color: var(--xmas-gold); }
+
+/*---SCROLLBAR---*/
+
+[data-theme="christmas"] ::-webkit-scrollbar { width: 7px; }
+[data-theme="christmas"] ::-webkit-scrollbar-track { background: rgba(4, 10, 6, 0.8); }
+[data-theme="christmas"] ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--xmas-red), var(--xmas-green));
+    border-radius: 4px;
+}
+[data-theme="christmas"] ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #ff4433, var(--xmas-gold));
+}
+
+/*---SCROLL_TOP_BTN---*/
+
+[data-theme="christmas"] #scrollTopBtn {
+    background: var(--xmas-red);
+    border-color: rgba(232, 55, 42, 0.4);
+    box-shadow: 0 4px 16px rgba(232, 55, 42, 0.5);
+    animation: xmas-star-pulse 2s ease-in-out infinite;
+}
+
+@keyframes xmas-star-pulse {
+    0%, 100% { box-shadow: 0 4px 16px rgba(232, 55, 42, 0.5); }
+    50%       { box-shadow: 0 4px 24px rgba(232, 55, 42, 0.8), 0 0 10px rgba(255, 215, 0, 0.3); }
+}
+
+/*---FORMS---*/
+
+[data-theme="christmas"] .form-control:focus,
+[data-theme="christmas"] .form-select:focus {
+    border-color: var(--xmas-red);
+    box-shadow: 0 0 0 3px rgba(232, 55, 42, 0.18);
+}
+
+/*---LOADING_BAR---*/
+
+[data-theme="christmas"] .progress-bar-value {
+    background: linear-gradient(90deg, var(--xmas-red), var(--xmas-gold), var(--xmas-green));
+}
+
+/*---FOOTER---*/
+
+[data-theme="christmas"] .app-footer {
+    background: rgba(4, 10, 6, 0.95) !important;
+    border-top-color: rgba(90, 200, 110, 0.12) !important;
+}
