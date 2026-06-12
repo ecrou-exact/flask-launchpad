@@ -66,12 +66,6 @@ const { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } = Vue
 const LINE_H = 21   // px — must match CSS line-height on .se-overlay / .se-ta--code
 const PAD_Y  = 24   // px — top + bottom padding inside code area
 
-const MODES = [
-    { id: 'text',     label: 'Text',     icon: 'fa-align-left'    },
-    { id: 'markdown', label: 'Markdown', icon: 'fa-brands fa-markdown' },
-    { id: 'code',     label: 'Code',     icon: 'fa-code'          },
-]
-
 const MD_ACTIONS = [
     { id: 'bold',    icon: 'fa-bold',        title: 'Bold'          },
     { id: 'italic',  icon: 'fa-italic',      title: 'Italic'        },
@@ -82,23 +76,6 @@ const MD_ACTIONS = [
     { id: 'ol',      icon: 'fa-list-ol',     title: 'Numbered list' },
     { id: 'quote',   icon: 'fa-quote-right', title: 'Blockquote'    },
     { id: 'hr',      icon: 'fa-minus',       title: 'Horizontal rule' },
-]
-
-const MD_VIEWS = [
-    { id: 'write',   icon: 'fa-pen',           label: 'Write only'  },
-    { id: 'split',   icon: 'fa-table-columns',  label: 'Split view'  },
-    { id: 'preview', icon: 'fa-eye',            label: 'Preview only' },
-]
-
-const LANGS = [
-    { id: 'javascript', label: 'JavaScript' },
-    { id: 'python',     label: 'Python'     },
-    { id: 'json',       label: 'JSON'       },
-    { id: 'bash',       label: 'Bash'       },
-    { id: 'html',       label: 'HTML'       },
-    { id: 'css',        label: 'CSS'        },
-    { id: 'sql',        label: 'SQL'        },
-    { id: 'plaintext',  label: 'Plain text' },
 ]
 
 export default {
@@ -118,57 +95,47 @@ export default {
     emits: ['update:modelValue'],
 
     template: `
-<div class="se-root" :class="'se-mode--' + active_mode">
+<div class="se-root" :class="'se-mode--' + mode">
 
-    <!-- hidden input — form submission without JS framework -->
+    <!-- hidden input for native form submission -->
     <input v-if="name" type="hidden" :name="name" :value="inner_value">
 
     <!-- ── Toolbar ──────────────────────────────────────────────────── -->
     <div class="se-toolbar">
 
-        <div class="se-mode-switcher">
-            <button
-                v-for="m in MODES" :key="m.id"
-                class="se-mode-btn"
-                :class="{ 'is-active': active_mode === m.id }"
-                @click="switch_mode(m.id)"
-                type="button"
-                :title="m.label">
-                <i :class="'fas ' + m.icon"></i>
-                <span>{{ m.label }}</span>
-            </button>
-        </div>
+        <!-- Mode badge (display only) -->
+        <span class="se-mode-badge">
+            <i :class="mode_icon"></i> {{ mode_label }}
+        </span>
 
         <div class="se-toolbar-sep"></div>
 
-        <!-- Markdown extras -->
-        <template v-if="active_mode === 'markdown'">
+        <!-- Markdown: formatting shortcuts + preview toggle -->
+        <template v-if="mode === 'markdown'">
+            <template v-if="!show_preview">
+                <button
+                    v-for="a in MD_ACTIONS" :key="a.id"
+                    class="se-tb-btn"
+                    type="button"
+                    :title="a.title"
+                    @click="md_action(a.id)">
+                    <i :class="'fas ' + a.icon"></i>
+                </button>
+                <div class="se-toolbar-sep"></div>
+            </template>
             <button
-                v-for="a in MD_ACTIONS" :key="a.id"
-                class="se-tb-btn"
+                class="se-preview-toggle"
+                :class="{ 'is-active': show_preview }"
                 type="button"
-                :title="a.title"
-                @click="md_action(a.id)">
-                <i :class="'fas ' + a.icon"></i>
+                @click="toggle_preview">
+                <i :class="show_preview ? 'fas fa-pen' : 'fas fa-eye'"></i>
+                {{ show_preview ? 'Edit' : 'Preview' }}
             </button>
             <div class="se-toolbar-sep"></div>
-            <button
-                v-for="v in MD_VIEWS" :key="v.id"
-                class="se-tb-btn"
-                :class="{ 'is-active': md_view === v.id }"
-                type="button"
-                :title="v.label"
-                @click="md_view = v.id">
-                <i :class="'fas ' + v.icon"></i>
-            </button>
         </template>
 
-        <!-- Code extras -->
-        <template v-if="active_mode === 'code'">
-            <select class="se-lang-select" v-model="active_lang" @change="refresh_highlight">
-                <option v-for="l in LANGS" :key="l.id" :value="l.id">{{ l.label }}</option>
-            </select>
-        </template>
+        <!-- Code: language badge (display only) -->
+        <span v-if="mode === 'code'" class="se-lang-badge">{{ language }}</span>
 
         <div class="se-toolbar-spacer"></div>
         <span class="se-char-count">{{ stat_label }}</span>
@@ -177,8 +144,8 @@ export default {
     <!-- ── Body ─────────────────────────────────────────────────────── -->
     <div class="se-body" :style="body_style">
 
-        <!-- TEXT mode ──────────────────────────────── -->
-        <template v-if="active_mode === 'text'">
+        <!-- TEXT ───────────────────────────────────── -->
+        <template v-if="mode === 'text'">
             <textarea
                 ref="ta_ref"
                 class="se-ta"
@@ -191,35 +158,23 @@ export default {
             </textarea>
         </template>
 
-        <!-- MARKDOWN mode ──────────────────────────── -->
-        <template v-else-if="active_mode === 'markdown'">
-            <div class="se-md-layout" :class="'se-md-view--' + md_view">
-                <div class="se-md-write-pane" v-show="md_view !== 'preview'">
-                    <textarea
-                        ref="ta_ref"
-                        class="se-ta se-ta--md"
-                        :value="inner_value"
-                        @input="inner_value = $event.target.value"
-                        :placeholder="placeholder"
-                        :readonly="readonly"
-                        spellcheck="false"
-                        @keydown="on_keydown">
-                    </textarea>
-                </div>
-                <div class="se-md-preview-pane" v-show="md_view !== 'write'">
-                    <div
-                        v-if="marked_ready"
-                        class="se-md-preview"
-                        v-html="rendered_md">
-                    </div>
-                    <div v-else class="se-md-loading">
-                        <i class="fas fa-spinner fa-spin"></i> Loading preview…
-                    </div>
-                </div>
-            </div>
+        <!-- MARKDOWN ───────────────────────────────── -->
+        <template v-else-if="mode === 'markdown'">
+            <textarea
+                v-show="!show_preview"
+                ref="ta_ref"
+                class="se-ta se-ta--md"
+                :value="inner_value"
+                @input="inner_value = $event.target.value"
+                :placeholder="placeholder"
+                :readonly="readonly"
+                spellcheck="false"
+                @keydown="on_keydown">
+            </textarea>
+            <div v-show="show_preview" class="se-md-preview" v-html="rendered_md"></div>
         </template>
 
-        <!-- CODE mode ──────────────────────────────── -->
+        <!-- CODE ───────────────────────────────────── -->
         <template v-else>
             <div class="se-code-wrap" :style="code_wrap_style">
                 <div class="se-gutter" ref="gutter_ref">
@@ -260,13 +215,10 @@ export default {
 
         // ── Reactive state ──────────────────────────────────────────────
         const inner_value  = ref(props.modelValue)
-        const active_mode  = ref(props.mode)
-        const active_lang  = ref(props.language)
-        const md_view      = ref('write')
         const hljs_ready   = ref(false)
-        const marked_ready = ref(false)
-        const rendered_md  = ref('')
         const highlighted  = ref('')
+        const show_preview = ref(false)
+        const rendered_md  = ref('')
         const ta_ref       = ref(null)
         const overlay_ref  = ref(null)
         const gutter_ref   = ref(null)
@@ -276,69 +228,57 @@ export default {
         watch(inner_value, v => emit('update:modelValue', v))
 
         // ── Computed ────────────────────────────────────────────────────
+        const MODE_META = {
+            text:     { label: 'Text',     icon: 'fas fa-align-left' },
+            markdown: { label: 'Markdown', icon: 'fas fa-brands fa-markdown' },
+            code:     { label: 'Code',     icon: 'fas fa-code' },
+        }
+        const mode_label = computed(() => MODE_META[props.mode]?.label ?? props.mode)
+        const mode_icon  = computed(() => MODE_META[props.mode]?.icon  ?? 'fas fa-file')
+
         const line_count = computed(() =>
             (inner_value.value.match(/\n/g) || []).length + 1
         )
 
         const stat_label = computed(() => {
             const c = inner_value.value.length
-            if (active_mode.value === 'text') {
+            if (props.mode === 'text') {
                 const w = inner_value.value.trim() ? inner_value.value.trim().split(/\s+/).length : 0
                 return `${w}w · ${c}c`
             }
-            if (active_mode.value === 'code') {
-                return `${line_count.value}L · ${c}c`
-            }
+            if (props.mode === 'code') return `${line_count.value}L · ${c}c`
             return `${c}c`
         })
 
         const min_h = computed(() => parseInt(props.minHeight) || 220)
         const max_h = computed(() => parseInt(props.maxHeight) || 600)
 
-        const body_style = computed(() => {
-            if (active_mode.value === 'code') return {}
-            return { minHeight: props.minHeight, maxHeight: props.maxHeight }
-        })
+        const body_style = computed(() =>
+            props.mode === 'code' ? {} : { minHeight: props.minHeight }
+        )
 
         const code_wrap_style = computed(() => {
-            const content_h = line_count.value * LINE_H + PAD_Y
-            const h = Math.min(max_h.value, Math.max(min_h.value, content_h))
-            return { height: h + 'px' }
+            const h = Math.min(max_h.value, Math.max(min_h.value, line_count.value * LINE_H + PAD_Y))
+            return { minHeight: h + 'px' }
         })
 
-        const escaped_code = computed(() => {
-            return inner_value.value
+        const escaped_code = computed(() =>
+            inner_value.value
                 .replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;')
-        })
-
-        // ── Mode switching ──────────────────────────────────────────────
-        async function switch_mode(m) {
-            active_mode.value = m
-            if (m === 'code')     await ensure_hljs()
-            if (m === 'markdown') await ensure_marked()
-            await nextTick()
-            if (m === 'code')     refresh_highlight()
-            if (m === 'markdown') render_md()
-        }
+        )
 
         // ── highlight.js ────────────────────────────────────────────────
-        async function ensure_hljs() {
-            if (hljs_ready.value) return
-            await load_hljs()
-            hljs_ready.value = true
-        }
-
         function refresh_highlight() {
             if (!hljs_ready.value || !window.hljs) return
             const code = inner_value.value
             if (!code) { highlighted.value = ''; return }
             try {
-                if (active_lang.value === 'plaintext') {
+                if (props.language === 'plaintext') {
                     highlighted.value = escaped_code.value
                 } else {
-                    highlighted.value = window.hljs.highlight(code, { language: active_lang.value }).value
+                    highlighted.value = window.hljs.highlight(code, { language: props.language }).value
                 }
             } catch {
                 highlighted.value = window.hljs.highlightAuto(code).value
@@ -346,30 +286,29 @@ export default {
         }
 
         // ── marked ──────────────────────────────────────────────────────
-        async function ensure_marked() {
-            if (marked_ready.value) return
-            await load_marked()
-            marked_ready.value = true
+        function render_md() {
+            if (!window.marked) return
+            try { rendered_md.value = window.marked.parse(inner_value.value) }
+            catch { rendered_md.value = '<p><em>Render error</em></p>' }
         }
 
-        function render_md() {
-            if (!marked_ready.value || !window.marked) return
-            try {
-                rendered_md.value = window.marked.parse(inner_value.value)
-            } catch {
-                rendered_md.value = '<p><em>Render error</em></p>'
+        async function toggle_preview() {
+            show_preview.value = !show_preview.value
+            if (show_preview.value) {
+                if (!window.marked) await load_marked()
+                render_md()
             }
         }
 
-        // ── Debounced watchers ──────────────────────────────────────────
+        // ── Debounced content watcher ───────────────────────────────────
         let _hl_t = null, _md_t = null
 
         watch(inner_value, () => {
-            if (active_mode.value === 'code' && hljs_ready.value) {
+            if (props.mode === 'code' && hljs_ready.value) {
                 clearTimeout(_hl_t)
                 _hl_t = setTimeout(refresh_highlight, 80)
             }
-            if (active_mode.value === 'markdown' && marked_ready.value) {
+            if (props.mode === 'markdown' && show_preview.value && window.marked) {
                 clearTimeout(_md_t)
                 _md_t = setTimeout(render_md, 100)
             }
@@ -510,34 +449,27 @@ export default {
             }
 
             ta.focus()
-            setTimeout(render_md, 50)
         }
 
         // ── Lifecycle ───────────────────────────────────────────────────
         onMounted(async () => {
-            if (active_mode.value === 'code') {
-                await ensure_hljs()
+            if (props.mode === 'code') {
+                await load_hljs()
+                hljs_ready.value = true
                 refresh_highlight()
             }
-            if (active_mode.value === 'markdown') {
-                await ensure_marked()
-                render_md()
-            }
         })
 
-        onBeforeUnmount(() => {
-            clearTimeout(_hl_t)
-            clearTimeout(_md_t)
-        })
+        onBeforeUnmount(() => { clearTimeout(_hl_t); clearTimeout(_md_t) })
 
         return {
-            inner_value, active_mode, active_lang, md_view,
-            hljs_ready, marked_ready,
-            rendered_md, highlighted, escaped_code,
+            inner_value, hljs_ready, highlighted, escaped_code,
+            show_preview, rendered_md,
             ta_ref, overlay_ref, gutter_ref,
-            MODES, MD_ACTIONS, MD_VIEWS, LANGS,
+            MD_ACTIONS,
+            mode_label, mode_icon,
             line_count, stat_label, body_style, code_wrap_style,
-            switch_mode, on_keydown, sync_scroll, md_action, refresh_highlight,
+            on_keydown, sync_scroll, md_action, toggle_preview,
         }
     }
 }

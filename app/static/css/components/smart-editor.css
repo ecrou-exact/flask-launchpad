@@ -11,7 +11,8 @@
     flex-direction: column;
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
-    overflow: hidden;
+    overflow: hidden;           /* required for resize: vertical */
+    resize: vertical;           /* bottom-right drag handle */
     background: var(--bg-surface);
     box-shadow: var(--shadow-sm);
     font-family: var(--font-sans);
@@ -36,50 +37,58 @@
     min-height: 38px;
 }
 
-.se-mode-switcher {
-    display: flex;
-    gap: 1px;
-    background: var(--bg-surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 2px;
-    flex-shrink: 0;
-}
-
-.se-mode-btn {
+/* Mode badge — display-only, set by prop */
+.se-mode-badge {
     display: inline-flex;
     align-items: center;
     gap: 5px;
     padding: 3px 9px;
-    border: none;
-    border-radius: 4px;
-    background: transparent;
-    color: var(--text-muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    font-size: .7rem;
+    font-family: var(--font-sans);
+    font-weight: 600;
+    flex-shrink: 0;
+    user-select: none;
+}
+
+.se-mode-badge i { font-size: .65rem; color: var(--brand); }
+
+/* Preview toggle button — standalone pill style, not derived from se-tb-btn */
+.se-preview-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-surface);
+    color: var(--text-secondary);
     font-size: .7rem;
     font-family: var(--font-sans);
     font-weight: 500;
     cursor: pointer;
     white-space: nowrap;
-    transition: background var(--transition), color var(--transition);
+    flex-shrink: 0;
+    transition: background var(--transition), color var(--transition), border-color var(--transition);
 }
 
-.se-mode-btn i { font-size: .68rem; }
+.se-preview-toggle i { font-size: .65rem; }
 
-.se-mode-btn:hover {
+.se-preview-toggle:hover {
     background: var(--bg-elevated);
-    color: var(--text-secondary);
+    color: var(--text-main);
+    border-color: var(--text-muted);
 }
 
-.se-mode-btn.is-active {
-    background: var(--brand);
-    color: #fff;
+.se-preview-toggle.is-active {
+    background: var(--brand-dim);
+    color: var(--brand);
+    border-color: var(--brand-glow);
     font-weight: 600;
 }
-
-[data-bs-theme="dark"] .se-mode-btn.is-active,
-[data-theme="forest"]  .se-mode-btn.is-active,
-[data-theme="midnight"].se-mode-btn.is-active,
-[data-theme="slate"]   .se-mode-btn.is-active { color: #fff; }
 
 /* Generic toolbar button */
 
@@ -121,19 +130,20 @@
     user-select: none;
 }
 
-.se-lang-select {
-    padding: 3px 6px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    background: var(--bg-surface);
-    color: var(--text-secondary);
-    font-size: .7rem;
-    font-family: var(--font-sans);
-    cursor: pointer;
-    outline: none;
+/* Language badge — display-only, set by prop */
+.se-lang-badge {
+    font-size: .65rem;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    padding: 2px 8px;
+    background: var(--brand-dim);
+    color: var(--brand);
+    border: 1px solid var(--brand-glow);
+    border-radius: 4px;
+    text-transform: lowercase;
+    flex-shrink: 0;
+    user-select: none;
 }
-
-.se-lang-select:focus { border-color: var(--brand); }
 
 /*---BODY---*/
 
@@ -141,7 +151,8 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    overflow: auto;
+    overflow: hidden;
+    min-height: 0;
     position: relative;
 }
 
@@ -156,7 +167,7 @@
     margin: 0;
     border: none;
     outline: none;
-    resize: vertical;
+    resize: none;              /* root handles resize */
     background: var(--bg-surface);
     color: var(--text-main);
     font-family: var(--font-sans);
@@ -164,6 +175,7 @@
     line-height: 1.7;
     caret-color: var(--brand);
     box-sizing: border-box;
+    overflow: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;
 }
@@ -174,8 +186,6 @@
 .se-ta::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
 .se-ta--md {
-    resize: none;
-    height: 100%;
     font-family: var(--font-mono);
     font-size: .78rem;
     line-height: 1.75;
@@ -185,7 +195,8 @@
 
 .se-code-wrap {
     display: flex;
-    flex-shrink: 0;
+    flex: 1;                   /* fills body when root is resized */
+    min-height: 0;
     background: var(--bg-surface);
     font-family: var(--font-mono);
     font-size: .78rem;
@@ -283,34 +294,15 @@
 
 /*---MARKDOWN MODE---*/
 
-.se-md-layout {
-    flex: 1;
-    display: flex;
-    overflow: hidden;
-}
+/* Markdown preview panel — fills body */
 
-.se-md-write-pane,
-.se-md-preview-pane {
-    display: flex;
-    flex-direction: column;
+.se-mode--markdown .se-body .se-md-preview {
+    flex: 1;
     overflow: auto;
 }
 
-/* write only */
-.se-md-view--write .se-md-write-pane   { flex: 1; }
-.se-md-view--write .se-md-preview-pane { display: none; }
-
-/* preview only */
-.se-md-view--preview .se-md-write-pane   { display: none; }
-.se-md-view--preview .se-md-preview-pane { flex: 1; }
-
-/* split */
-.se-md-view--split .se-md-write-pane,
-.se-md-view--split .se-md-preview-pane { flex: 1; }
-
-.se-md-view--split .se-md-write-pane {
-    border-right: 1px solid var(--border);
-}
+/* Also fill the body fully in markdown mode when preview is shown */
+.se-mode--markdown .se-body { overflow: auto; }
 
 /* Markdown preview content */
 
@@ -419,13 +411,6 @@
 
 .se-md-preview tr:nth-child(even) { background: var(--bg-elevated); }
 
-.se-md-loading {
-    padding: 20px;
-    text-align: center;
-    color: var(--text-muted);
-    font-size: .8rem;
-    font-family: var(--font-sans);
-}
 
 /*---HLJS TOKEN OVERRIDES (for .se-overlay)---*/
 /* Maps highlight.js classes → code-viewer's --cv-* vars */
@@ -476,10 +461,5 @@
 /*---RESPONSIVE---*/
 
 @media (max-width: 640px) {
-    .se-mode-btn span { display: none; }
-    .se-mode-btn { padding: 4px 8px; }
-    .se-md-view--split .se-md-write-pane,
-    .se-md-view--split .se-md-preview-pane { flex: none; width: 100%; }
-    .se-md-view--split .se-md-layout { flex-direction: column; }
-    .se-md-view--split .se-md-write-pane { border-right: none; border-bottom: 1px solid var(--border); }
+    .se-tb-btn { width: 24px; height: 24px; font-size: .68rem; }
 }
