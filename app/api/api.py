@@ -40,6 +40,7 @@ from .site_settings_api import site_settings_ns
 from .comment_api import comment_ns
 from .jobs_api import jobs_ns
 from .database_api import database_ns
+from .tags_api import tags_ns
 
 api.add_namespace(account_ns, path="/account")
 api.add_namespace(config_ns, path="/config")
@@ -50,6 +51,7 @@ api.add_namespace(site_settings_ns, path="/site-settings")
 api.add_namespace(comment_ns, path="/comments")
 api.add_namespace(jobs_ns, path="/jobs")
 api.add_namespace(database_ns, path="/database")
+api.add_namespace(tags_ns, path="/tags")
 
 
 # ── Automatic API call logging ────────────────────────────────────────────────

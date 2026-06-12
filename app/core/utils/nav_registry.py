@@ -99,6 +99,15 @@ NAV: list[dict] = [
         'permission': 'admin_only',
     },
 
+    # ── Tags ──────────────────────────────────────────────────────────────────
+    {
+        'group':      'Tags',
+        'label':      'Tags',
+        'icon':       'fa-tags',
+        'href':       '/tags/',
+        'permission': 'tags.view',
+    },
+
     # ── Community ─────────────────────────────────────────────────────────────
     {
         'group':      'Community',

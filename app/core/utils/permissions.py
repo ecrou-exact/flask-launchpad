@@ -84,6 +84,20 @@ PERMISSIONS: dict[str, dict] = {
         'icon':        'fa-wand-magic-sparkles',
     },
 
+    # ── Tags ─────────────────────────────────────────────────────────────────
+    'tags.view': {
+        'label':       'View tags',
+        'description': 'Access the tag list.',
+        'group':       'Tags',
+        'icon':        'fa-tags',
+    },
+    'tags.manage': {
+        'label':       'Manage tags',
+        'description': 'Create, edit, delete tags and import taxonomies/galaxies.',
+        'group':       'Tags',
+        'icon':        'fa-tag',
+    },
+
     # ── Comments ─────────────────────────────────────────────────────────────
     'comments.view': {
         'label':       'View comments',
