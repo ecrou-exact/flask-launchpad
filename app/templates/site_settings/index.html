@@ -3,6 +3,7 @@
 
 {% block head_extra %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/site_settings/site_settings.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/site_settings/database.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -20,8 +21,18 @@
                         <li class="breadcrumb-item active">Server Settings</li>
                     </ol>
                 </nav>
-                <h1 class="page-title">Server Settings</h1>
+                <h1 class="page-title">Settings</h1>
             </div>
+        </div>
+
+        <!-- Tab bar -->
+        <div class="ss-page-tabs">
+            <a href="/admin/settings" class="ss-page-tab is-active">
+                <i class="fas fa-server"></i> Server Settings
+            </a>
+            <a href="/admin/settings/database" class="ss-page-tab">
+                <i class="fas fa-database"></i> Database
+            </a>
         </div>
 
         <div class="page-body">

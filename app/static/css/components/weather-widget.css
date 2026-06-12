@@ -44,7 +44,7 @@
     color: var(--text-main);
 }
 
-.ww-icon { font-size: .85rem; line-height: 1; }
+.ww-icon { font-size: .8rem; line-height: 1; display: inline-flex; align-items: center; }
 
 .ww-temp {
     font-weight: 600;
@@ -96,7 +96,7 @@
     border-bottom: 1px solid var(--border-subtle);
 }
 
-.ww-tooltip-icon { font-size: 1.4rem; line-height: 1; flex-shrink: 0; }
+.ww-tooltip-icon { font-size: 1.6rem; line-height: 1; flex-shrink: 0; display: inline-flex; align-items: center; }
 
 .ww-tooltip-city {
     font-weight: 700;

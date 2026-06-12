@@ -40,6 +40,7 @@
     {# JS libraries #}
     <script src="{{ url_for('static', filename='bootstrap-5.3.0/js/bootstrap.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/vue.global.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
     <script src="{{ url_for('static', filename='js/blur.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/nav.js') }}" defer></script>
 </head>
@@ -85,13 +86,13 @@
                 {# ── Weather & time widget ── #}
                 {% if weather_widget_enabled %}
                 <div class="ww-chip" id="ww-chip" onclick="wwToggle()" title="Weather & local time">
-                    <span class="ww-icon" id="ww-icon">🌡️</span>
+                    <span class="ww-icon" id="ww-icon"><i class="fas fa-cloud" style="color:var(--text-muted)"></i></span>
                     <span class="ww-temp" id="ww-temp"></span>
                     <span class="ww-sep">·</span>
                     <span class="ww-time" id="ww-time">--:--</span>
                     <div class="ww-tooltip" id="ww-tooltip">
                         <div class="ww-tooltip-header">
-                            <span class="ww-tooltip-icon" id="ww-icon-lg">🌡️</span>
+                            <span class="ww-tooltip-icon" id="ww-icon-lg"><i class="fas fa-cloud" style="color:var(--text-muted)"></i></span>
                             <div>
                                 <div class="ww-tooltip-city" id="ww-city">Detecting…</div>
                                 <div class="ww-tooltip-time-local" id="ww-time-local">--:--</div>

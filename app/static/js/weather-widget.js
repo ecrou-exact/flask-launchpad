@@ -48,6 +48,7 @@
 
     var _chip      = document.getElementById('ww-chip');
     var _icon      = document.getElementById('ww-icon');
+    var _icon_lg   = null;
     var _temp      = document.getElementById('ww-temp');
     var _time      = document.getElementById('ww-time');
     var _tooltip   = document.getElementById('ww-tooltip');
@@ -126,7 +127,8 @@
 
             var info = wmo(code);
 
-            if (_icon) _icon.textContent = info.e;
+            setIcon(_icon, info);
+            setIcon(_icon_lg, info);
             if (_temp) _temp.textContent = temp + '°';
             if (_desc) _desc.textContent = info.l + ' · ' + wind + ' km/h wind';
             if (_wind) _wind.textContent = '';   /* already in desc */
@@ -138,7 +140,9 @@
         })
         .catch(function () {
             /* Still show time even if weather fails */
-            if (_icon) _icon.textContent = '🕐';
+            var fallback = { i: 'fa-clock', c: 'var(--text-muted)' };
+            setIcon(_icon, fallback);
+            setIcon(_icon_lg, fallback);
             if (_chip) _chip.classList.add('ww-ready');
         });
     }
@@ -159,7 +163,9 @@
 
     function onDenied() {
         /* No geolocation — show time only */
-        if (_icon) _icon.textContent = '🕐';
+        var fallback = { i: 'fa-clock', c: 'var(--text-muted)' };
+        setIcon(_icon, fallback);
+        setIcon(_icon_lg, fallback);
         if (_city) _city.textContent = 'Location unavailable';
         if (_desc) _desc.textContent = 'Enable location for weather';
         if (_chip) _chip.classList.add('ww-ready');
@@ -183,6 +189,7 @@
         /* Re-assign DOM refs (script may run before DOM ready) */
         _chip      = document.getElementById('ww-chip');
         _icon      = document.getElementById('ww-icon');
+        _icon_lg   = document.getElementById('ww-icon-lg');
         _temp      = document.getElementById('ww-temp');
         _time      = document.getElementById('ww-time');
         _tooltip   = document.getElementById('ww-tooltip');

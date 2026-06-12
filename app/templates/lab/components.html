@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/smart-editor.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/pivotick.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/graph-viewer.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/chart-viewer.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -286,6 +287,86 @@ max-height  CSS string   (default: '600px')</pre>
                         </details>
                     </section>
 
+                    <!-- ── Chart Viewer ── -->
+                    <section class="lab-card" id="chart-viewer">
+                        <div class="lab-card-header">
+                            <div class="lab-card-meta">
+                                <span class="lab-card-icon"><i class="fas fa-chart-line"></i></span>
+                                <div>
+                                    <h2 class="lab-card-title">Chart Viewer</h2>
+                                    <p class="lab-card-desc">
+                                        Universal ECharts component — 12 chart types from one JSON format.
+                                        Switch views with the tab bar, click a data point to see its detail,
+                                        export as PNG, or go fullscreen.
+                                    </p>
+                                </div>
+                            </div>
+                            <code class="lab-file-badge">chart-viewer.js</code>
+                        </div>
+
+                        <!-- Dataset picker -->
+                        <div class="lab-demo-tabs">
+                            <button
+                                v-for="d in chart_presets"
+                                :key="d.id"
+                                class="lab-demo-tab"
+                                :class="{ 'is-active': active_chart_preset === d.id }"
+                                @click="active_chart_preset = d.id">
+                                <i :class="'fas ' + d.icon" style="margin-right:4px;font-size:.72rem;"></i>
+                                [[ d.label ]]
+                            </button>
+                        </div>
+
+                        <div class="lab-card-body" style="padding:0;">
+                            <chart-viewer
+                                :data="current_chart_data"
+                                :views="ALL_VIEWS"
+                                :detail="true"
+                                height="440px">
+                            </chart-viewer>
+                        </div>
+
+                        <details class="lab-usage">
+                            <summary><i class="fas fa-code"></i> Usage</summary>
+                            <pre class="lab-usage-code">import ChartViewer from '/static/js/components/chart-viewer.js'
+
+&lt;!-- All 12 chart types, click-to-detail enabled --&gt;
+&lt;chart-viewer
+    :data="my_data"
+    :views="['line','area','bar','bar-h','pie','donut','scatter',
+             'radar','funnel','gauge','treemap','heatmap','table']"
+    :detail="true"
+    height="440px"&gt;
+&lt;/chart-viewer&gt;
+
+&lt;!-- Single view — no tab bar --&gt;
+&lt;chart-viewer :data="my_data" views="pie" height="320px"&gt;&lt;/chart-viewer&gt;
+
+/* Universal JSON format (all chart types read the same structure) */
+{
+    "title":      "My Chart",
+    "subtitle":   "Optional subtitle",
+    "categories": ["Jan", "Feb", "Mar"],   // X-axis labels (also pie slice names)
+    "series": [
+        { "name": "Revenue", "values": [120, 200, 150] },
+        { "name": "Cost",    "values": [80,  140, 90]  }
+    ],
+    "meta": {
+        "unit":    "€",        // appended to values in tooltips + detail panel
+        "x_label": "Month",
+        "y_label": "Amount"
+    }
+}
+
+/* Chart type notes */
+// pie / donut / treemap / funnel → first series only; categories = slice labels
+// gauge   → first value of first series (0-100 ideal)
+// scatter → values can be [[x,y], ...] pairs or flat array (auto-index X)
+// heatmap → series[i].values = row of values; categories = X-axis labels
+// table   → always available when :detail="true"</pre>
+                        </details>
+                    </section>
+
                     <!-- ── New components go here ── -->
 
                 </div>
@@ -304,6 +385,8 @@ max-height  CSS string   (default: '600px')</pre>
     import CodeViewer   from '/static/js/components/code-viewer.js'
     import SmartEditor  from '/static/js/components/smart-editor.js'
     import GraphViewer  from '/static/js/components/graph-viewer.js'
+    import ChartViewer  from '/static/js/components/chart-viewer.js'
+
 
     const DIFF_LEFT = `{
   "app": "flask-launchpad",
@@ -446,7 +529,7 @@ max-height  CSS string   (default: '600px')</pre>
 
     createApp({
         delimiters: ['[[', ']]'],
-        components: { LoadingBar, DiffViewer, CodeViewer, SmartEditor, GraphViewer },
+        components: { LoadingBar, DiffViewer, CodeViewer, SmartEditor, GraphViewer, ChartViewer },
 
         setup() {
             const ready          = ref(false)
@@ -456,10 +539,11 @@ max-height  CSS string   (default: '600px')</pre>
             const active_section = ref('diff-viewer')
 
             const components = [
-                { id: 'diff-viewer',   label: 'Diff Viewer',    icon: 'fa-code-compare'  },
-                { id: 'code-viewer',   label: 'Code Viewer',    icon: 'fa-file-code'     },
-                { id: 'smart-editor',  label: 'Smart Editor',   icon: 'fa-pen-to-square' },
+                { id: 'diff-viewer',   label: 'Diff Viewer',    icon: 'fa-code-compare'    },
+                { id: 'code-viewer',   label: 'Code Viewer',    icon: 'fa-file-code'       },
+                { id: 'smart-editor',  label: 'Smart Editor',   icon: 'fa-pen-to-square'   },
                 { id: 'graph-viewer',  label: 'Graph Viewer',   icon: 'fa-diagram-project' },
+                { id: 'chart-viewer',  label: 'Chart Viewer',   icon: 'fa-chart-line'      },
             ]
 
             // ── Smart Editor demo state ───────────────────────────────
@@ -507,6 +591,46 @@ max-height  CSS string   (default: '600px')</pre>
                 code:     PY_SAMPLE,
             })
             const active_editor_demo = ref('text')
+
+            // ── Chart Viewer demo state ──────────────────────────────
+            const CHART_PRESETS = {
+                timeseries: {
+                    title: 'Platform Metrics', subtitle: 'Last 6 months',
+                    categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    series: [
+                        { name: 'Users',    values: [42,  65,  58,  83,  91,  107] },
+                        { name: 'Sessions', values: [118, 190, 162, 240, 275, 320] },
+                        { name: 'Revenue',  values: [12,  18,  15,  24,  29,   35] },
+                    ],
+                    meta: { x_label: 'Month', y_label: 'Count' },
+                },
+                distribution: {
+                    title: 'Traffic Sources', subtitle: 'Current month',
+                    categories: ['Organic', 'Direct', 'Referral', 'Social', 'Email'],
+                    series: [
+                        { name: 'Visits', values: [4200, 2800, 1600, 980, 420] },
+                    ],
+                    meta: { unit: '', x_label: 'Source', y_label: 'Visits' },
+                },
+                score: {
+                    title: 'System Health', subtitle: 'Real-time',
+                    categories: ['Uptime', 'CPU', 'Memory', 'Disk', 'Network'],
+                    series: [
+                        { name: 'Score', values: [98, 72, 65, 41, 88] },
+                    ],
+                    meta: { unit: '%', x_label: 'Metric', y_label: 'Score' },
+                },
+            }
+
+            const ALL_VIEWS = ['line','area','bar','bar-h','pie','donut','scatter','radar','funnel','gauge','treemap','heatmap','table']
+
+            const chart_presets = [
+                { id: 'timeseries',   label: 'Time Series',   icon: 'fa-chart-line'  },
+                { id: 'distribution', label: 'Distribution',  icon: 'fa-chart-pie'   },
+                { id: 'score',        label: 'Scores / KPIs', icon: 'fa-gauge-high'  },
+            ]
+            const active_chart_preset = ref('timeseries')
+            const current_chart_data  = computed(() => CHART_PRESETS[active_chart_preset.value])
 
             // ── Graph Viewer demo state ───────────────────────────────
             const graph_demos = [
@@ -605,6 +729,7 @@ max-height  CSS string   (default: '600px')</pre>
                 components, code_demos, current_demo,
                 editor_demos, editor_values, active_editor_demo,
                 graph_demos, active_graph_demo, graph_config, graph_data,
+                chart_presets, active_chart_preset, current_chart_data, ALL_VIEWS,
                 scroll_to,
             }
         }

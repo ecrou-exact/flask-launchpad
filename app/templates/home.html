@@ -2,6 +2,7 @@
 
 {% block head_extra %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/home/home.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/chart-viewer.css') }}">
 {% endblock %}
 
 {% block page_title %}Home{% endblock %}
@@ -14,10 +15,7 @@
 
         <!-- HERO -->
         <section class="home-hero">
-            <div class="home-hero-glow"></div>
-
             <div class="home-hero-inner">
-
                 <div class="home-hero-badge">
                     <i class="fas fa-rocket"></i>
                     Flask Launchpad
@@ -48,67 +46,30 @@
                         API Docs
                     </a>
                 </div>
-
             </div>
         </section>
 
-        <!-- STATS -->
-        <div class="row g-3 mb-5">
-
-            <div class="col-12 col-md-6 col-xl-3">
-                <div class="home-stat-card">
-                    <i class="fas fa-shield-halved"></i>
-                    <div>
-                        <h3>Security</h3>
-                        <p>Auth • RBAC • CSRF</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-12 col-md-6 col-xl-3">
-                <div class="home-stat-card">
-                    <i class="fas fa-code"></i>
-                    <div>
-                        <h3>API First</h3>
-                        <p>REST • Swagger</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-12 col-md-6 col-xl-3">
-                <div class="home-stat-card">
-                    <i class="fas fa-layer-group"></i>
-                    <div>
-                        <h3>Frontend</h3>
-                        <p>Vue 3 • Bootstrap</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-12 col-md-6 col-xl-3">
-                <div class="home-stat-card">
-                    <i class="fas fa-palette"></i>
-                    <div>
-                        <h3>Themes</h3>
-                        <p>Dark • Customizable</p>
-                    </div>
-                </div>
-            </div>
-
-        </div>
+        <!-- CHART DEMO -->
+        <section class="home-chart-section animate-on-scroll">
+            <div class="home-section-title">Project Activity</div>
+            <p class="home-section-subtitle">Live stats rendered with the built-in chart system.</p>
+            <chart-viewer
+                :data="chart_data"
+                :views="['line','bar','pie','table']"
+                :detail="true"
+                height="340px"
+            ></chart-viewer>
+        </section>
 
         <!-- FEATURES -->
         <section class="home-section">
-
-            <div class="home-section-title animate-on-scroll">
-                Core Features
-            </div>
+            <div class="home-section-title animate-on-scroll">Core Features</div>
 
             <div class="row g-3">
 
                 <div class="col-12 col-md-6 col-lg-4">
                     <div class="home-feature-card">
-                        <i class="fas fa-shield-halved"></i>
+                        <div class="home-feature-icon"><i class="fas fa-shield-halved"></i></div>
                         <h3>Authentication</h3>
                         <p>Secure auth, roles, permissions.</p>
                     </div>
@@ -116,7 +77,7 @@
 
                 <div class="col-12 col-md-6 col-lg-4">
                     <div class="home-feature-card">
-                        <i class="fas fa-code"></i>
+                        <div class="home-feature-icon"><i class="fas fa-code"></i></div>
                         <h3>API First</h3>
                         <p>REST API with Swagger.</p>
                     </div>
@@ -124,7 +85,7 @@
 
                 <div class="col-12 col-md-6 col-lg-4">
                     <div class="home-feature-card">
-                        <i class="fas fa-bolt"></i>
+                        <div class="home-feature-icon"><i class="fas fa-bolt"></i></div>
                         <h3>Feature Flags</h3>
                         <p>Enable features without deploy.</p>
                     </div>
@@ -132,7 +93,7 @@
 
                 <div class="col-12 col-md-6 col-lg-4">
                     <div class="home-feature-card">
-                        <i class="fas fa-gears"></i>
+                        <div class="home-feature-icon"><i class="fas fa-gears"></i></div>
                         <h3>Jobs</h3>
                         <p>Async job tracking system.</p>
                     </div>
@@ -140,15 +101,15 @@
 
                 <div class="col-12 col-md-6 col-lg-4">
                     <div class="home-feature-card">
-                        <i class="fas fa-palette"></i>
+                        <div class="home-feature-icon"><i class="fas fa-palette"></i></div>
                         <h3>Themes</h3>
-                        <p>Dark mode & customization.</p>
+                        <p>Dark mode &amp; customization.</p>
                     </div>
                 </div>
 
                 <div class="col-12 col-md-6 col-lg-4">
                     <div class="home-feature-card">
-                        <i class="fas fa-layer-group"></i>
+                        <div class="home-feature-icon"><i class="fas fa-layer-group"></i></div>
                         <h3>UI Kit</h3>
                         <p>Reusable Vue components.</p>
                     </div>
@@ -190,55 +151,69 @@
 {% block script %}
 <script type="module">
 const { createApp, ref, onMounted } = Vue
-    createApp({
-        delimiters: ['[[', ']]'],
+import { message_list } from '/static/js/toaster.js'
+import LoadingBar from '/static/js/components/loading-bar.js'
+import ChartViewer from '/static/js/components/chart-viewer.js'
 
-        setup() {
+createApp({
+    delimiters: ['[[', ']]'],
+    components: { LoadingBar, ChartViewer },
 
-            const page_is_loading = ref(false)
+    setup() {
+        const page_is_loading = ref(false)
 
-            async function init() {
-                await new Promise(r => setTimeout(r, 300))
-                page_is_loading.value = true
-                setTimeout(() => {
-                    setupScrollAnimations()
-                    setupCardGlow()
-                }, 300)
-            }
+        const chart_data = ref({
+            title:      'Project Activity',
+            subtitle:   'Last 6 months',
+            categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+            series: [
+                { name: 'Users',     values: [12, 19, 15, 28, 34, 41] },
+                { name: 'API Calls', values: [340, 520, 410, 690, 780, 920] },
+                { name: 'Features',  values: [4, 5, 6, 7, 8, 9] },
+                { name: 'Roles',     values: [2, 2, 3, 3, 4, 4] },
+            ],
+            meta: {
+                x_label: 'Month',
+                y_label: 'Count',
+            },
+        })
 
-            function setupScrollAnimations() {
-                const els = document.querySelectorAll('.home-feature-card, .home-cta, .home-section-title')
-
-                const observer = new IntersectionObserver((entries) => {
-                    entries.forEach(e => {
-                        if (e.isIntersecting) {
-                            e.target.classList.add('is-visible')
-                        }
-                    })
-                }, { threshold: 0.15 })
-
-                els.forEach(el => {
-                    el.classList.add('animate-on-scroll')
-                    observer.observe(el)
-                })
-            }
-
-            function setupCardGlow() {
-                const cards = document.querySelectorAll('.home-feature-card, .home-stat-card')
-
-                cards.forEach(card => {
-                    card.addEventListener('mousemove', (e) => {
-                        const r = card.getBoundingClientRect()
-                        card.style.setProperty('--x', `${e.clientX - r.left}px`)
-                        card.style.setProperty('--y', `${e.clientY - r.top}px`)
-                    })
-                })
-            }
-
-            onMounted(init)
-
-            return { page_is_loading }
+        async function init() {
+            await new Promise(r => setTimeout(r, 200))
+            page_is_loading.value = true
+            setTimeout(() => {
+                setupScrollAnimations()
+                setupCardGlow()
+            }, 100)
         }
-    }).mount('#main-container')
+
+        function setupScrollAnimations() {
+            const els = document.querySelectorAll(
+                '.home-feature-card, .home-cta, .home-section-title, .home-chart-section'
+            )
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(e => {
+                    if (e.isIntersecting) e.target.classList.add('is-visible')
+                })
+            }, { threshold: 0.12 })
+            els.forEach(el => observer.observe(el))
+        }
+
+        function setupCardGlow() {
+            const cards = document.querySelectorAll('.home-feature-card')
+            cards.forEach(card => {
+                card.addEventListener('mousemove', (e) => {
+                    const r = card.getBoundingClientRect()
+                    card.style.setProperty('--x', `${e.clientX - r.left}px`)
+                    card.style.setProperty('--y', `${e.clientY - r.top}px`)
+                })
+            })
+        }
+
+        onMounted(init)
+
+        return { message_list, page_is_loading, chart_data }
+    }
+}).mount('#main-container')
 </script>
 {% endblock %}
