@@ -1,0 +1,543 @@
+{% extends 'base.html' %}
+{% block page_title %}Database{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/site_settings/site_settings.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/site_settings/database.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper" v-cloak>
+    <loading-bar :active="!ready"></loading-bar>
+
+    <div v-if="ready">
+
+        <div class="page-header">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-1">
+                        <li class="breadcrumb-item"><a href="/">Home</a></li>
+                        <li class="breadcrumb-item">Admin</li>
+                        <li class="breadcrumb-item active">Database</li>
+                    </ol>
+                </nav>
+                <h1 class="page-title">Settings</h1>
+            </div>
+            <div class="page-actions">
+                <button class="btn btn-sm btn-outline-secondary" @click="refresh_all" :disabled="loading">
+                    <i class="fas fa-rotate-right" :class="{ 'fa-spin': loading }"></i> Refresh
+                </button>
+            </div>
+        </div>
+
+        <!-- Tab bar -->
+        <div class="ss-page-tabs">
+            <a href="/admin/settings" class="ss-page-tab">
+                <i class="fas fa-server"></i> Server Settings
+            </a>
+            <a href="/admin/settings/database" class="ss-page-tab is-active">
+                <i class="fas fa-database"></i> Database
+            </a>
+        </div>
+
+        <div class="page-body">
+            <div class="row g-3">
+
+                <!-- ── Left column ── -->
+                <div class="col-12 col-xl-7">
+
+                    <!-- DB Overview -->
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="ss-card-header">
+                                <div class="ss-card-icon"><i class="fas fa-database"></i></div>
+                                <div>
+                                    <h6 class="ss-card-title">Database Overview</h6>
+                                    <p class="ss-card-sub">Current state, size, and table stats.</p>
+                                </div>
+                                <div class="ms-auto">
+                                    <span v-if="db_info.db_type" class="db-type-badge">
+                                        <i class="fas fa-circle-check" style="color:var(--brand)"></i>
+                                        [[ db_info.db_type ]]
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div v-if="db_info.db_type" class="db-stat-grid">
+                                <div class="db-stat-card">
+                                    <div class="db-stat-label">Size</div>
+                                    <div class="db-stat-value">[[ db_info.size_human ]]</div>
+                                </div>
+                                <div class="db-stat-card">
+                                    <div class="db-stat-label">Tables</div>
+                                    <div class="db-stat-value">[[ db_info.table_count ]]</div>
+                                </div>
+                                <div class="db-stat-card">
+                                    <div class="db-stat-label">Backups</div>
+                                    <div class="db-stat-value">[[ db_info.backup_count ]]</div>
+                                </div>
+                            </div>
+
+                            <div v-if="db_info.db_path" class="db-stat-sub mb-3" style="font-size:.72rem;color:var(--text-muted);">
+                                <i class="fas fa-file-circle-info me-1"></i> [[ db_info.db_path ]]
+                            </div>
+
+                            <!-- Table list -->
+                            <div v-if="db_info.tables && db_info.tables.length">
+                                <div style="font-size:.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.5rem;">Tables</div>
+                                <div style="max-height:240px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-sm);">
+                                    <table class="db-table-list">
+                                        <thead>
+                                            <tr>
+                                                <th>Table</th>
+                                                <th>Rows</th>
+                                                <th></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="t in db_info.tables" :key="t.name">
+                                                <td>[[ t.name ]]</td>
+                                                <td>[[ t.rows >= 0 ? t.rows.toLocaleString() : '—' ]]</td>
+                                                <td>
+                                                    <span v-if="t.rows > 0"
+                                                          class="db-row-bar"
+                                                          :style="{ width: Math.min(t.rows / max_rows * 80, 80) + 'px' }">
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div v-else class="db-empty"><i class="fas fa-table"></i> No table data</div>
+                        </div>
+                    </div>
+
+                    <!-- SQL Console -->
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="ss-card-header">
+                                <div class="ss-card-icon"><i class="fas fa-terminal"></i></div>
+                                <div>
+                                    <h6 class="ss-card-title">SQL Console</h6>
+                                    <p class="ss-card-sub">Execute queries against the live database.</p>
+                                </div>
+                            </div>
+
+                            <div class="db-sql-warn">
+                                <i class="fas fa-triangle-exclamation"></i>
+                                <span>
+                                    All queries are <strong>logged and audited</strong>.
+                                    <strong>DELETE / DROP / TRUNCATE / UPDATE</strong> trigger an <strong>automatic backup</strong> before execution — you can restore it instantly if needed.
+                                    Results capped at 500 rows.
+                                </span>
+                            </div>
+
+                            <textarea
+                                v-model="sql_query"
+                                class="db-sql-textarea"
+                                placeholder="SELECT * FROM user LIMIT 10;"
+                                spellcheck="false"
+                                @keydown.ctrl.enter.prevent="run_sql"
+                                @keydown.meta.enter.prevent="run_sql">
+                            </textarea>
+
+                            <div class="db-sql-controls">
+                                <button class="db-btn db-btn--primary" @click="run_sql" :disabled="sql_running || !sql_query.trim()">
+                                    <i class="fas fa-play" v-if="!sql_running"></i>
+                                    <i class="fas fa-spinner fa-spin" v-else></i>
+                                    Execute <kbd style="font-size:.65rem;opacity:.7;margin-left:2px;">Ctrl+↵</kbd>
+                                </button>
+                                <button class="db-btn" @click="sql_query = ''; sql_result = null; sql_error = null">
+                                    <i class="fas fa-xmark"></i> Clear
+                                </button>
+                                <span v-if="sql_result" style="font-size:.72rem;color:var(--text-muted);margin-left:auto;">
+                                    [[ sql_result.count ]] [[ sql_result.is_read ? 'row(s) returned' : 'row(s) affected' ]]
+                                </span>
+                            </div>
+
+                            <!-- Destructive query pre-warning -->
+                            <div v-if="sql_is_destructive" class="db-sql-dml-warn">
+                                <i class="fas fa-shield-halved"></i>
+                                Destructive query — a backup will be created automatically before execution.
+                            </div>
+                            <div v-else-if="sql_is_dml" class="db-sql-dml-warn" style="color:var(--text-muted);border-color:var(--border);">
+                                <i class="fas fa-pen" style="color:var(--text-muted)"></i>
+                                Write operation — changes committed immediately.
+                            </div>
+
+                            <!-- Undo banner (destructive query was executed, backup was created) -->
+                            <div v-if="sql_result && sql_result.backup_before" class="db-sql-undo-banner">
+                                <i class="fas fa-shield-check"></i>
+                                <span>
+                                    Auto-backup created before this query:
+                                    <code>[[ sql_result.backup_before ]]</code>
+                                </span>
+                                <button class="db-btn db-btn--warning db-btn--sm"
+                                        @click="undo_via_backup(sql_result.backup_before)">
+                                    <i class="fas fa-rotate-left"></i> Undo (restore this backup)
+                                </button>
+                            </div>
+
+                            <!-- Results -->
+                            <div v-if="sql_result && sql_result.columns.length > 0" class="db-sql-results">
+                                <div class="db-sql-results-header">
+                                    <span><i class="fas fa-table me-1"></i> Results</span>
+                                    <span>[[ sql_result.count ]] row(s)</span>
+                                </div>
+                                <div class="db-sql-results-table-wrap">
+                                    <table class="db-sql-results-table">
+                                        <thead>
+                                            <tr>
+                                                <th v-for="col in sql_result.columns" :key="col">[[ col ]]</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="(row, ri) in sql_result.rows" :key="ri">
+                                                <td v-for="(cell, ci) in row" :key="ci">[[ cell !== null ? cell : 'NULL' ]]</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div v-else-if="sql_result && !sql_result.is_read" class="db-sql-results">
+                                <div class="db-sql-results-header">
+                                    <span><i class="fas fa-circle-check me-1" style="color:#22c55e"></i> Query executed</span>
+                                    <span>[[ sql_result.count ]] row(s) affected</span>
+                                </div>
+                            </div>
+                            <div v-if="sql_error" class="db-sql-error">
+                                <i class="fas fa-circle-xmark me-1"></i> [[ sql_error ]]
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- ── Right column ── -->
+                <div class="col-12 col-xl-5">
+
+                    <!-- Backups -->
+                    <div class="card mb-3" id="backup-section">
+                        <div class="card-body">
+                            <div class="ss-card-header">
+                                <div class="ss-card-icon"><i class="fas fa-box-archive"></i></div>
+                                <div>
+                                    <h6 class="ss-card-title">Backups</h6>
+                                    <p class="ss-card-sub">Create, download, or restore a snapshot.</p>
+                                </div>
+                                <div class="ms-auto">
+                                    <button class="db-btn db-btn--primary" @click="create_backup" :disabled="backup_creating">
+                                        <i class="fas fa-plus" v-if="!backup_creating"></i>
+                                        <i class="fas fa-spinner fa-spin" v-else></i>
+                                        Backup Now
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div v-if="backups.length === 0" class="db-empty">
+                                <i class="fas fa-box-open"></i> No backups yet
+                            </div>
+
+                            <div v-else class="db-backup-list">
+                                <div
+                                    v-for="b in backups"
+                                    :key="b.filename"
+                                    class="db-backup-item"
+                                    :class="{ 'is-restoring': restore_target === b.filename }">
+
+                                    <i class="fas fa-file-zipper db-backup-icon"></i>
+                                    <div class="db-backup-info">
+                                        <div class="db-backup-name">[[ b.filename ]]</div>
+                                        <div class="db-backup-meta">[[ b.size_human ]] · [[ fmt_date(b.created_at) ]]</div>
+                                    </div>
+                                    <div class="db-backup-actions">
+                                        <a :href="'/api/database/backups/' + b.filename + '/download'"
+                                           class="db-btn" title="Download">
+                                            <i class="fas fa-download"></i>
+                                        </a>
+                                        <button class="db-btn db-btn--warning"
+                                                @click="initiate_restore(b.filename)"
+                                                :disabled="restore_target === b.filename"
+                                                title="Restore">
+                                            <i class="fas fa-rotate-left"></i>
+                                        </button>
+                                        <button class="db-btn db-btn--danger"
+                                                @click="delete_backup(b.filename)"
+                                                title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Restore confirmation box -->
+                            <div v-if="restore_target" class="db-restore-confirm mt-3">
+                                <div class="db-restore-confirm-title">
+                                    <i class="fas fa-triangle-exclamation"></i>
+                                    Confirm restore — [[ restore_target ]]
+                                </div>
+                                <p style="font-size:.78rem;color:var(--text-secondary);margin-bottom:.6rem;">
+                                    A 6-digit code has been sent to the admin email. Enter it below to confirm.
+                                    This will <strong>replace the current database</strong> and is irreversible.
+                                </p>
+                                <div class="db-restore-code-input">
+                                    <input
+                                        v-model="restore_code"
+                                        type="text"
+                                        maxlength="6"
+                                        placeholder="000000"
+                                        @keydown.enter="confirm_restore">
+                                    <button class="db-btn db-btn--danger" @click="confirm_restore" :disabled="restore_confirming">
+                                        <i class="fas fa-check" v-if="!restore_confirming"></i>
+                                        <i class="fas fa-spinner fa-spin" v-else></i>
+                                        Confirm
+                                    </button>
+                                    <button class="db-btn" @click="cancel_restore">
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- Event History -->
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="ss-card-header">
+                                <div class="ss-card-icon"><i class="fas fa-clock-rotate-left"></i></div>
+                                <div>
+                                    <h6 class="ss-card-title">Event History</h6>
+                                    <p class="ss-card-sub">All database operations — last 100 events.</p>
+                                </div>
+                            </div>
+
+                            <div v-if="history.length === 0" class="db-empty">
+                                <i class="fas fa-scroll"></i> No events yet
+                            </div>
+
+                            <div v-else class="db-history-list" style="max-height:380px;overflow-y:auto;">
+                                <div v-for="e in history" :key="e.id" class="db-history-item">
+                                    <span :class="'db-level-dot db-level-dot--' + e.level"></span>
+                                    <div class="db-history-title">[[ e.title ]]</div>
+                                    <div class="db-history-meta">[[ fmt_date(e.created_at) ]]</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script type="module">
+const { createApp, ref, computed, onMounted } = Vue
+import { message_list } from '/static/js/toaster.js'
+import { create_message } from '/static/js/toaster.js'
+import { TOAST, apiFetch } from '/static/js/constants.js'
+import LoadingBar from '/static/js/components/loading-bar.js'
+
+createApp({
+    delimiters: ['[[', ']]'],
+    components: { LoadingBar },
+
+    setup() {
+        const ready   = ref(false)
+        const loading = ref(false)
+
+        // ── DB info ──────────────────────────────────────────
+        const db_info = ref({})
+
+        async function load_db_info() {
+            const res = await apiFetch('/api/database/info')
+            if (res.ok) db_info.value = await res.json()
+        }
+
+        const max_rows = computed(() => {
+            const tables = db_info.value.tables || []
+            return Math.max(1, ...tables.map(t => t.rows || 0))
+        })
+
+        // ── Backups ──────────────────────────────────────────
+        const backups         = ref([])
+        const backup_creating = ref(false)
+        const restore_target  = ref(null)
+        const restore_code    = ref('')
+        const restore_confirming = ref(false)
+
+        async function load_backups() {
+            const res = await apiFetch('/api/database/backups')
+            if (res.ok) backups.value = await res.json()
+        }
+
+        async function create_backup() {
+            backup_creating.value = true
+            const res = await apiFetch('/api/database/backups', 'POST')
+            const d   = await res.json()
+            if (res.ok) {
+                create_message(d.message, TOAST.SUCCESS)
+                await load_backups()
+                await load_db_info()
+            } else {
+                create_message(d.message, TOAST.ERROR)
+            }
+            backup_creating.value = false
+        }
+
+        async function delete_backup(filename) {
+            if (!confirm(`Delete backup ${filename}?`)) return
+            const res = await apiFetch(`/api/database/backups/${filename}`, 'DELETE')
+            const d   = await res.json()
+            if (res.ok) {
+                create_message(d.message, TOAST.SUCCESS)
+                backups.value = backups.value.filter(b => b.filename !== filename)
+            } else {
+                create_message(d.message, TOAST.ERROR)
+            }
+        }
+
+        async function initiate_restore(filename) {
+            if (!confirm(
+                `Restore ${filename}?\n\nThis will REPLACE the current database. A confirmation code will be sent to the admin email.`
+            )) return
+
+            const res = await apiFetch('/api/database/restore/initiate', 'POST', { filename })
+            const d   = await res.json()
+            if (res.ok) {
+                restore_target.value = filename
+                restore_code.value   = ''
+                create_message(d.message, TOAST.WARNING, true)
+            } else {
+                create_message(d.message, TOAST.ERROR)
+            }
+        }
+
+        async function confirm_restore() {
+            if (!restore_code.value.trim()) {
+                create_message('Enter the 6-digit code', TOAST.WARNING)
+                return
+            }
+            restore_confirming.value = true
+            const res = await apiFetch('/api/database/restore/confirm', 'POST', {
+                filename: restore_target.value,
+                code:     restore_code.value.trim(),
+            })
+            const d = await res.json()
+            if (res.ok) {
+                create_message(d.message, TOAST.SUCCESS, true)
+                restore_target.value = null
+                restore_code.value   = ''
+                await refresh_all()
+            } else {
+                create_message(d.message, TOAST.ERROR)
+            }
+            restore_confirming.value = false
+        }
+
+        function cancel_restore() {
+            restore_target.value = null
+            restore_code.value   = ''
+        }
+
+        // ── SQL Console ──────────────────────────────────────
+        const sql_query   = ref('')
+        const sql_running = ref(false)
+        const sql_result  = ref(null)
+        const sql_error   = ref(null)
+
+        const DESTRUCTIVE_RE = /^(DELETE|DROP|TRUNCATE|UPDATE)\b/i
+        const DML_RE         = /^(INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|TRUNCATE|REPLACE)\b/i
+
+        const sql_is_destructive = computed(() => DESTRUCTIVE_RE.test(sql_query.value.trim()))
+        const sql_is_dml         = computed(() => DML_RE.test(sql_query.value.trim()) && !sql_is_destructive.value)
+
+        async function run_sql() {
+            if (!sql_query.value.trim() || sql_running.value) return
+            sql_running.value = true
+            sql_result.value  = null
+            sql_error.value   = null
+
+            const res = await apiFetch('/api/database/sql', 'POST', { query: sql_query.value })
+            const d   = await res.json()
+
+            if (res.ok) {
+                sql_result.value = d
+                if (!d.is_read) await refresh_all()
+                if (d.backup_before) {
+                    create_message(
+                        `Auto-backup created before destructive query: ${d.backup_before}`,
+                        TOAST.WARNING,
+                        true
+                    )
+                }
+            } else {
+                sql_error.value = d.message
+            }
+            sql_running.value = false
+        }
+
+        async function undo_via_backup(filename) {
+            restore_target.value = filename
+            restore_code.value   = ''
+            const res = await apiFetch('/api/database/restore/initiate', 'POST', { filename })
+            const d   = await res.json()
+            if (res.ok) {
+                create_message(d.message, TOAST.WARNING, true)
+                // Scroll to backup section
+                document.getElementById('backup-section')?.scrollIntoView({ behavior: 'smooth' })
+            } else {
+                create_message(d.message, TOAST.ERROR)
+                restore_target.value = null
+            }
+        }
+
+        // ── History ──────────────────────────────────────────
+        const history = ref([])
+
+        async function load_history() {
+            const res = await apiFetch('/api/database/history')
+            if (res.ok) history.value = await res.json()
+        }
+
+        // ── Utils ────────────────────────────────────────────
+        function fmt_date(iso) {
+            if (!iso) return '—'
+            try {
+                return new Date(iso).toLocaleString('en-GB', {
+                    day: '2-digit', month: 'short', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit',
+                })
+            } catch { return iso }
+        }
+
+        async function refresh_all() {
+            loading.value = true
+            await Promise.all([load_db_info(), load_backups(), load_history()])
+            loading.value = false
+        }
+
+        onMounted(async () => {
+            await refresh_all()
+            ready.value = true
+        })
+
+        return {
+            message_list, ready, loading,
+            db_info, max_rows,
+            backups, backup_creating,
+            restore_target, restore_code, restore_confirming,
+            create_backup, delete_backup, initiate_restore, confirm_restore, cancel_restore,
+            sql_query, sql_running, sql_result, sql_error, sql_is_dml, sql_is_destructive, run_sql, undo_via_backup,
+            history,
+            fmt_date, refresh_all,
+        }
+    }
+}).mount('#main-container')
+</script>
+{% endblock %}
