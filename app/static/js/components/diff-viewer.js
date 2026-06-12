@@ -151,7 +151,7 @@ function build_split_rows(ops) {
 
         if (op.type === 'equal') {
             rows.push({
-                left_num: ln++,  left_type: 'equal', left_marker: ' ',  left_html: esc(op.v),
+                left_num: ln++, left_type: 'equal', left_marker: ' ', left_html: esc(op.v),
                 right_num: rn++, right_type: 'equal', right_marker: ' ', right_html: esc(op.vb ?? op.v),
                 is_hunk_start: false,
             })
@@ -169,15 +169,15 @@ function build_split_rows(ops) {
             const char_ops = (d && ins_op) ? diff_chars(d.v, ins_op.v) : null
 
             rows.push({
-                left_num:    d      ? ln++     : null,
-                left_type:   d      ? 'del'    : 'empty',
-                left_marker: d      ? '-'      : '',
-                left_html:   d      ? render_line_html(d.v, char_ops, 'left') : '',
+                left_num: d ? ln++ : null,
+                left_type: d ? 'del' : 'empty',
+                left_marker: d ? '-' : '',
+                left_html: d ? render_line_html(d.v, char_ops, 'left') : '',
 
-                right_num:    ins_op ? rn++     : null,
-                right_type:   ins_op ? 'add'    : 'empty',
-                right_marker: ins_op ? '+'      : '',
-                right_html:   ins_op ? render_line_html(ins_op.v, char_ops, 'right') : '',
+                right_num: ins_op ? rn++ : null,
+                right_type: ins_op ? 'add' : 'empty',
+                right_marker: ins_op ? '+' : '',
+                right_html: ins_op ? render_line_html(ins_op.v, char_ops, 'right') : '',
 
                 is_hunk_start: k === 0,
             })
@@ -223,13 +223,12 @@ const DEFAULT_DEL = '#ef4444'
 
 export default {
     name: 'DiffViewer',
-    delimiters: ['[[', ']]'],
 
     props: {
-        initialLeft:  { type: String, default: '' },
+        initialLeft: { type: String, default: '' },
         initialRight: { type: String, default: '' },
-        leftLabel:    { type: String, default: 'Original' },
-        rightLabel:   { type: String, default: 'Modified' },
+        leftLabel: { type: String, default: 'Original' },
+        rightLabel: { type: String, default: 'Modified' },
     },
 
     template: `
@@ -244,9 +243,9 @@ export default {
                     <i class="fas fa-keyboard"></i>
                 </button>
                 <div class="dv-stats" v-if="stats.added || stats.removed">
-                    <span class="dv-stat dv-stat--add"><i class="fas fa-plus"></i>[[ stats.added ]]</span>
-                    <span class="dv-stat dv-stat--del"><i class="fas fa-minus"></i>[[ stats.removed ]]</span>
-                    <span class="dv-stat dv-stat--eq"  v-if="stats.unchanged"><i class="fas fa-minus" style="opacity:.35"></i>[[ stats.unchanged ]]</span>
+                    <span class="dv-stat dv-stat--add"><i class="fas fa-plus"></i>{{ stats.added }}</span>
+                    <span class="dv-stat dv-stat--del"><i class="fas fa-minus"></i>{{ stats.removed }}</span>
+                    <span class="dv-stat dv-stat--eq"  v-if="stats.unchanged"><i class="fas fa-minus" style="opacity:.35"></i>{{ stats.unchanged }}</span>
                 </div>
             </div>
 
@@ -274,7 +273,7 @@ export default {
                     <button class="dv-btn dv-btn--icon" @click="go_prev_hunk" title="Previous change">
                         <i class="fas fa-chevron-up"></i>
                     </button>
-                    <span class="dv-hunk-counter">[[ cur_hunk + 1 ]] / [[ hunk_positions.length ]]</span>
+                    <span class="dv-hunk-counter">{{ cur_hunk + 1 }} / {{ hunk_positions.length }}</span>
                     <button class="dv-btn dv-btn--icon" @click="go_next_hunk" title="Next change">
                         <i class="fas fa-chevron-down"></i>
                     </button>
@@ -300,12 +299,12 @@ export default {
                         <div class="dv-sp-row dv-sp-row--range">
                             <label>Line bg</label>
                             <input type="range" min="2" max="35" v-model.number="bg_opacity" class="dv-range" />
-                            <span class="dv-sp-val">[[ bg_opacity ]]%</span>
+                            <span class="dv-sp-val">{{ bg_opacity }}%</span>
                         </div>
                         <div class="dv-sp-row dv-sp-row--range">
                             <label>Inline hl</label>
                             <input type="range" min="10" max="85" v-model.number="inline_opacity" class="dv-range" />
-                            <span class="dv-sp-val">[[ inline_opacity ]]%</span>
+                            <span class="dv-sp-val">{{ inline_opacity }}%</span>
                         </div>
                         <button class="dv-btn dv-btn--sm dv-btn--block" @click="reset_colors">
                             <i class="fas fa-rotate-left"></i> Reset defaults
@@ -331,11 +330,11 @@ export default {
                 <div class="dv-input-header">
                     <span class="dv-input-label">
                         <i class="fas fa-circle dv-dot dv-dot--del"></i>
-                        [[ leftLabel ]]
+                        {{ leftLabel }}
                     </span>
                     <div class="dv-input-actions">
                         <button class="dv-btn dv-btn--sm" @click="format_json('left')" title="Format as JSON">
-                            <i class="fas fa-brackets-curly"></i>
+                            <i class="fa-solid fa-code"></i>
                         </button>
                         <label class="dv-btn dv-btn--sm" title="Import file">
                             <i class="fas fa-file-import"></i>
@@ -356,8 +355,8 @@ export default {
                     :class="{ 'dv-textarea--drag': drag_left }">
                 </textarea>
                 <div class="dv-input-footer">
-                    <span>[[ line_count(left_text) ]] lines</span>
-                    <span>[[ left_text.length.toLocaleString() ]] chars</span>
+                    <span>{{ line_count(left_text) }} lines</span>
+                    <span>{{ left_text.length.toLocaleString() }} chars</span>
                 </div>
             </div>
 
@@ -366,11 +365,11 @@ export default {
                 <div class="dv-input-header">
                     <span class="dv-input-label">
                         <i class="fas fa-circle dv-dot dv-dot--add"></i>
-                        [[ rightLabel ]]
+                        {{ rightLabel }}
                     </span>
                     <div class="dv-input-actions">
                         <button class="dv-btn dv-btn--sm" @click="format_json('right')" title="Format as JSON">
-                            <i class="fas fa-brackets-curly"></i>
+                            <i class="fas fa-code"></i>
                         </button>
                         <label class="dv-btn dv-btn--sm" title="Import file">
                             <i class="fas fa-file-import"></i>
@@ -391,8 +390,8 @@ export default {
                     :class="{ 'dv-textarea--drag': drag_right }">
                 </textarea>
                 <div class="dv-input-footer">
-                    <span>[[ line_count(right_text) ]] lines</span>
-                    <span>[[ right_text.length.toLocaleString() ]] chars</span>
+                    <span>{{ line_count(right_text) }} lines</span>
+                    <span>{{ right_text.length.toLocaleString() }} chars</span>
                 </div>
             </div>
         </div>
@@ -415,14 +414,14 @@ export default {
 
             <div class="dv-pane" ref="left_pane_ref" @scroll="sync_scroll('left', $event)">
                 <div class="dv-pane-label">
-                    <i class="fas fa-circle dv-dot dv-dot--del"></i>[[ leftLabel ]]
+                    <i class="fas fa-circle dv-dot dv-dot--del"></i>{{ leftLabel }}
                 </div>
                 <div v-for="(row, idx) in split_rows" :key="'l'+idx"
                     class="dv-row"
                     :class="'dv-row--' + row.left_type"
                     :data-row-idx="idx">
-                    <span class="dv-lnum">[[ row.left_num !== null ? row.left_num : '' ]]</span>
-                    <span class="dv-marker">[[ row.left_marker ]]</span>
+                    <span class="dv-lnum">{{ row.left_num !== null ? row.left_num : '' }}</span>
+                    <span class="dv-marker">{{ row.left_marker }}</span>
                     <pre class="dv-code" v-html="row.left_html"></pre>
                 </div>
             </div>
@@ -431,13 +430,13 @@ export default {
 
             <div class="dv-pane" ref="right_pane_ref" @scroll="sync_scroll('right', $event)">
                 <div class="dv-pane-label">
-                    <i class="fas fa-circle dv-dot dv-dot--add"></i>[[ rightLabel ]]
+                    <i class="fas fa-circle dv-dot dv-dot--add"></i>{{ rightLabel }}
                 </div>
                 <div v-for="(row, idx) in split_rows" :key="'r'+idx"
                     class="dv-row"
                     :class="'dv-row--' + row.right_type">
-                    <span class="dv-lnum">[[ row.right_num !== null ? row.right_num : '' ]]</span>
-                    <span class="dv-marker">[[ row.right_marker ]]</span>
+                    <span class="dv-lnum">{{ row.right_num !== null ? row.right_num : '' }}</span>
+                    <span class="dv-marker">{{ row.right_marker }}</span>
                     <pre class="dv-code" v-html="row.right_html"></pre>
                 </div>
             </div>
@@ -447,16 +446,16 @@ export default {
         <!-- ── Unified view ──────────────────────────────────────────────── -->
         <div v-else class="dv-unified-wrap" ref="unified_pane_ref">
             <div class="dv-unified-header">
-                <span><i class="fas fa-circle dv-dot dv-dot--del"></i>[[ leftLabel ]]</span>
-                <span><i class="fas fa-circle dv-dot dv-dot--add"></i>[[ rightLabel ]]</span>
+                <span><i class="fas fa-circle dv-dot dv-dot--del"></i>{{ leftLabel }}</span>
+                <span><i class="fas fa-circle dv-dot dv-dot--add"></i>{{ rightLabel }}</span>
             </div>
             <div v-for="(row, idx) in unified_rows" :key="idx"
                 class="dv-row dv-unified-row"
                 :class="'dv-row--' + row.type"
                 :data-row-idx="idx">
-                <span class="dv-lnum dv-lnum--a">[[ row.left_num  !== null ? row.left_num  : '' ]]</span>
-                <span class="dv-lnum dv-lnum--b">[[ row.right_num !== null ? row.right_num : '' ]]</span>
-                <span class="dv-marker">[[ row.marker ]]</span>
+                <span class="dv-lnum dv-lnum--a">{{ row.left_num  !== null ? row.left_num  : '' }}</span>
+                <span class="dv-lnum dv-lnum--b">{{ row.right_num !== null ? row.right_num : '' }}</span>
+                <span class="dv-marker">{{ row.marker }}</span>
                 <pre class="dv-code" v-html="row.html"></pre>
             </div>
         </div>
@@ -467,31 +466,31 @@ export default {
     setup(props) {
 
         // ── Text state ────────────────────────────────────────────────────
-        const left_text  = ref(props.initialLeft)
+        const left_text = ref(props.initialLeft)
         const right_text = ref(props.initialRight)
-        const drag_left  = ref(false)
+        const drag_left = ref(false)
         const drag_right = ref(false)
 
         // ── UI state ──────────────────────────────────────────────────────
-        const view_mode     = ref('split')
-        const ignore_ws     = ref(false)
-        const show_input    = ref(true)
+        const view_mode = ref('split')
+        const ignore_ws = ref(false)
+        const show_input = ref(true)
         const show_settings = ref(false)
-        const cur_hunk      = ref(0)
+        const cur_hunk = ref(0)
 
         // ── Color customization ───────────────────────────────────────────
-        const add_hex        = ref(DEFAULT_ADD)
-        const del_hex        = ref(DEFAULT_DEL)
-        const bg_opacity     = ref(12)
+        const add_hex = ref(DEFAULT_ADD)
+        const del_hex = ref(DEFAULT_DEL)
+        const bg_opacity = ref(12)
         const inline_opacity = ref(42)
 
         const color_vars = computed(() => ({
-            '--dv-add-bg':     hex_to_rgba(add_hex.value, bg_opacity.value / 100),
+            '--dv-add-bg': hex_to_rgba(add_hex.value, bg_opacity.value / 100),
             '--dv-add-inline': hex_to_rgba(add_hex.value, inline_opacity.value / 100),
-            '--dv-add-text':   add_hex.value,
-            '--dv-del-bg':     hex_to_rgba(del_hex.value, bg_opacity.value / 100),
+            '--dv-add-text': add_hex.value,
+            '--dv-del-bg': hex_to_rgba(del_hex.value, bg_opacity.value / 100),
             '--dv-del-inline': hex_to_rgba(del_hex.value, inline_opacity.value / 100),
-            '--dv-del-text':   del_hex.value,
+            '--dv-del-text': del_hex.value,
         }))
 
         // ── Diff core ─────────────────────────────────────────────────────
@@ -500,7 +499,7 @@ export default {
             return diff_lines(left_text.value, right_text.value, ignore_ws.value)
         })
 
-        const split_rows   = computed(() => build_split_rows(raw_ops.value))
+        const split_rows = computed(() => build_split_rows(raw_ops.value))
         const unified_rows = computed(() => build_unified_rows(raw_ops.value))
 
         const stats = computed(() => {
@@ -519,18 +518,18 @@ export default {
                 .filter(i => i >= 0)
         )
 
-        const is_empty      = computed(() => left_text.value === '' && right_text.value === '')
-        const is_identical  = computed(() =>
+        const is_empty = computed(() => left_text.value === '' && right_text.value === '')
+        const is_identical = computed(() =>
             !is_empty.value &&
             raw_ops.value.length > 0 &&
             raw_ops.value.every(op => op.type === 'equal')
         )
 
         // ── Scroll sync ───────────────────────────────────────────────────
-        const left_pane_ref    = ref(null)
-        const right_pane_ref   = ref(null)
+        const left_pane_ref = ref(null)
+        const right_pane_ref = ref(null)
         const unified_pane_ref = ref(null)
-        const settings_anchor  = ref(null)
+        const settings_anchor = ref(null)
         const syncing = ref(false)
 
         function sync_scroll(side, e) {
@@ -538,7 +537,7 @@ export default {
             syncing.value = true
             const other = side === 'left' ? right_pane_ref.value : left_pane_ref.value
             if (other) {
-                other.scrollTop  = e.target.scrollTop
+                other.scrollTop = e.target.scrollTop
                 other.scrollLeft = e.target.scrollLeft
             }
             nextTick(() => { syncing.value = false })
@@ -612,14 +611,14 @@ export default {
 
         function swap_sides() {
             const tmp = left_text.value
-            left_text.value  = right_text.value
+            left_text.value = right_text.value
             right_text.value = tmp
         }
 
         function reset_colors() {
-            add_hex.value        = DEFAULT_ADD
-            del_hex.value        = DEFAULT_DEL
-            bg_opacity.value     = 12
+            add_hex.value = DEFAULT_ADD
+            del_hex.value = DEFAULT_DEL
+            bg_opacity.value = 12
             inline_opacity.value = 42
         }
 
