@@ -102,11 +102,19 @@ export default {
         const auto_scroll = ref(true)
         const line_count  = ref(0)
         const input_text  = ref('')
-        const theme       = ref('dark')  // 'dark' | 'light'
+        const theme       = ref('dark')  // 'dark' | 'light' | 'solarized'
+        const _THEMES = ['dark', 'light', 'hacker']
 
         function toggle_theme() {
-            theme.value = theme.value === 'dark' ? 'light' : 'dark'
+            const idx = _THEMES.indexOf(theme.value)
+            theme.value = _THEMES[(idx + 1) % _THEMES.length]
         }
+
+        const theme_icon = computed(() => {
+            if (theme.value === 'dark')   return { icon: 'fas fa-sun',      title: 'Switch to light'  }
+            if (theme.value === 'light')  return { icon: 'fas fa-terminal', title: 'Switch to hacker' }
+            return                               { icon: 'fas fa-moon',     title: 'Switch to dark'   }
+        })
 
         const parsed = computed(() => {
             let source
@@ -176,7 +184,7 @@ export default {
 
         return {
             body_ref, input_ref, auto_scroll, line_count, input_text,
-            theme, toggle_theme,
+            theme, toggle_theme, theme_icon,
             parsed, fmt_ts, on_scroll,
             handle_clear, copy_all, submit,
         }
@@ -195,8 +203,8 @@ export default {
         </div>
         <div class="at-header-right">
             <span class="at-count">{{ line_count }} lines</span>
-            <button class="at-btn" :title="theme === 'dark' ? 'Switch to light' : 'Switch to dark'" @click="toggle_theme">
-                <i :class="theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon'"></i>
+            <button class="at-btn" :title="theme_icon.title" @click="toggle_theme">
+                <i :class="theme_icon.icon"></i>
             </button>
             <button class="at-btn" title="Copy all" @click="copy_all">
                 <i class="fas fa-copy"></i>

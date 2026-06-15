@@ -258,6 +258,71 @@
 .at--light .at-input  { color: #24292f; }
 .at--light .at-input::placeholder { color: #8c959f; }
 
+/*---AT_HACKER_MODE---*/
+
+.at--hacker {
+    background: #000000;
+    border-color: #0d3d0d;
+}
+
+.at--hacker .at-header {
+    background: #050f05;
+    border-bottom-color: #0d3d0d;
+}
+
+.at--hacker .at-title  { color: #00cc33; font-family: var(--font-mono); letter-spacing: .06em; }
+.at--hacker .at-count  { color: #005500; }
+
+.at--hacker .at-btn {
+    border-color: #0d3d0d;
+    color: #00cc33;
+}
+.at--hacker .at-btn:hover         { background: #001a00; color: #00ff41; border-color: #00ff41; }
+.at--hacker .at-btn--danger:hover { color: #ff3333; border-color: #ff3333; }
+
+.at--hacker .at-body {
+    scrollbar-color: #0d3d0d #000000;
+}
+.at--hacker .at-body::-webkit-scrollbar-track { background: #000000; }
+.at--hacker .at-body::-webkit-scrollbar-thumb { background: #0d3d0d; border-radius: 3px; }
+
+.at--hacker .at-line:hover { background: rgba(0,255,65,.04); }
+
+.at--hacker .at-ts  { color: #005500; }
+.at--hacker .at-msg { color: #00ff41; text-shadow: 0 0 6px rgba(0,255,65,.35); }
+
+.at--hacker .at-line--success .at-ts  { color: #00cc33; }
+.at--hacker .at-line--success .at-msg { color: #00ff41; text-shadow: 0 0 8px rgba(0,255,65,.5); }
+.at--hacker .at-line--warning .at-ts  { color: #aaaa00; }
+.at--hacker .at-line--warning .at-msg { color: #ffff00; text-shadow: 0 0 6px rgba(255,255,0,.3); }
+.at--hacker .at-line--error .at-ts    { color: #cc0000; }
+.at--hacker .at-line--error .at-msg   { color: #ff3333; text-shadow: 0 0 6px rgba(255,0,0,.3); }
+.at--hacker .at-line--debug .at-ts    { color: #003300; }
+.at--hacker .at-line--debug .at-msg   { color: #007700; }
+
+.at--hacker .at-empty { color: #004400; }
+
+.at--hacker .at-skeleton { background: #0a1a0a; }
+
+.at--hacker .at-footer,
+.at--hacker .at-input-row {
+    background: #050f05;
+    border-top-color: #0d3d0d;
+}
+
+.at--hacker .at-live-label { color: #005500; }
+.at--hacker .at-live-dot   { background: #00ff41; box-shadow: 0 0 6px #00ff41; }
+
+.at--hacker .at-prompt { color: #00ff41; text-shadow: 0 0 6px rgba(0,255,65,.5); }
+.at--hacker .at-input  { color: #00ff41; caret-color: #00ff41; text-shadow: 0 0 4px rgba(0,255,65,.4); }
+.at--hacker .at-input::placeholder { color: #004400; }
+
+.at--hacker .at-mode-badge {
+    color: #00ff41;
+    background: rgba(0,255,65,.08);
+    border-color: rgba(0,255,65,.2);
+}
+
 /*---AT_EDIT_MODE---*/
 
 .at-mode-badge {

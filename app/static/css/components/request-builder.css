@@ -51,7 +51,9 @@
     transition: background .12s;
 }
 
-.rb-method-btn:hover { background: rgba(255,255,255,.04); }
+.rb-method-btn:hover {
+    background: rgba(255, 255, 255, .04);
+}
 
 .rb-method-chevron {
     font-size: .5rem;
@@ -67,7 +69,7 @@
     background: #161b22;
     border: 1px solid #30363d;
     border-radius: var(--radius-md);
-    box-shadow: 0 8px 24px rgba(0,0,0,.4);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .4);
     min-width: 90px;
     overflow: hidden;
 }
@@ -88,7 +90,9 @@
 }
 
 .rb-method-opt:hover,
-.rb-method-opt.is-active { background: rgba(255,255,255,.06); }
+.rb-method-opt.is-active {
+    background: rgba(255, 255, 255, .06);
+}
 
 .rb-url-divider {
     width: 1px;
@@ -113,7 +117,9 @@
     caret-color: #22c55e;
 }
 
-.rb-url-input::placeholder { color: #484f58; }
+.rb-url-input::placeholder {
+    color: #484f58;
+}
 
 /*---RB_SEND_BTN---*/
 
@@ -136,15 +142,21 @@
     white-space: nowrap;
 }
 
-.rb-send-btn:hover    { filter: brightness(1.1); }
-.rb-send-btn:disabled { opacity: .5; cursor: not-allowed; }
+.rb-send-btn:hover {
+    filter: brightness(1.1);
+}
+
+.rb-send-btn:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
 
 /*---RB_ERROR---*/
 
 .rb-error {
     padding: 8px 16px;
-    background: rgba(239,68,68,.07);
-    border-bottom: 1px solid rgba(239,68,68,.18);
+    background: rgba(239, 68, 68, .07);
+    border-bottom: 1px solid rgba(239, 68, 68, .18);
     color: #f87171;
     font-size: .78rem;
 }
@@ -176,14 +188,21 @@
     margin-bottom: -1px;
 }
 
-.rb-tab:hover         { color: var(--text-main); }
-.rb-tab--active       { color: var(--brand); border-bottom-color: var(--brand); }
+.rb-tab:hover {
+    color: var(--text-main);
+}
+
+.rb-tab--active {
+    color: var(--brand);
+    border-bottom-color: var(--brand);
+}
 
 .rb-tab-count {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 18px; height: 16px;
+    min-width: 18px;
+    height: 16px;
     padding: 0 4px;
     background: var(--brand-dim);
     color: var(--brand);
@@ -224,12 +243,14 @@
 }
 
 .rb-hrow-check input[type="checkbox"] {
-    width: 14px; height: 14px;
+    width: 14px;
+    height: 14px;
     accent-color: var(--brand);
     cursor: pointer;
 }
 
-.rb-hkey, .rb-hval {
+.rb-hkey,
+.rb-hval {
     background: var(--bg-elevated);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-sm);
@@ -242,8 +263,15 @@
     min-width: 0;
 }
 
-.rb-hkey:focus, .rb-hval:focus { border-color: var(--brand); }
-.rb-hkey::placeholder, .rb-hval::placeholder { color: var(--text-muted); }
+.rb-hkey:focus,
+.rb-hval:focus {
+    border-color: var(--brand);
+}
+
+.rb-hkey::placeholder,
+.rb-hval::placeholder {
+    color: var(--text-muted);
+}
 
 .rb-hdel {
     background: none;
@@ -254,10 +282,14 @@
     padding: 4px;
     border-radius: var(--radius-sm);
     transition: color .12s;
-    display: flex; align-items: center; justify-content: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.rb-hdel:hover { color: #ef4444; }
+.rb-hdel:hover {
+    color: #ef4444;
+}
 
 .rb-add-row {
     display: inline-flex;
@@ -274,7 +306,10 @@
     transition: border-color .12s, color .12s;
 }
 
-.rb-add-row:hover { border-color: var(--brand); color: var(--brand); }
+.rb-add-row:hover {
+    border-color: var(--brand);
+    color: var(--brand);
+}
 
 /*---RB_BODY_EDITOR---*/
 
@@ -321,15 +356,29 @@
 }
 
 .rb-status-dot {
-    width: 7px; height: 7px;
+    width: 7px;
+    height: 7px;
     border-radius: 50%;
     flex-shrink: 0;
 }
 
-.rb-status--ok  { background: rgba(34,197,94,.1);  color: #22c55e; }
-.rb-status--ok .rb-status-dot { background: #22c55e; }
-.rb-status--err { background: rgba(239,68,68,.1);  color: #ef4444; }
-.rb-status--err .rb-status-dot { background: #ef4444; }
+.rb-status--ok {
+    background: rgba(34, 197, 94, .1);
+    color: #22c55e;
+}
+
+.rb-status--ok .rb-status-dot {
+    background: #22c55e;
+}
+
+.rb-status--err {
+    background: rgba(239, 68, 68, .1);
+    color: #ef4444;
+}
+
+.rb-status--err .rb-status-dot {
+    background: #ef4444;
+}
 
 .rb-res-time {
     font-size: .74rem;
@@ -353,15 +402,21 @@
     border: 1px solid #30363d;
     color: #7d8590;
     border-radius: var(--radius-sm);
-    width: 28px; height: 28px;
-    display: flex; align-items: center; justify-content: center;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: .7rem;
     cursor: pointer;
     transition: color .12s, border-color .12s;
     flex-shrink: 0;
 }
 
-.rb-res-copy:hover { color: #c9d1d9; border-color: #484f58; }
+.rb-res-copy:hover {
+    color: #c9d1d9;
+    border-color: #484f58;
+}
 
 .rb-res-body {
     margin: 0;
@@ -379,4 +434,6 @@
     scrollbar-color: #30363d #0d1117;
 }
 
-.rb-res-body--json { color: #4ade80; }
+.rb-res-body--json {
+    color: #4ade80;
+}

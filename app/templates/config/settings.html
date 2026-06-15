@@ -2,6 +2,7 @@
 {% block page_title %}Settings{% endblock %}
 {% block head_extra %}
 <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/config/config.css') }}">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/components/ansi-terminal.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -300,6 +301,25 @@
                         </div>
                     </div>
 
+                    {# Terminal preview ───────────────────────────── #}
+                    <div id="section-terminal" class="card mb-3">
+                        <div class="card-body">
+                            <div class="settings-card-header mb-3">
+                                <div class="settings-card-icon"><i class="fas fa-terminal"></i></div>
+                                <div>
+                                    <h6 class="settings-section-title mb-0">Terminal</h6>
+                                    <p class="text-muted small mb-0">Preview the terminal component.</p>
+                                </div>
+                            </div>
+                            <ansi-terminal
+                                :entries="terminal_demo_entries"
+                                title="demo"
+                                :live="false"
+                                @clear="terminal_demo_entries.length = 0">
+                            </ansi-terminal>
+                        </div>
+                    </div>
+
                 </div>
 
                 {# ── Right column ─────────────────────────────────── #}
@@ -542,7 +562,8 @@
     const { createApp, ref, reactive, computed, onMounted, onUnmounted, nextTick } = Vue
     import { message_list, create_message } from '/static/js/toaster.js'
     import { TOAST, apiFetch } from '/static/js/constants.js'
-    import LoadingBar from '/static/js/components/loading-bar.js'
+    import LoadingBar    from '/static/js/components/loading-bar.js'
+    import AnsiTerminal  from '/static/js/components/ansi-terminal.js'
 
     const IS_SUPER_ADMIN = {{ 'true' if is_super_admin else 'false' }}
 
@@ -601,7 +622,7 @@
 
     createApp({
         delimiters: ['[[', ']]'],
-        components: { LoadingBar },
+        components: { LoadingBar, AnsiTerminal },
         setup() {
             const page_is_loading   = ref(false)
             const theme             = ref('{{ config.theme if config else "system" }}')
@@ -611,6 +632,19 @@
             const toast_style       = ref('{{ config.toast_style if config else "card" }}')
             const toast_duration    = ref({{ config.toast_duration if config and config.toast_duration else 5 }})
             const save_status       = ref('')
+
+            const _now = () => new Date().toISOString()
+            const terminal_demo_entries = ref([
+                { ts: _now(), msg: 'Flask-Launchpad v2.1.0 started',           level: 'success' },
+                { ts: _now(), msg: 'Database connection established',           level: 'info'    },
+                { ts: _now(), msg: 'Loading feature flags from config…',        level: 'info'    },
+                { ts: _now(), msg: '5 features enabled, 1 disabled',            level: 'success' },
+                { ts: _now(), msg: 'SMTP host not configured — emails disabled',level: 'warning' },
+                { ts: _now(), msg: 'Static files collected (342 files)',        level: 'info'    },
+                { ts: _now(), msg: 'Background job runner started (4 workers)', level: 'success' },
+                { ts: _now(), msg: 'Session key regenerated — restart required',level: 'warning' },
+                { ts: _now(), msg: '\x1b[32mAll systems go.\x1b[0m Ready to serve requests.', level: 'info' },
+            ])
             const preview_disabled  = ref(false)
             const active_section    = ref('section-theme')
 
@@ -860,6 +894,7 @@
                 { id: 'section-theme',         label: 'Theme',         icon: 'fa-palette'       },
                 { id: 'section-nav',           label: 'Navigation',    icon: 'fa-table-columns' },
                 { id: 'section-notifications', label: 'Notifications', icon: 'fa-bell'          },
+                { id: 'section-terminal',      label: 'Terminal',      icon: 'fa-terminal'      },
             ]
             if (IS_SUPER_ADMIN) {
                 sections.splice(1, 0, { id: 'section-theme-studio', label: 'Theme Studio', icon: 'fa-wand-magic-sparkles' })
@@ -1021,6 +1056,7 @@
                 setTheme, setNavPosition,
                 setToastPosition, setToastStyle, setToastDuration,
                 toggleSidebarCollapsed, previewToast, scrollToSection,
+                terminal_demo_entries,
                 // Theme Studio
                 studio_themes, modal_title, modal_is_builtin, modal_editing_uuid,
                 modal_saving, modal_form, modal_tab, paste_input, paste_result,
