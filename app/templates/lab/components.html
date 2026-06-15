@@ -8,6 +8,8 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/pivotick.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/graph-viewer.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/chart-viewer.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/stat-card.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/timeline.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -367,7 +369,111 @@ max-height  CSS string   (default: '600px')</pre>
                         </details>
                     </section>
 
-                    <!-- ── New components go here ── -->
+                    <!-- ── Stat Card ── -->
+                    <section class="lab-card" id="stat-card">
+                        <div class="lab-card-header">
+                            <div class="lab-card-meta">
+                                <span class="lab-card-icon"><i class="fas fa-square-poll-vertical"></i></span>
+                                <div>
+                                    <h2 class="lab-card-title">Stat Card</h2>
+                                    <p class="lab-card-desc">
+                                        KPI metric card with icon, trend indicator, and color variants.
+                                        7 colors: <code>brand blue green red orange purple gray</code>.
+                                        Trend is positive/negative/zero; use <code>trend-inverse</code> for error-type metrics.
+                                    </p>
+                                </div>
+                            </div>
+                            <code class="lab-file-badge">stat-card.js</code>
+                        </div>
+                        <div class="lab-card-body">
+                            <div class="lab-stat-grid">
+                                <stat-card label="Total Users"   :value="1240"  icon="fa-users"         color="blue"   :trend="12.5"  sub="vs last month"></stat-card>
+                                <stat-card label="Active Jobs"   :value="8"     icon="fa-gears"         color="brand"  :trend="3"     sub="right now"></stat-card>
+                                <stat-card label="Error Rate"    :value="2.4"   icon="fa-circle-xmark"  color="red"    unit="%" :trend="-0.8" trend-inverse sub="last 24h"></stat-card>
+                                <stat-card label="Storage Used"  :value="14.2"  icon="fa-database"      color="orange" unit=" GB" sub="of 100 GB quota"></stat-card>
+                                <stat-card label="Log Events"    :value="98210" icon="fa-scroll"        color="purple" :trend="4.1"></stat-card>
+                                <stat-card label="API Calls"     :value="null"  icon="fa-code"          color="gray"   :loading="true"></stat-card>
+                            </div>
+                        </div>
+                        <details class="lab-usage">
+                            <summary><i class="fas fa-code"></i> Usage</summary>
+                            <pre class="lab-usage-code">import StatCard from '/static/js/components/stat-card.js'
+// also link css/components/stat-card.css
+
+&lt;!-- Basic --&gt;
+&lt;stat-card label="Total Users" :value="1240" icon="fa-users" color="blue"&gt;&lt;/stat-card&gt;
+
+&lt;!-- With trend (positive = green, negative = red) --&gt;
+&lt;stat-card label="Revenue" :value="12400" unit="€" icon="fa-euro-sign" color="green" :trend="8.3" trend-label="+8% vs last month"&gt;&lt;/stat-card&gt;
+
+&lt;!-- Inverted trend: down = good (e.g. error count) --&gt;
+&lt;stat-card label="Error Rate" :value="2.4" unit="%" icon="fa-circle-xmark" color="red" :trend="-0.8" trend-inverse&gt;&lt;/stat-card&gt;
+
+&lt;!-- Loading skeleton --&gt;
+&lt;stat-card label="API Calls" icon="fa-code" color="gray" :loading="true"&gt;&lt;/stat-card&gt;
+
+Props:
+  value        String|Number|null  Main metric
+  label        String              Card title
+  icon         String              FA class (without 'fas ')
+  color        String              brand | blue | green | red | orange | purple | gray
+  unit         String              Appended to value: '%', 'ms', ' GB', etc.
+  trend        Number|null         % change — positive/negative/zero
+  trend-inverse Boolean            Flip trend color logic (bad if up)
+  trend-label  String              Override auto-generated trend text
+  sub          String              Small line below the label
+  loading      Boolean             Show skeleton state</pre>
+                        </details>
+                    </section>
+
+                    <!-- ── Timeline ── -->
+                    <section class="lab-card" id="timeline">
+                        <div class="lab-card-header">
+                            <div class="lab-card-meta">
+                                <span class="lab-card-icon"><i class="fas fa-timeline"></i></span>
+                                <div>
+                                    <h2 class="lab-card-title">Timeline</h2>
+                                    <p class="lab-card-desc">
+                                        Vertical event timeline with day grouping, level dots, actor avatars,
+                                        and collapsible descriptions. Emits a <code>select</code> event on item click.
+                                        Designed for log feeds, activity streams, audit trails.
+                                    </p>
+                                </div>
+                            </div>
+                            <code class="lab-file-badge">timeline.js</code>
+                        </div>
+                        <div class="lab-card-body">
+                            <timeline :items="timeline_items" :loading="false" @select="on_tl_select"></timeline>
+                        </div>
+                        <details class="lab-usage">
+                            <summary><i class="fas fa-code"></i> Usage</summary>
+                            <pre class="lab-usage-code">import Timeline from '/static/js/components/timeline.js'
+// also link css/components/timeline.css
+
+&lt;timeline :items="logs" :loading="fetching" @select="openDetail"&gt;&lt;/timeline&gt;
+
+Item shape:
+{
+  uuid:        String   // unique key
+  title:       String   // main text
+  level:       String   // 'info' | 'success' | 'warning' | 'error'
+  category:    String   // 'user' | 'system' | 'security' | 'admin' | 'api' | 'database' | 'connectors'
+  action:      String   // e.g. 'create', 'delete', 'login' (shown as mono tag)
+  created_at:  String   // ISO datetime
+  actor_name:  String   // null → shows "System"
+  description: String   // optional long text (collapsible after max-desc chars)
+}
+
+Props:
+  items        Array    Required
+  loading      Boolean  Show skeleton rows (default: false)
+  group-by-day Boolean  Group under Today / Yesterday / date headers (default: true)
+  max-desc     Number   Chars before "more" button (default: 180)
+
+Events:
+  select(item) — emitted when a row is clicked</pre>
+                        </details>
+                    </section>
 
                 </div>
             </div>
@@ -379,13 +485,15 @@ max-height  CSS string   (default: '600px')</pre>
 {% block script %}
 <script type="module">
     const { createApp, ref, computed, onMounted, onUnmounted } = Vue
-    import { message_list } from '/static/js/toaster.js'
+    import { message_list, create_message } from '/static/js/toaster.js'
     import LoadingBar  from '/static/js/components/loading-bar.js'
     import DiffViewer   from '/static/js/components/diff-viewer.js'
     import CodeViewer   from '/static/js/components/code-viewer.js'
     import SmartEditor  from '/static/js/components/smart-editor.js'
     import GraphViewer  from '/static/js/components/graph-viewer.js'
     import ChartViewer  from '/static/js/components/chart-viewer.js'
+    import StatCard     from '/static/js/components/stat-card.js'
+    import Timeline     from '/static/js/components/timeline.js'
 
 
     const DIFF_LEFT = `{
@@ -529,7 +637,7 @@ max-height  CSS string   (default: '600px')</pre>
 
     createApp({
         delimiters: ['[[', ']]'],
-        components: { LoadingBar, DiffViewer, CodeViewer, SmartEditor, GraphViewer, ChartViewer },
+        components: { LoadingBar, DiffViewer, CodeViewer, SmartEditor, GraphViewer, ChartViewer, StatCard, Timeline },
 
         setup() {
             const ready          = ref(false)
@@ -544,6 +652,8 @@ max-height  CSS string   (default: '600px')</pre>
                 { id: 'smart-editor',  label: 'Smart Editor',   icon: 'fa-pen-to-square'   },
                 { id: 'graph-viewer',  label: 'Graph Viewer',   icon: 'fa-diagram-project' },
                 { id: 'chart-viewer',  label: 'Chart Viewer',   icon: 'fa-chart-line'      },
+                { id: 'stat-card',     label: 'Stat Card',      icon: 'fa-square-poll-vertical' },
+                { id: 'timeline',      label: 'Timeline',        icon: 'fa-timeline'        },
             ]
 
             // ── Smart Editor demo state ───────────────────────────────
@@ -698,6 +808,25 @@ max-height  CSS string   (default: '600px')</pre>
             )
 
             // ── Intersection observer for active nav link ─────────────
+            // ── Timeline demo data ────────────────────────────────────
+            const now = new Date()
+            function ago(h) { return new Date(now.getTime() - h * 3600000).toISOString() }
+
+            const timeline_items = [
+                { uuid: 'tl-1', title: 'User admin@admin.admin logged in', level: 'info',    category: 'user',     action: 'login',       created_at: ago(0.1),  actor_name: 'Admin',       description: null },
+                { uuid: 'tl-2', title: 'Tag "APT29" created',              level: 'success', category: 'admin',    action: 'create',      created_at: ago(0.3),  actor_name: 'Admin',       description: 'Tag created from MISP galaxy cluster. Source: threat-actor.' },
+                { uuid: 'tl-3', title: 'Connector "Shodan" test failed',   level: 'error',   category: 'connectors', action: 'test',      created_at: ago(1.2),  actor_name: 'Admin',       description: 'Connection refused on host api.shodan.io:443. Verify API key and network access. This is a longer description to demonstrate the collapsible "more" button that appears when text exceeds the maxDesc threshold configured on the component.' },
+                { uuid: 'tl-4', title: 'DB backup created',                level: 'success', category: 'database', action: 'create',      created_at: ago(2.5),  actor_name: null,          description: 'Automatic scheduled backup: backup_2026-06-15.db (1.2 MB)' },
+                { uuid: 'tl-5', title: 'Password changed',                 level: 'warning', category: 'security', action: 'edit',        created_at: ago(5),    actor_name: 'Editor',      description: null },
+                { uuid: 'tl-6', title: 'Background job completed',         level: 'success', category: 'system',   action: 'job_done',    created_at: ago(8),    actor_name: null,          description: 'tags.import_galaxy — 412 tags imported in 3.2s' },
+                { uuid: 'tl-7', title: 'Role "Editor" permissions updated', level: 'warning', category: 'admin',   action: 'edit',        created_at: ago(26),   actor_name: 'Admin',       description: 'Added: tags.edit, tags.delete. Removed: users.list' },
+                { uuid: 'tl-8', title: 'New user registered',              level: 'info',    category: 'user',     action: 'create',      created_at: ago(50),   actor_name: null,          description: 'test@example.com — email verification sent' },
+            ]
+
+            function on_tl_select(item) {
+                create_message(`Selected: ${item.title}`, 'info')
+            }
+
             let observer = null
 
             function setup_observer() {
@@ -730,6 +859,7 @@ max-height  CSS string   (default: '600px')</pre>
                 editor_demos, editor_values, active_editor_demo,
                 graph_demos, active_graph_demo, graph_config, graph_data,
                 chart_presets, active_chart_preset, current_chart_data, ALL_VIEWS,
+                timeline_items, on_tl_select,
                 scroll_to,
             }
         }

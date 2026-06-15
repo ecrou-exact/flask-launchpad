@@ -292,6 +292,14 @@
     font-family: var(--font-mono);
 }
 
+/*---STAT_CARD_DEMO---*/
+
+.lab-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+}
+
 /*---RESPONSIVE---*/
 
 @media (max-width: 860px) {
