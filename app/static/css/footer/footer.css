@@ -77,10 +77,20 @@
     transition: color var(--transition-slow);
 }
 
+.footer-creator {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    transition: color var(--transition-slow);
+}
+
 @media (max-width: 575.98px) {
     .footer-inner {
         padding: 0 1.125rem;
     }
 
-    .footer-copy { display: none; }
+    .footer-copy {
+        display: none;
+    }
 }
