@@ -110,21 +110,50 @@ function diff_chars(a, b) {
 }
 
 // Render one line as HTML, optionally with intraline char highlights
+// function render_line_html(line, char_ops, side) {
+//     if (!char_ops) return esc(line)
+//     const parts = []
+//     let run_type = null, run_buf = []
+
+//     function flush() {
+//         if (!run_buf.length) return
+//         const text = esc(run_buf.join(''))
+//         if (run_type === 'equal') {
+//             parts.push(text)
+//         } else if (run_type === 'insert' && side === 'right') {
+//             parts.push(`<mark class="dv-mark-add">${text}</mark>`)
+//         } else if (run_type === 'delete' && side === 'left') {
+//             parts.push(`<mark class="dv-mark-del">${text}</mark>`)
+//         } else {
+//             parts.push(text)
+//         }
+//         run_type = null; run_buf = []
+//     }
+
+//     for (const op of char_ops) {
+//         if (op.type !== run_type) flush()
+//         run_type = op.type
+//         run_buf.push(op.v)
+//     }
+//     flush()
+//     return parts.join('')
+// }
+
 function render_line_html(line, char_ops, side) {
     if (!char_ops) return esc(line)
+
     const parts = []
     let run_type = null, run_buf = []
 
     function flush() {
         if (!run_buf.length) return
         const text = esc(run_buf.join(''))
-        if (run_type === 'equal') {
-            parts.push(text)
-        } else if (run_type === 'insert' && side === 'right') {
+
+        if (run_type === 'insert' && side === 'right') {
             parts.push(`<mark class="dv-mark-add">${text}</mark>`)
         } else if (run_type === 'delete' && side === 'left') {
             parts.push(`<mark class="dv-mark-del">${text}</mark>`)
-        } else {
+        } else if (run_type === 'equal') {
             parts.push(text)
         }
         run_type = null; run_buf = []
