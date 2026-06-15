@@ -21,6 +21,7 @@ _ADMIN_RELATED_PERMS = {
     'jobs.manage',
     'tags.view', 'tags.manage',
     'template_studio.manage',
+    'connectors.view', 'connectors.manage',
 }
 
 NAV: list[dict] = [

@@ -188,6 +188,42 @@
     text-overflow: ellipsis;
 }
 
+.db-backup-name-text {
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+}
+
+.db-rename-hint {
+    font-size: .6rem;
+    opacity: 0;
+    color: var(--text-muted);
+    transition: opacity .15s;
+}
+
+.db-backup-name-text:hover .db-rename-hint {
+    opacity: 1;
+}
+
+.db-rename-input-wrap {
+    display: block;
+}
+
+.db-rename-input {
+    width: 100%;
+    font-family: var(--font-mono);
+    font-size: .82rem;
+    font-weight: 600;
+    background: var(--bg-input, var(--bg-card));
+    color: var(--text-main);
+    border: 1px solid var(--brand);
+    border-radius: var(--radius-sm);
+    padding: .1rem .4rem;
+    outline: none;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 20%, transparent);
+}
+
 .db-backup-meta {
     font-size: .7rem;
     color: var(--text-muted);

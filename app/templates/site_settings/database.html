@@ -238,7 +238,25 @@
 
                                     <i class="fas fa-file-zipper db-backup-icon"></i>
                                     <div class="db-backup-info">
-                                        <div class="db-backup-name">[[ b.filename ]]</div>
+                                        <div class="db-backup-name">
+                                            <span v-if="renaming !== b.filename"
+                                                  class="db-backup-name-text"
+                                                  @click="start_rename(b.filename)"
+                                                  title="Click to rename">
+                                                [[ b.filename ]]
+                                                <i class="fas fa-pen db-rename-hint"></i>
+                                            </span>
+                                            <span v-else class="db-rename-input-wrap">
+                                                <input
+                                                    class="db-rename-input"
+                                                    v-model="rename_value"
+                                                    @keydown.enter.prevent="save_rename(b.filename)"
+                                                    @keydown.escape.prevent="cancel_rename"
+                                                    @blur="save_rename(b.filename)"
+                                                    :ref="el => { if (el) el.focus() }"
+                                                    spellcheck="false">
+                                            </span>
+                                        </div>
                                         <div class="db-backup-meta">[[ b.size_human ]] · [[ fmt_date(b.created_at) ]]</div>
                                     </div>
                                     <div class="db-backup-actions">
@@ -471,6 +489,44 @@ createApp({
         const backups         = ref([])
         const backup_creating = ref(false)
 
+        // Inline rename state
+        const renaming     = ref(null)   // filename being renamed
+        const rename_value = ref('')
+        let   _rename_saving = false     // guard against double-save on blur+enter
+
+        function start_rename(filename) {
+            renaming.value     = filename
+            rename_value.value = filename.replace(/\.db$/, '')
+            _rename_saving     = false
+        }
+
+        function cancel_rename() {
+            renaming.value = null
+        }
+
+        async function save_rename(old_filename) {
+            if (_rename_saving || renaming.value !== old_filename) return
+            _rename_saving = true
+
+            const new_val = rename_value.value.trim()
+            renaming.value = null
+
+            if (!new_val || new_val + '.db' === old_filename || new_val === old_filename) {
+                _rename_saving = false
+                return
+            }
+
+            const res = await apiFetch(`/api/database/backups/${old_filename}/rename`, 'PUT', { new_filename: new_val })
+            const d   = await res.json()
+            if (res.ok) {
+                create_message(d.message, TOAST.SUCCESS)
+                await load_backups()
+            } else {
+                create_message(d.message, TOAST.ERROR)
+            }
+            _rename_saving = false
+        }
+
         // Pending action state (shared for restore / delete / download)
         const pending          = ref(null)   // { action, filename }
         const action_code      = ref('')
@@ -686,6 +742,7 @@ createApp({
             message_list, ready, loading,
             db_info, max_rows,
             backups, backup_creating,
+            renaming, rename_value, start_rename, cancel_rename, save_rename,
             pending, action_code, action_confirming,
             action_label, action_icon, action_color, action_btn_class,
             create_backup, initiate_action, confirm_action, cancel_action,

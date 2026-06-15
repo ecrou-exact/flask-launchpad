@@ -7,6 +7,7 @@ from ..features.site_settings.database_core import (
     get_db_info,
     list_backups,
     create_backup_core,
+    rename_backup_core,
     initiate_restore_core,
     confirm_restore_core,
     initiate_delete_core,
@@ -43,6 +44,23 @@ class DBBackups(Resource):
         if name:
             return {'filename': name, 'message': msg}, 201
         return {'message': msg}, 400
+
+
+# ── Rename (no confirmation required) ────────────────────────────────────────
+
+@database_ns.route('/backups/<string:filename>/rename')
+class DBBackupRename(Resource):
+    method_decorators = [api_require_permission('admin_only')]
+
+    def put(self, filename):
+        data         = request.get_json(silent=True) or {}
+        new_filename = (data.get('new_filename') or '').strip()
+        if not new_filename:
+            return {'message': 'new_filename required'}, 400
+        ok, result = rename_backup_core(filename, new_filename, current_user.id)
+        if not ok:
+            return {'message': result}, 400
+        return {'filename': result, 'message': f'Renamed to {result}'}, 200
 
 
 # ── Restore ───────────────────────────────────────────────────────────────────

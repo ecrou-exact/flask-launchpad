@@ -98,6 +98,20 @@ PERMISSIONS: dict[str, dict] = {
         'icon':        'fa-tag',
     },
 
+    # ── Connectors ───────────────────────────────────────────────────────────
+    'connectors.view': {
+        'label':       'View connectors',
+        'description': 'See the connector list and status.',
+        'group':       'Connectors',
+        'icon':        'fa-plug',
+    },
+    'connectors.manage': {
+        'label':       'Manage connectors',
+        'description': 'Create, edit, delete connectors and trigger sync/test jobs.',
+        'group':       'Connectors',
+        'icon':        'fa-plug',
+    },
+
     # ── Comments ─────────────────────────────────────────────────────────────
     'comments.view': {
         'label':       'View comments',

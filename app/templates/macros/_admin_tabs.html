@@ -41,6 +41,13 @@
     </a>
     {% endif %}
 
+    {% if current_user.is_admin() or current_user.has_permission('connectors.view') %}
+    <a href="/connectors/"
+       class="admin-tab {% if request.path.startswith('/connectors') %}is-active{% endif %}">
+        <i class="fas fa-plug"></i><span>Connectors</span>
+    </a>
+    {% endif %}
+
     {% if current_user.is_admin() %}
     <a href="/admin/settings"
        class="admin-tab {% if request.path.startswith('/admin/settings') and not request.path.startswith('/admin/settings/database') %}is-active{% endif %}">

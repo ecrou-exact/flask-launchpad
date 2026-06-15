@@ -97,7 +97,7 @@ def get_db_info() -> dict:
 def list_backups() -> list:
     bd = _backup_dir()
     result = []
-    for f in sorted(bd.glob('*.db'), reverse=True):
+    for f in sorted(bd.glob('*.db'), key=lambda f: f.stat().st_mtime, reverse=True):
         stat = f.stat()
         result.append({
             'filename':   f.name,
@@ -134,6 +134,36 @@ def create_backup_core(user_id: int) -> tuple:
         actor_id=user_id,
     )
     return name, f"Backup created successfully ({_fmt_size(size)})"
+
+
+def rename_backup_core(old_filename: str, new_filename: str, user_id: int) -> tuple:
+    from ...core.utils.logger import log_action
+
+    p_old = _safe_backup_path(old_filename)
+    if p_old is None or not p_old.exists():
+        return False, 'Backup not found.'
+
+    new_filename = new_filename.strip()
+    if not new_filename.endswith('.db'):
+        new_filename += '.db'
+    p_new = _safe_backup_path(new_filename)
+    if p_new is None:
+        return False, 'Invalid filename. Use only letters, numbers, hyphens, underscores and a .db extension.'
+    if p_new.exists():
+        return False, f'A backup named "{new_filename}" already exists.'
+
+    p_old.rename(p_new)
+    log_action(
+        f'DB backup renamed: {old_filename} → {new_filename}',
+        'edit',
+        category='database',
+        level='info',
+        object_type='db_backup',
+        is_public=False,
+        meta={'old': old_filename, 'new': new_filename},
+        actor_id=user_id,
+    )
+    return True, new_filename
 
 
 def delete_backup_core(filename: str, user_id: int) -> tuple:

@@ -42,6 +42,7 @@ def create_app():
     from .features.template_studio.template_studio import template_studio_blueprint
     from .features.dynamic_pages.dynamic_pages import dynamic_pages_blueprint
     from .features.tags.tags import tags_blueprint
+    from .features.connectors.connectors import connectors_blueprint
     app.register_blueprint(home_blueprint, url_prefix="/")
     app.register_blueprint(account_blueprint, url_prefix="/account")
     app.register_blueprint(config_blueprint, url_prefix="/")
@@ -52,6 +53,7 @@ def create_app():
     app.register_blueprint(template_studio_blueprint, url_prefix="/admin/template-studio")
     app.register_blueprint(dynamic_pages_blueprint, url_prefix="/pages")
     app.register_blueprint(tags_blueprint, url_prefix="/tags")
+    app.register_blueprint(connectors_blueprint, url_prefix="/connectors")
 
     from .api.api import api_blueprint
     csrf.exempt(api_blueprint)
@@ -67,6 +69,8 @@ def create_app():
     from .core.db_class.job import Job                                 # noqa: F401
     from .core.db_class.page_definition import PageDefinition         # noqa: F401
     from .core.db_class.tag import Tag                                # noqa: F401
+    from .core.db_class.connector import Connector                    # noqa: F401
+    from .features.connectors import connectors_core                  # noqa: F401 — registers job handlers
 
     @app.context_processor
     def inject_site_config():
