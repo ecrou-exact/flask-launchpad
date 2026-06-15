@@ -82,6 +82,10 @@
                     @click="setSourceFilter(s.key)">
                     <i :class="'fas ' + s.icon"></i> [[ s.label ]]
                 </button>
+                <span v-if="active_namespace" class="tags-ns-active-chip">
+                    <i class="fas fa-filter"></i> [[ active_namespace ]]
+                    <button class="tags-ns-active-chip-clear" @click="setNamespaceFilter('')" title="Clear namespace filter">×</button>
+                </span>
             </div>
 
             <!-- Data table -->
@@ -120,6 +124,18 @@
                     </span>
                 </template>
 
+                <!-- Namespace chip (clickable filter) -->
+                <template #cell-namespace="{ item }">
+                    <span v-if="item.namespace"
+                        class="tags-ns-filter-chip"
+                        :class="{ 'is-active': active_namespace === item.namespace }"
+                        @click.stop="setNamespaceFilter(item.namespace)"
+                        :title="'Filter by ' + item.namespace">
+                        [[ item.namespace ]]
+                    </span>
+                    <span v-else class="text-muted" style="font-size:.72rem;">—</span>
+                </template>
+
                 <!-- Active status -->
                 <template #cell-is_active="{ item }">
                     <span v-if="item.is_active" class="text-success" style="font-size:.75rem;">
@@ -146,6 +162,25 @@
                                 <div class="mb-2">
                                     <div style="font-size:.68rem;color:var(--text-muted);margin-bottom:.2rem;">Full name</div>
                                     <code style="font-size:.75rem;">[[ item.name ]]</code>
+                                </div>
+                                <!-- Galaxy meta details -->
+                                <div v-if="item.source === 'galaxy' && galaxyMeta(item).length" class="tags-expand-meta">
+                                    <div style="font-size:.68rem;color:var(--text-muted);margin-bottom:.5rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;">
+                                        <i class="fas fa-circle-info me-1"></i> Galaxy details
+                                    </div>
+                                    <div class="tags-expand-meta-grid">
+                                        <template v-for="row in galaxyMeta(item)" :key="row.label">
+                                            <span class="tags-expand-meta-label">[[ row.label ]]</span>
+                                            <span class="tags-expand-meta-value">
+                                                <template v-if="row.links">
+                                                    <a v-for="(link, i) in row.links" :key="i"
+                                                        :href="link" target="_blank" rel="noopener"
+                                                        class="tags-expand-meta-link">[[ i + 1 ]]</a>
+                                                </template>
+                                                <template v-else>[[ row.value ]]</template>
+                                            </span>
+                                        </template>
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-md-6 d-flex gap-2 align-items-start flex-wrap" v-if="can_manage">
@@ -255,6 +290,7 @@
             const show_import         = ref(false)
             const import_loading      = ref(false)
             const active_source       = ref('')
+            const active_namespace    = ref('')
             const selected_taxonomy   = ref('ALL')
             const selected_galaxy     = ref('ALL')
             const available_taxonomies = ref([])
@@ -275,8 +311,10 @@
             ]
 
             const fetch_url = computed(() => {
-                const base = '/api/tags/'
-                return active_source.value ? `${base}?source=${active_source.value}&is_active=1` : `${base}?is_active=1`
+                const params = new URLSearchParams({ is_active: '1' })
+                if (active_source.value)    params.set('source',    active_source.value)
+                if (active_namespace.value) params.set('namespace', active_namespace.value)
+                return `/api/tags/?${params}`
             })
 
             const columns = [
@@ -315,6 +353,11 @@
                 setTimeout(() => table_ref.value?.fetchData(), 0)
             }
 
+            function setNamespaceFilter(ns) {
+                active_namespace.value = active_namespace.value === ns ? '' : ns
+                setTimeout(() => table_ref.value?.fetchData(), 0)
+            }
+
             function sourceIcon(source) {
                 return { custom: 'fa-tag', taxonomy: 'fa-sitemap', galaxy: 'fa-globe', vulnerability: 'fa-bug' }[source] || 'fa-tag'
             }
@@ -331,7 +374,7 @@
                 import_loading.value = false
                 if (res.ok) {
                     const d = await res.json()
-                    create_message(`Import started. <a href="/jobs/${d.job_uuid}" target="_blank">View job</a>`, TOAST.SUCCESS, true)
+                    create_message('Import started.', TOAST.SUCCESS, true, { href: `/jobs/${d.job_uuid}`, label: 'View job →', target: '_blank' })
                 } else {
                     const d = await res.json()
                     create_message(d.message || 'Import failed', TOAST.ERROR, true)
@@ -417,6 +460,28 @@
                 }
             }
 
+            function galaxyMeta(item) {
+                const gm = item.meta?.galaxy_meta || {}
+                const rows = []
+                if (gm.country)
+                    rows.push({ label: 'Country', value: gm.country })
+                if (gm['cfr-suspected-state-sponsor'])
+                    rows.push({ label: 'Sponsor', value: gm['cfr-suspected-state-sponsor'] })
+                if (gm.synonyms?.length)
+                    rows.push({ label: 'Aliases', value: gm.synonyms.join(', ') })
+                if (gm['cfr-target-category']?.length)
+                    rows.push({ label: 'Targets', value: gm['cfr-target-category'].join(', ') })
+                if (gm['targeted-sector']?.length)
+                    rows.push({ label: 'Sectors', value: gm['targeted-sector'].join(', ') })
+                if (gm['cfr-type-of-incident']?.length)
+                    rows.push({ label: 'Incidents', value: gm['cfr-type-of-incident'].join(', ') })
+                if (gm['attribution-confidence'])
+                    rows.push({ label: 'Confidence', value: gm['attribution-confidence'] + '%' })
+                if (gm.refs?.length)
+                    rows.push({ label: 'References', value: null, links: gm.refs })
+                return rows
+            }
+
             async function handleBulk({ action, ids }) {
                 const count = ids === 'ALL' ? 'all' : ids.length
                 const verb  = action === 'activate' ? 'Activate' : action === 'deactivate' ? 'Deactivate' : 'Delete'
@@ -437,13 +502,13 @@
             return {
                 message_list, page_is_loading, table_ref,
                 can_manage, show_import, import_loading,
-                active_source, selected_taxonomy, selected_galaxy,
+                active_source, active_namespace, selected_taxonomy, selected_galaxy,
                 available_taxonomies, available_galaxies,
                 source_filters, fetch_url, columns, bulk_actions,
                 modal_open, modal_saving, editing_tag, form,
-                setSourceFilter, sourceIcon, runImport,
+                setSourceFilter, setNamespaceFilter, sourceIcon, runImport,
                 openCreateModal, openEditModal, saveTag,
-                handleDelete, activateTag, deactivateTag, handleBulk,
+                handleDelete, activateTag, deactivateTag, handleBulk, galaxyMeta,
             }
         }
     }).mount('#main-container')

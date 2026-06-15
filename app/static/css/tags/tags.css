@@ -56,6 +56,284 @@
     white-space: nowrap;
 }
 
+/*---TOOLTIP---*/
+
+.tag-pill-wrapper {
+    display: inline-flex;
+    position: relative;
+    vertical-align: middle;
+}
+
+/* position:fixed is injected by JS — only visual styles here */
+.tag-pill-tooltip {
+    min-width: 240px;
+    max-width: 360px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    padding: .75rem .9rem .7rem;
+    pointer-events: none;
+    white-space: normal;
+    text-align: left;
+}
+
+/* arrow — above variant: arrow at bottom pointing down */
+.tag-pill-tooltip--above::before,
+.tag-pill-tooltip--above::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: solid transparent;
+    pointer-events: none;
+}
+.tag-pill-tooltip--above::before {
+    border-width: 7px;
+    border-top-color: var(--border);
+}
+.tag-pill-tooltip--above::after {
+    border-width: 6px;
+    border-top-color: var(--bg-surface);
+    margin-top: 1px;
+}
+
+/* arrow — below variant: arrow at top pointing up */
+.tag-pill-tooltip--below::before,
+.tag-pill-tooltip--below::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: solid transparent;
+    pointer-events: none;
+}
+.tag-pill-tooltip--below::before {
+    border-width: 7px;
+    border-bottom-color: var(--border);
+}
+.tag-pill-tooltip--below::after {
+    border-width: 6px;
+    border-bottom-color: var(--bg-surface);
+    margin-bottom: 1px;
+}
+
+.tag-pill-tooltip-header {
+    display: flex;
+    align-items: flex-start;
+    gap: .45rem;
+    margin-bottom: .45rem;
+}
+
+.tag-pill-tooltip-header i {
+    margin-top: 2px;
+    flex-shrink: 0;
+    opacity: .65;
+    color: var(--text-secondary);
+    font-size: .75rem;
+}
+
+.tag-pill-tooltip-name {
+    color: var(--text-main);
+    font-weight: 600;
+    font-size: .73rem;
+    line-height: 1.35;
+    word-break: break-all;
+}
+
+.tag-pill-tooltip-desc {
+    margin: 0 0 .55rem;
+    font-size: .72rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+/* galaxy meta rows */
+.tag-pill-tooltip-galaxy {
+    margin-bottom: .55rem;
+    display: flex;
+    flex-direction: column;
+    gap: .2rem;
+    padding: .45rem .55rem;
+    background: var(--bg-elevated);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+}
+
+.tag-pill-tooltip-meta-row {
+    display: flex;
+    align-items: baseline;
+    gap: .4rem;
+    font-size: .69rem;
+    line-height: 1.4;
+}
+
+.tag-pill-tooltip-meta-label {
+    flex-shrink: 0;
+    color: var(--text-muted);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    font-size: .6rem;
+    min-width: 68px;
+}
+
+.tag-pill-tooltip-meta-value {
+    color: var(--text-secondary);
+    word-break: break-word;
+}
+
+.tag-pill-tooltip-footer {
+    display: flex;
+    gap: .35rem;
+    flex-wrap: wrap;
+    padding-top: .5rem;
+    border-top: 1px solid var(--border-subtle);
+}
+
+.tag-pill-tooltip-badge {
+    display: inline-block;
+    font-size: .6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    padding: .15rem .45rem;
+    border-radius: 3px;
+    line-height: 1.4;
+}
+
+.tag-pill-tooltip-badge--source {
+    background: var(--brand-dim);
+    color: var(--brand);
+}
+
+.tag-pill-tooltip-badge--ns {
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+}
+
+/*---NAMESPACE FILTER---*/
+
+.tags-ns-filter-chip {
+    display: inline-block;
+    font-size: .68rem;
+    font-weight: 600;
+    padding: .15rem .5rem;
+    border-radius: 4px;
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: background .15s, color .15s, border-color .15s;
+    user-select: none;
+}
+
+.tags-ns-filter-chip:hover {
+    background: var(--brand-dim);
+    color: var(--brand);
+    border-color: var(--brand-glow);
+}
+
+.tags-ns-filter-chip.is-active {
+    background: var(--brand-dim);
+    color: var(--brand);
+    border-color: var(--brand-glow);
+}
+
+.tags-ns-active-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    font-size: .72rem;
+    font-weight: 600;
+    padding: .28rem .65rem;
+    border-radius: 20px;
+    background: var(--brand-dim);
+    color: var(--brand);
+    border: 1px solid var(--brand-glow);
+}
+
+.tags-ns-active-chip i {
+    font-size: .62rem;
+    opacity: .7;
+}
+
+.tags-ns-active-chip-clear {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    line-height: 1;
+    font-size: 1rem;
+    color: var(--brand);
+    cursor: pointer;
+    opacity: .6;
+    transition: opacity .1s;
+}
+
+.tags-ns-active-chip-clear:hover {
+    opacity: 1;
+}
+
+/*---EXPAND META (galaxy details in collapse row)---*/
+
+.tags-expand-meta {
+    margin-top: .75rem;
+    padding: .65rem .75rem;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+
+.tags-expand-meta-grid {
+    display: grid;
+    grid-template-columns: 90px 1fr;
+    gap: .25rem .5rem;
+    align-items: baseline;
+}
+
+.tags-expand-meta-label {
+    font-size: .62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--text-muted);
+    padding-top: .1rem;
+}
+
+.tags-expand-meta-value {
+    font-size: .78rem;
+    color: var(--text-secondary);
+    line-height: 1.45;
+    word-break: break-word;
+}
+
+.tags-expand-meta-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.35rem;
+    height: 1.35rem;
+    font-size: .62rem;
+    font-weight: 700;
+    border-radius: 3px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    text-decoration: none;
+    margin-right: .25rem;
+    transition: background .12s, color .12s;
+}
+
+.tags-expand-meta-link:hover {
+    background: var(--brand-dim);
+    color: var(--brand);
+    border-color: var(--brand-glow);
+}
+
 /*---INACTIVE PILL---*/
 
 .tag-pill--inactive {

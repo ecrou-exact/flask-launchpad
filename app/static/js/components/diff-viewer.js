@@ -471,7 +471,6 @@ export default {
         // modes can be read only or input editable
 
         const modes = ref(props.mode)
-        console.log('modes:', modes.value)
 
         // ── Text state ────────────────────────────────────────────────────
         const left_text = ref(props.initialLeft)

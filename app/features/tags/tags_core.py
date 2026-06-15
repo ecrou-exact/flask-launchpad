@@ -6,17 +6,19 @@ import json
 import os
 from datetime import datetime
 
+from sqlalchemy import case as sa_case
 from ... import db
 from ...core.db_class.tag import Tag
 from ...core.utils.logger import log_action
 from ...core.utils.job_runner import register_handler, enqueue_job
 
-TAXONOMY_DIR = os.path.join(os.getcwd(), 'modules', 'misp-taxonomies')
-GALAXY_DIR   = os.path.join(os.getcwd(), 'modules', 'misp-galaxy', 'clusters')
+TAXONOMY_DIR    = os.path.join(os.getcwd(), 'modules', 'misp-taxonomies')
+GALAXY_DIR      = os.path.join(os.getcwd(), 'modules', 'misp-galaxy', 'clusters')
+GALAXY_DEFS_DIR = os.path.join(os.getcwd(), 'modules', 'misp-galaxy', 'galaxies')
 
 SOURCE_ICONS = {
-    'custom':        'fa-tag',
-    'taxonomy':      'fa-sitemap',
+    'custom':        'fa-user-tag',
+    'taxonomy':      'fa-tag',
     'galaxy':        'fa-globe',
     'vulnerability': 'fa-bug',
 }
@@ -56,6 +58,21 @@ def _hsl_to_hex(hsl: str) -> str:
         g = hue_to_rgb(p, q, h)
         b = hue_to_rgb(p, q, h - 1/3)
     return '#{:02x}{:02x}{:02x}'.format(int(r * 255), int(g * 255), int(b * 255))
+
+
+def _galaxy_icon(cluster_name: str) -> str:
+    """Read the predefined icon from the galaxy definition file."""
+    path = os.path.join(GALAXY_DEFS_DIR, f'{cluster_name}.json')
+    if os.path.isfile(path):
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            icon = data.get('icon')
+            if icon:
+                return icon if icon.startswith('fa-') else f'fa-{icon}'
+        except Exception:
+            pass
+    return 'fa-globe'
 
 
 def _list_taxonomies() -> list[dict]:
@@ -129,7 +146,8 @@ def list_tags_paginated(source=None, namespace=None, is_active=None, is_public=N
     if search:
         pattern = f'%{search}%'
         q = q.filter(
-            db.or_(Tag.name.ilike(pattern), Tag.description.ilike(pattern))
+            db.or_(Tag.name.ilike(pattern), Tag.description.ilike(pattern),
+                   Tag.namespace.ilike(pattern))
         )
 
     sort_col = {
@@ -140,10 +158,22 @@ def list_tags_paginated(source=None, namespace=None, is_active=None, is_public=N
         'is_active':  Tag.is_active,
     }.get(sort, Tag.name)
 
-    if direction == 'desc':
-        q = q.order_by(sort_col.desc())
+    if search:
+        # Namespace-exact match first, then namespace-prefix, then rest
+        ns_priority = sa_case(
+            (Tag.namespace.ilike(search), 0),
+            (Tag.namespace.ilike(f'{search}%'), 1),
+            else_=2,
+        )
+        if direction == 'desc':
+            q = q.order_by(ns_priority, sort_col.desc())
+        else:
+            q = q.order_by(ns_priority, sort_col.asc())
     else:
-        q = q.order_by(sort_col.asc())
+        if direction == 'desc':
+            q = q.order_by(sort_col.desc())
+        else:
+            q = q.order_by(sort_col.asc())
 
     total = q.count()
     total_pages = max(1, (total + per_page - 1) // per_page)
@@ -425,6 +455,7 @@ def _handle_import_galaxy(ctx, meta):
     values      = data.get('values', [])
     total       = len(values)
     created     = 0
+    icon        = _galaxy_icon(cluster_name)
 
     ctx.log(f'Importing galaxy "{galaxy_type}" — {total} entries')
     for i, entry in enumerate(values):
@@ -440,7 +471,7 @@ def _handle_import_galaxy(ctx, meta):
 
         _upsert_tag(
             tag_name, desc, color, 'galaxy', galaxy_type, ext_id,
-            icon='fa-globe',
+            icon=icon,
             meta={'galaxy_meta': galaxy_meta, 'cluster': cluster_name},
         )
         created += 1
@@ -516,6 +547,7 @@ def _upsert_tag(name, description, color, source, namespace, external_id,
     if existing:
         existing.color       = color or existing.color
         existing.description = description or existing.description
+        existing.icon        = icon or existing.icon
         existing.is_active   = True
         existing.is_public   = True
         if meta:
@@ -568,6 +600,7 @@ def _import_galaxy_inline(cluster_name, path, ctx):
 
     galaxy_type = data.get('type', cluster_name)
     values      = data.get('values', [])
+    icon        = _galaxy_icon(cluster_name)
     for entry in values:
         val      = entry.get('value', '')
         tag_name = f'misp-galaxy:{galaxy_type}="{val}"'
@@ -577,6 +610,6 @@ def _import_galaxy_inline(cluster_name, path, ctx):
         galaxy_meta = entry.get('meta', {})
         _upsert_tag(
             tag_name, desc, color, 'galaxy', galaxy_type, ext_id,
-            icon='fa-globe',
+            icon=icon,
             meta={'galaxy_meta': galaxy_meta, 'cluster': cluster_name},
         )
