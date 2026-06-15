@@ -4,6 +4,7 @@
 <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/pagination/pagination.css') }}">
 <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/admin/logs.css') }}">
 <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/components/timeline.css') }}">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/components/key-value.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -79,11 +80,29 @@
                     </div>
                 </div>
 
-                <timeline
-                    :items="tl_items"
-                    :loading="tl_loading"
-                    @select="tl_select">
-                </timeline>
+                <div class="logs-tl-main">
+                    <timeline
+                        :items="tl_items"
+                        :loading="tl_loading"
+                        @select="tl_select">
+                    </timeline>
+
+                    <!-- Detail panel -->
+                    <div v-if="selected_log" class="logs-tl-detail">
+                        <div class="logs-tl-detail-header">
+                            <span class="logs-tl-detail-title">
+                                <i class="fas fa-circle-info me-1" style="font-size:.7rem;"></i>
+                                Log detail
+                            </span>
+                            <button class="logs-tl-detail-close" @click="selected_log = null" title="Close">
+                                <i class="fas fa-xmark"></i>
+                            </button>
+                        </div>
+                        <div class="logs-tl-detail-body">
+                            <key-value :data="selected_log"></key-value>
+                        </div>
+                    </div>
+                </div>
 
                 <div v-if="!tl_loading && tl_has_more" class="logs-tl-load-more">
                     <button class="btn btn-outline-secondary btn-sm" @click="tl_load_more">
@@ -106,12 +125,13 @@
     import LoadingBar from '/static/js/components/loading-bar.js'
     import LogTable   from '/static/js/components/table/log-table.js'
     import Timeline   from '/static/js/components/timeline.js'
+    import KeyValue   from '/static/js/components/key-value.js'
 
     const TL_PAGE_SIZE = 50
 
     createApp({
         delimiters: ['[[', ']]'],
-        components: { LoadingBar, LogTable, Timeline },
+        components: { LoadingBar, LogTable, Timeline, KeyValue },
 
         setup() {
 
@@ -133,9 +153,10 @@
             })
 
             // ── Timeline state ────────────────────────────────────────────────
-            const tl_items   = ref([])
-            const tl_loading = ref(false)
-            const tl_level   = ref('all')
+            const tl_items    = ref([])
+            const tl_loading  = ref(false)
+            const tl_level    = ref('all')
+            const selected_log = ref(null)
             const tl_search  = ref('')
             const tl_page    = ref(1)
             const tl_has_more = ref(false)
@@ -181,8 +202,7 @@
             }
 
             function tl_select(item) {
-                // could open a detail modal — for now just copy title
-                create_message(item.title, TOAST.INFO)
+                selected_log.value = selected_log.value?.uuid === item.uuid ? null : item
             }
 
             // ── Delete single log ─────────────────────────────────────────────
@@ -223,6 +243,7 @@
                 can_delete_logs,
                 view_mode, set_view,
                 tl_items, tl_loading, tl_level, tl_search, tl_has_more,
+                selected_log,
                 set_tl_level, debounce_tl_load, tl_load_more, tl_select,
                 handleDelete,
                 handleBulkDelete,

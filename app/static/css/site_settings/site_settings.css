@@ -377,3 +377,60 @@
 }
 
 .ss-server-reconnect-link:hover { text-decoration: underline; }
+
+/*---SS_FILETREE---*/
+
+.ss-filetree-panel {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.ss-filetree-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: .78rem;
+    font-family: var(--font-mono);
+    color: var(--text-secondary);
+}
+
+.ss-filetree-search {
+    margin-left: auto;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 3px 10px;
+    font-size: .74rem;
+    font-family: var(--font-sans);
+    color: var(--text-main);
+    outline: none;
+    width: 180px;
+    transition: border-color .15s;
+}
+
+.ss-filetree-search:focus { border-color: var(--brand); }
+.ss-filetree-search::placeholder { color: var(--text-muted); }
+
+.ss-filetree-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: .78rem;
+    padding: 2px 5px;
+    border-radius: var(--radius-sm);
+    transition: color .15s;
+    flex-shrink: 0;
+}
+
+.ss-filetree-close:hover { color: var(--text-main); }
+
+.ss-filetree-body {
+    padding: 8px 4px;
+    max-height: 380px;
+    overflow-y: auto;
+}

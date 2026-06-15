@@ -1,3 +1,6 @@
+import re
+from pathlib import Path
+
 from flask import request
 from flask_restx import Namespace, Resource
 from flask_login import current_user
@@ -301,6 +304,76 @@ class SubmoduleUpdate(Resource):
             meta={'path': path, 'job_id': job.id},
         )
         return {'message': title + ' — job queued', 'job': job.to_json()}, 202
+
+
+@site_settings_ns.route('/submodules/tree')
+class SubmoduleTree(Resource):
+    method_decorators = [api_require_permission('admin_only')]
+
+    def get(self):
+        """Return the file tree of a submodule directory (max 3 levels deep)."""
+        path_str = (request.args.get('path') or '').strip()
+        if not re.match(r'^modules/[\w\-\.]+$', path_str):
+            return {'message': 'Invalid path — must be modules/<name>'}, 400
+
+        root = Path(path_str)
+        if not root.exists() or not root.is_dir():
+            return {'message': 'Directory not found', 'tree': []}, 404
+
+        def build(p, depth=0):
+            nodes = []
+            try:
+                entries = sorted(p.iterdir(), key=lambda e: (e.is_file(), e.name.lower()))
+                for entry in entries[:300]:
+                    node = {
+                        'name': entry.name,
+                        'path': str(entry),
+                        'type': 'dir' if entry.is_dir() else 'file',
+                        'ext':  entry.suffix.lstrip('.').lower() if entry.is_file() else None,
+                    }
+                    if entry.is_dir() and depth < 3:
+                        node['children'] = build(entry, depth + 1)
+                    elif entry.is_dir():
+                        node['children'] = []
+                    nodes.append(node)
+            except PermissionError:
+                pass
+            return nodes
+
+        return {'tree': build(root)}, 200
+
+
+@site_settings_ns.route('/submodules/file')
+class SubmoduleFile(Resource):
+    method_decorators = [api_require_permission('admin_only')]
+
+    MAX_BYTES = 512 * 1024  # 512 KB
+
+    def get(self):
+        """Return text content of a file inside a submodule (read-only)."""
+        path_str = (request.args.get('path') or '').strip()
+        if not re.match(r'^modules/[\w\-\./]+$', path_str):
+            return {'message': 'Invalid path'}, 400
+
+        # Resolve and ensure path stays inside the project
+        project_root = Path('.').resolve()
+        target = (project_root / path_str).resolve()
+        if not str(target).startswith(str(project_root / 'modules')):
+            return {'message': 'Path traversal not allowed'}, 403
+
+        if not target.exists():
+            return {'message': 'File not found'}, 404
+        if not target.is_file():
+            return {'message': 'Path is not a file'}, 400
+        if target.stat().st_size > self.MAX_BYTES:
+            return {'message': f'File too large (>{self.MAX_BYTES // 1024} KB)'}, 400
+
+        try:
+            content = target.read_text(encoding='utf-8', errors='replace')
+        except Exception as e:
+            return {'message': f'Could not read file: {e}'}, 500
+
+        return {'content': content, 'path': path_str, 'name': target.name}, 200
 
 
 @site_settings_ns.route('/submodules/remove')

@@ -4,6 +4,8 @@
 {% block head_extra %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/site_settings/site_settings.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/site_settings/database.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/timeline.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/ansi-terminal.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -138,7 +140,7 @@
                                     <i class="fas fa-spinner fa-spin" v-else></i>
                                     Execute <kbd style="font-size:.65rem;opacity:.7;margin-left:2px;">Ctrl+↵</kbd>
                                 </button>
-                                <button class="db-btn" @click="sql_query = ''; sql_result = null; sql_error = null">
+                                <button class="db-btn" @click="sql_query = ''; sql_result = null; sql_error = null; sql_terminal_log.length = 0">
                                     <i class="fas fa-xmark"></i> Clear
                                 </button>
                                 <span v-if="sql_result" style="font-size:.72rem;color:var(--text-muted);margin-left:auto;">
@@ -169,36 +171,15 @@
                                 </button>
                             </div>
 
-                            <!-- Results -->
-                            <div v-if="sql_result && sql_result.columns.length > 0" class="db-sql-results">
-                                <div class="db-sql-results-header">
-                                    <span><i class="fas fa-table me-1"></i> Results</span>
-                                    <span>[[ sql_result.count ]] row(s)</span>
-                                </div>
-                                <div class="db-sql-results-table-wrap">
-                                    <table class="db-sql-results-table">
-                                        <thead>
-                                            <tr>
-                                                <th v-for="col in sql_result.columns" :key="col">[[ col ]]</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr v-for="(row, ri) in sql_result.rows" :key="ri">
-                                                <td v-for="(cell, ci) in row" :key="ci">[[ cell !== null ? cell : 'NULL' ]]</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                            <div v-else-if="sql_result && !sql_result.is_read" class="db-sql-results">
-                                <div class="db-sql-results-header">
-                                    <span><i class="fas fa-circle-check me-1" style="color:#22c55e"></i> Query executed</span>
-                                    <span>[[ sql_result.count ]] row(s) affected</span>
-                                </div>
-                            </div>
-                            <div v-if="sql_error" class="db-sql-error">
-                                <i class="fas fa-circle-xmark me-1"></i> [[ sql_error ]]
-                            </div>
+                            <!-- Terminal output -->
+                            <ansi-terminal
+                                v-if="sql_terminal_log.length > 0"
+                                :entries="sql_terminal_log"
+                                title="SQL Output"
+                                :live="false"
+                                class="mt-3"
+                                @clear="sql_terminal_log.length = 0">
+                            </ansi-terminal>
                         </div>
                     </div>
 
@@ -432,12 +413,12 @@
                                 <i class="fas fa-scroll"></i> No events yet
                             </div>
 
-                            <div v-else class="db-history-list" style="max-height:380px;overflow-y:auto;">
-                                <div v-for="e in history" :key="e.id" class="db-history-item">
-                                    <span :class="'db-level-dot db-level-dot--' + e.level"></span>
-                                    <div class="db-history-title">[[ e.title ]]</div>
-                                    <div class="db-history-meta">[[ fmt_date(e.created_at) ]]</div>
-                                </div>
+                            <div v-else style="max-height:480px;overflow-y:auto;">
+                                <timeline
+                                    :items="history_tl"
+                                    :loading="!ready"
+                                    :group-by-day="true">
+                                </timeline>
                             </div>
                         </div>
                     </div>
@@ -456,7 +437,9 @@ const { createApp, ref, computed, onMounted } = Vue
 import { message_list } from '/static/js/toaster.js'
 import { create_message } from '/static/js/toaster.js'
 import { TOAST, apiFetch } from '/static/js/constants.js'
-import LoadingBar from '/static/js/components/loading-bar.js'
+import LoadingBar    from '/static/js/components/loading-bar.js'
+import Timeline      from '/static/js/components/timeline.js'
+import AnsiTerminal  from '/static/js/components/ansi-terminal.js'
 
 const ACTION_META = {
     restore:  { label: 'Confirm Restore',   icon: 'fas fa-triangle-exclamation', color: '#f59e0b', btn: 'db-btn--danger' },
@@ -466,7 +449,7 @@ const ACTION_META = {
 
 createApp({
     delimiters: ['[[', ']]'],
-    components: { LoadingBar },
+    components: { LoadingBar, Timeline, AnsiTerminal },
 
     setup() {
         const ready   = ref(false)
@@ -629,10 +612,11 @@ createApp({
         }
 
         // ── SQL Console ──────────────────────────────────────
-        const sql_query   = ref('')
-        const sql_running = ref(false)
-        const sql_result  = ref(null)
-        const sql_error   = ref(null)
+        const sql_query        = ref('')
+        const sql_running      = ref(false)
+        const sql_result       = ref(null)
+        const sql_error        = ref(null)
+        const sql_terminal_log = ref([])
 
         const DESTRUCTIVE_RE = /^(DELETE|DROP|TRUNCATE|UPDATE)\b/i
         const DML_RE         = /^(INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|TRUNCATE|REPLACE)\b/i
@@ -640,27 +624,58 @@ createApp({
         const sql_is_destructive = computed(() => DESTRUCTIVE_RE.test(sql_query.value.trim()))
         const sql_is_dml         = computed(() => DML_RE.test(sql_query.value.trim()) && !sql_is_destructive.value)
 
+        function _sql_log(msg, level = 'info') {
+            sql_terminal_log.value.push({ ts: new Date().toISOString(), msg, level })
+        }
+
         async function run_sql() {
             if (!sql_query.value.trim() || sql_running.value) return
             sql_running.value = true
             sql_result.value  = null
             sql_error.value   = null
 
+            const query_preview = sql_query.value.trim().replace(/\s+/g, ' ').slice(0, 200)
+            _sql_log('> ' + query_preview, 'info')
+
+            const t0  = Date.now()
             const res = await apiFetch('/api/database/sql', 'POST', { query: sql_query.value })
             const d   = await res.json()
+            const ms  = Date.now() - t0
 
             if (res.ok) {
                 sql_result.value = d
+                if (d.is_read && d.columns && d.columns.length > 0) {
+                    // Print results as text table
+                    const cols = d.columns
+                    const rows = d.rows || []
+                    const widths = cols.map((c, i) =>
+                        Math.max(String(c).length, ...rows.map(r => String(r[i] ?? 'NULL').length))
+                    )
+                    const sep  = widths.map(w => '─'.repeat(w)).join('─┼─')
+                    const head = cols.map((c, i) => String(c).padEnd(widths[i])).join(' │ ')
+                    _sql_log(head, 'info')
+                    _sql_log(sep,  'info')
+                    for (const row of rows.slice(0, 200)) {
+                        _sql_log(row.map((c, i) => String(c ?? 'NULL').padEnd(widths[i])).join(' │ '), 'info')
+                    }
+                    if (rows.length > 200) _sql_log(`… ${rows.length - 200} more rows not shown`, 'warning')
+                    _sql_log(`✓ ${d.count} row(s) returned in ${ms}ms`, 'success')
+                } else if (!d.is_read) {
+                    _sql_log(`✓ ${d.count} row(s) affected in ${ms}ms`, 'success')
+                } else {
+                    _sql_log('(empty result set)', 'info')
+                }
                 if (!d.is_read) await refresh_all()
                 if (d.backup_before) {
+                    _sql_log(`⚑ Auto-backup created: ${d.backup_before}`, 'warning')
                     create_message(
                         `Auto-backup created before destructive query: ${d.backup_before}`,
-                        TOAST.WARNING,
-                        true
+                        TOAST.WARNING, true
                     )
                 }
             } else {
                 sql_error.value = d.message
+                _sql_log(`✗ ${d.message}`, 'error')
             }
             sql_running.value = false
         }
@@ -716,6 +731,21 @@ createApp({
             if (res.ok) history.value = await res.json()
         }
 
+        const history_tl = computed(() =>
+            history.value.map(e => ({
+                uuid:        'h' + e.id,
+                title:       e.title,
+                level:       e.level  || 'info',
+                category:    'database',
+                action:      e.action || 'log',
+                created_at:  e.created_at,
+                actor_name:  null,
+                description: (e.meta && Object.keys(e.meta).length)
+                                 ? Object.entries(e.meta).map(([k,v]) => `${k}: ${v}`).join(' · ')
+                                 : null,
+            }))
+        )
+
         // ── Utils ────────────────────────────────────────────
         function fmt_date(iso) {
             if (!iso) return '—'
@@ -746,9 +776,10 @@ createApp({
             pending, action_code, action_confirming,
             action_label, action_icon, action_color, action_btn_class,
             create_backup, initiate_action, confirm_action, cancel_action,
-            sql_query, sql_running, sql_result, sql_error, sql_is_dml, sql_is_destructive, run_sql,
+            sql_query, sql_running, sql_result, sql_error, sql_is_dml, sql_is_destructive,
+            sql_terminal_log, run_sql,
             migrations, migration_running, migration_job_uuid, run_upgrade, run_downgrade,
-            history,
+            history, history_tl,
             fmt_date, refresh_all,
         }
     }
