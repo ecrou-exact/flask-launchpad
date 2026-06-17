@@ -55,6 +55,8 @@ export default {
         bulkActions:    { type: Array,   default: () => [] },
         defaultView:    { type: String,  default: 'table' },
         initialPerPage: { type: Number,  default: 10 },
+        initialSort:    { type: String,  default: '' },
+        initialDir:     { type: String,  default: 'asc' },
         sendUrl:        { type: String,  default: null },
     },
 
@@ -466,8 +468,8 @@ export default {
 
         const page          = ref(1)
         const per_page      = ref(props.initialPerPage)
-        const sort_key      = ref('')
-        const sort_dir      = ref('asc')
+        const sort_key      = ref(props.initialSort)
+        const sort_dir      = ref(props.initialDir)
         const search        = ref('')
 
         const selected_ids      = reactive(new Set())
@@ -550,7 +552,8 @@ export default {
                     sort:     sort_key.value,
                     dir:      sort_dir.value,
                 })
-                const res = await apiFetch(`${props.fetchUrl}?${params}`)
+                const sep = props.fetchUrl.includes('?') ? '&' : '?'
+                const res = await apiFetch(`${props.fetchUrl}${sep}${params}`)
                 if (!res.ok) {
                     loading.value = false
                     return

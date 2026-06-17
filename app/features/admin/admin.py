@@ -1,4 +1,5 @@
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, redirect, url_for
+from flask_login import current_user
 
 from ...core.utils.decorators import require_permission
 from ...core.db_class.site_config import get_site_bool
@@ -9,6 +10,23 @@ from .admin_core import get_user_or_404, get_role_or_404
 admin_blueprint = Blueprint('admin', __name__)
 
 
+@admin_blueprint.route('/', strict_slashes=False)
+@require_permission(None)
+def index():
+    """Redirect to the first admin section the user can access."""
+    if current_user.is_admin() or current_user.has_permission('users.view'):
+        return redirect(url_for('admin.users'))
+    if current_user.has_permission('admin.roles'):
+        return redirect(url_for('admin.roles'))
+    if current_user.has_permission('logs.view'):
+        return redirect(url_for('admin.logs'))
+    if current_user.has_permission('jobs.manage'):
+        return redirect('/jobs/')
+    if current_user.has_permission('tags.view'):
+        return redirect('/tags/')
+    return redirect('/')
+
+
 @admin_blueprint.route('/users')
 @require_permission('users.view')
 def users():
@@ -17,6 +35,7 @@ def users():
         allow_registration=get_site_bool('allow_registration', default=True),
         allow_login=get_site_bool('allow_login', default=True),
         email_verification_enabled=get_site_bool('email_verification_enabled', default=False),
+        weather_widget_enabled=get_site_bool('weather_widget_enabled', default=False),
     )
 
 

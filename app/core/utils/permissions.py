@@ -21,12 +21,6 @@ PERMISSIONS: dict[str, dict] = {
         'group':       'Admin',
         'icon':        'fa-sliders',
     },
-    'admin.server_settings': {
-        'label':       'Server settings',
-        'description': 'Access SMTP, session key and system info (admin only by default).',
-        'group':       'Admin',
-        'icon':        'fa-server',
-    },
     'admin.roles': {
         'label':       'Manage roles',
         'description': 'Create, edit and delete roles and their permissions.',
@@ -88,6 +82,34 @@ PERMISSIONS: dict[str, dict] = {
         'description': 'Create, edit, publish and delete dynamic pages (admin only by default).',
         'group':       'Template Studio',
         'icon':        'fa-wand-magic-sparkles',
+    },
+
+    # ── Tags ─────────────────────────────────────────────────────────────────
+    'tags.view': {
+        'label':       'View tags',
+        'description': 'Access the tag list.',
+        'group':       'Tags',
+        'icon':        'fa-tags',
+    },
+    'tags.manage': {
+        'label':       'Manage tags',
+        'description': 'Create, edit, delete tags and import taxonomies/galaxies.',
+        'group':       'Tags',
+        'icon':        'fa-tag',
+    },
+
+    # ── Connectors ───────────────────────────────────────────────────────────
+    'connectors.view': {
+        'label':       'View connectors',
+        'description': 'See the connector list and status.',
+        'group':       'Connectors',
+        'icon':        'fa-plug',
+    },
+    'connectors.manage': {
+        'label':       'Manage connectors',
+        'description': 'Create, edit, delete connectors and trigger sync/test jobs.',
+        'group':       'Connectors',
+        'icon':        'fa-plug',
     },
 
     # ── Comments ─────────────────────────────────────────────────────────────

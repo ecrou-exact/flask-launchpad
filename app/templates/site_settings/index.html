@@ -3,6 +3,9 @@
 
 {% block head_extra %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/site_settings/site_settings.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/site_settings/database.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/file-tree.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/ansi-terminal.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -20,7 +23,7 @@
                         <li class="breadcrumb-item active">Server Settings</li>
                     </ol>
                 </nav>
-                <h1 class="page-title">Server Settings</h1>
+                <h1 class="page-title">Settings</h1>
             </div>
         </div>
 
@@ -348,27 +351,15 @@
                                 </button>
                             </div>
 
-                            {# ── Install log panel ── #}
-                            <div v-if="pkg_install_log.length > 0" class="ss-log-panel mb-3">
-                                <div class="ss-log-header">
-                                    <span><i class="fas fa-terminal me-1"></i>pip output</span>
-                                    <button class="ss-log-clear" @click="pkg_install_log = []" title="Clear">
-                                        <i class="fas fa-xmark"></i>
-                                    </button>
-                                </div>
-                                <div class="ss-log-body">
-                                    <div v-for="(entry, i) in pkg_install_log" :key="i"
-                                         class="ss-log-line"
-                                         :class="{
-                                             'ss-log-line--ok':    entry.type === 'ok',
-                                             'ss-log-line--error': entry.type === 'error',
-                                             'ss-log-line--info':  entry.type === 'info',
-                                         }">
-                                        <span class="ss-log-time">[[ entry.time ]]</span>
-                                        <span class="ss-log-text">[[ entry.text ]]</span>
-                                    </div>
-                                </div>
-                            </div>
+                            {# ── Install log ── #}
+                            <ansi-terminal
+                                v-if="pkg_install_log.length > 0"
+                                :entries="pkg_install_log"
+                                title="pip install"
+                                :live="pkg_install_loading"
+                                class="mb-3"
+                                @clear="pkg_install_log.length = 0">
+                            </ansi-terminal>
 
                             {# ── Search ── #}
                             <div class="mb-2">
@@ -416,27 +407,15 @@
                                 </table>
                             </div>
 
-                            {# ── Update log panel ── #}
-                            <div v-if="pkg_update_log.length > 0" class="ss-log-panel mt-3">
-                                <div class="ss-log-header">
-                                    <span><i class="fas fa-terminal me-1"></i>Update output</span>
-                                    <button class="ss-log-clear" @click="pkg_update_log = []" title="Clear">
-                                        <i class="fas fa-xmark"></i>
-                                    </button>
-                                </div>
-                                <div class="ss-log-body">
-                                    <div v-for="(entry, i) in pkg_update_log" :key="i"
-                                         class="ss-log-line"
-                                         :class="{
-                                             'ss-log-line--ok':    entry.type === 'ok',
-                                             'ss-log-line--error': entry.type === 'error',
-                                             'ss-log-line--info':  entry.type === 'info',
-                                         }">
-                                        <span class="ss-log-time">[[ entry.time ]]</span>
-                                        <span class="ss-log-text">[[ entry.text ]]</span>
-                                    </div>
-                                </div>
-                            </div>
+                            {# ── Update log ── #}
+                            <ansi-terminal
+                                v-if="pkg_update_log.length > 0"
+                                :entries="pkg_update_log"
+                                title="pip update"
+                                :live="!!pkg_updating"
+                                class="mt-3"
+                                @clear="pkg_update_log.length = 0">
+                            </ansi-terminal>
                         </div>
                     </div>
                 </div>
@@ -524,6 +503,12 @@
                                                         <i v-else class="fas fa-cloud-arrow-down me-1"></i>
                                                         Update
                                                     </button>
+                                                    <button class="btn btn-outline-secondary btn-sm"
+                                                            style="font-size:.7rem; padding:.15rem .5rem;"
+                                                            :class="{ active: sub_browse_path === sub.path }"
+                                                            @click="toggleBrowse(sub)">
+                                                        <i class="fas fa-folder-open"></i>
+                                                    </button>
                                                     <button class="btn btn-outline-danger btn-sm"
                                                             style="font-size:.7rem; padding:.15rem .5rem;"
                                                             :disabled="sub_updating_path === sub.path || sub_removing_path === sub.path"
@@ -536,6 +521,26 @@
                                         </tr>
                                     </tbody>
                                 </table>
+                            </div>
+
+                            {# ── File tree panel ── #}
+                            <div v-if="sub_browse_path" class="ss-filetree-panel mt-3">
+                                <div class="ss-filetree-header">
+                                    <i class="fas fa-folder-open me-1" style="color:#f59e0b;"></i>
+                                    <span>[[ sub_browse_path ]]</span>
+                                    <button class="ss-filetree-close ms-auto" @click="sub_browse_path = null" title="Close">
+                                        <i class="fas fa-xmark"></i>
+                                    </button>
+                                </div>
+                                <div class="ss-filetree-body">
+                                    <file-tree
+                                        :nodes="sub_tree_nodes"
+                                        :loading="sub_tree_loading"
+                                        mode="read-plus"
+                                        :fetch-content="loadFileContent"
+                                        @select="onTreeSelect">
+                                    </file-tree>
+                                </div>
                             </div>
 
                             {# ── Add submodule modal ── #}
@@ -612,10 +617,12 @@
     import { TOAST, apiFetch } from '/static/js/constants.js'
     import { create_message, message_list } from '/static/js/toaster.js'
     import LoadingBar from '/static/js/components/loading-bar.js'
+    import FileTree      from '/static/js/components/file-tree.js'
+    import AnsiTerminal from '/static/js/components/ansi-terminal.js'
 
     createApp({
         delimiters: ['[[', ']]'],
-        components: { LoadingBar },
+        components: { LoadingBar, FileTree, AnsiTerminal },
 
         setup() {
             const page_is_loading = ref(false)
@@ -717,6 +724,9 @@
             const sub_removing_path = ref(null)
             const sub_adding        = ref(false)
             const show_add_modal    = ref(false)
+            const sub_browse_path   = ref(null)
+            const sub_tree_nodes    = ref([])
+            const sub_tree_loading  = ref(false)
             const add_url           = ref('')
             const add_path          = ref('')
             const add_branch        = ref('')
@@ -794,7 +804,8 @@
             }
 
             function _pkg_log(log_ref, text, type = 'info') {
-                log_ref.value.push({ time: _now(), text, type })
+                const level_map = { ok: 'success', error: 'error', info: 'info', warning: 'warning' }
+                log_ref.value.push({ ts: new Date().toISOString(), msg: text, level: level_map[type] || 'info' })
             }
 
             async function testSmtp() {
@@ -873,6 +884,34 @@
                     submodules.value = d.submodules || []
                 }
                 sub_loading.value = false
+            }
+
+            async function toggleBrowse(sub) {
+                if (sub_browse_path.value === sub.path) {
+                    sub_browse_path.value = null
+                    return
+                }
+                sub_browse_path.value  = sub.path
+                sub_tree_nodes.value   = []
+                sub_tree_loading.value = true
+                const res = await apiFetch('/api/site-settings/submodules/tree?path=' + encodeURIComponent(sub.path))
+                sub_tree_loading.value = false
+                if (res.ok) {
+                    const d = await res.json()
+                    sub_tree_nodes.value = d.tree || []
+                }
+            }
+
+            function onTreeSelect(node) { }
+
+            async function loadFileContent(node) {
+                const res = await apiFetch('/api/site-settings/submodules/file?path=' + encodeURIComponent(node.path))
+                if (!res.ok) {
+                    const d = await res.json().catch(() => ({}))
+                    return { content: '', error: d.message || 'Failed to load file' }
+                }
+                const d = await res.json()
+                return { content: d.content || '' }
             }
 
             function subStatusIcon(status) {
@@ -1028,8 +1067,10 @@
                 // submodules
                 submodules, sub_loading, sub_updating_all, sub_updating_path, sub_removing_path, sub_adding,
                 show_add_modal, add_url, add_path, add_branch, add_url_err, add_path_err,
+                sub_browse_path, sub_tree_nodes, sub_tree_loading,
                 loadSubmodules, subStatusIcon,
                 updateSubmodule, updateAllSubmodules, removeSubmodule,
+                toggleBrowse, onTreeSelect, loadFileContent,
                 openAddModal, closeAddModal, submitAddSubmodule,
                 onAddUrlInput, onAddPathInput,
             }

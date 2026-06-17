@@ -2,6 +2,7 @@
 
 {% block head_extra %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/home/home.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/chart-viewer.css') }}">
 {% endblock %}
 
 {% block page_title %}Home{% endblock %}
@@ -12,206 +13,136 @@
 
     <div v-if="page_is_loading">
 
-        {# ── Hero ── #}
-        <div class="home-hero">
-            <div class="home-hero-badge">
-                <i class="fas fa-rocket"></i>
-                Flask Launchpad
-            </div>
-            <h1 class="home-hero-title">Your Flask project,<br>ready to ship.</h1>
-            <p class="home-hero-subtitle">
-                A production-ready Flask boilerplate with authentication, roles, REST API,
-                and a clean component system. Clone, build, deploy.
-            </p>
-        </div>
+        <!-- HERO -->
+        <section class="home-hero">
+            <div class="home-hero-inner">
+                <div class="home-hero-badge">
+                    <i class="fas fa-rocket"></i>
+                    Flask Launchpad
+                </div>
 
-        {# ── Stats row ── #}
-        <div class="row g-3">
-            <div class="col-12 col-sm-6 col-xl-3">
-                <div class="home-stat-card">
-                    <div class="home-stat-icon home-stat-icon--primary">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <div>
-                        <div class="home-stat-value">[[ stats.users ]]</div>
-                        <div class="home-stat-label">Registered users</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-12 col-sm-6 col-xl-3">
-                <div class="home-stat-card">
-                    <div class="home-stat-icon home-stat-icon--success">
-                        <i class="fas fa-circle-check"></i>
-                    </div>
-                    <div>
-                        <div class="home-stat-value">[[ stats.roles ]]</div>
-                        <div class="home-stat-label">Roles configured</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-12 col-sm-6 col-xl-3">
-                <div class="home-stat-card">
-                    <div class="home-stat-icon home-stat-icon--info">
-                        <i class="fas fa-plug"></i>
-                    </div>
-                    <div>
-                        <div class="home-stat-value">[[ stats.endpoints ]]</div>
-                        <div class="home-stat-label">API endpoints</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-12 col-sm-6 col-xl-3">
-                <div class="home-stat-card">
-                    <div class="home-stat-icon home-stat-icon--warning">
-                        <i class="fas fa-shield-halved"></i>
-                    </div>
-                    <div>
-                        <div class="home-stat-value">[[ stats.features ]]</div>
-                        <div class="home-stat-label">Feature flags</div>
-                    </div>
-                </div>
-            </div>
-        </div>
+                <h1 class="home-hero-title">
+                    Stop building Flask apps<br>
+                    from scratch.
+                </h1>
 
-        {# ── Feature cards ── #}
-        <div>
-            <p class="home-section-title">What's included</p>
+                <p class="home-hero-subtitle">
+                    Authentication, roles, REST APIs, feature flags,
+                    jobs, notifications, and admin tools — already built.
+                </p>
+
+                <div class="home-hero-actions">
+                    <a href="https://github.com/ecrou-exact/flask-launchpad"
+                       target="_blank"
+                       class="btn btn-primary">
+                        <i class="fab fa-github"></i>
+                        View Repo
+                    </a>
+
+                    <a href="/api/"
+                       target="_blank"
+                       class="btn btn-outline-secondary">
+                        <i class="fas fa-code"></i>
+                        API Docs
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- CHART DEMO -->
+        <section class="home-chart-section animate-on-scroll">
+            <div class="home-section-title">Project Activity</div>
+            <p class="home-section-subtitle">Live stats rendered with the built-in chart system.</p>
+            <chart-viewer
+                :data="chart_data"
+                :views="['line','bar','pie','table']"
+                :detail="true"
+                height="340px"
+            ></chart-viewer>
+        </section>
+
+        <!-- FEATURES -->
+        <section class="home-section">
+            <div class="home-section-title animate-on-scroll">Core Features</div>
+
             <div class="row g-3">
 
                 <div class="col-12 col-md-6 col-lg-4">
-                    <a href="{{ url_for('account.index') if current_user.is_authenticated else url_for('account.login') }}"
-                       class="home-feature-card">
-                        <div class="home-feature-icon">
-                            <i class="fas fa-user-shield"></i>
-                        </div>
-                        <div>
-                            <p class="home-feature-title">Authentication</p>
-                            <p class="home-feature-desc">
-                                Login, registration, session management and role-based access control.
-                                Admin, Editor, Read-Only out of the box.
-                            </p>
-                        </div>
-                        <i class="fas fa-arrow-right home-feature-arrow"></i>
-                    </a>
-                </div>
-
-                <div class="col-12 col-md-6 col-lg-4">
-                    <a href="/api/" class="home-feature-card" target="_blank">
-                        <div class="home-feature-icon">
-                            <i class="fas fa-code"></i>
-                        </div>
-                        <div>
-                            <p class="home-feature-title">REST API</p>
-                            <p class="home-feature-desc">
-                                Flask-RESTX with Swagger UI. API key authentication,
-                                namespaces, and input validation ready.
-                            </p>
-                        </div>
-                        <i class="fas fa-arrow-right home-feature-arrow"></i>
-                    </a>
-                </div>
-
-                <div class="col-12 col-md-6 col-lg-4">
-                    <div class="home-feature-card" style="cursor: default;">
-                        <div class="home-feature-icon" style="background: rgba(25,135,84,0.08); color: var(--bs-success);">
-                            <i class="fas fa-flag"></i>
-                        </div>
-                        <div>
-                            <p class="home-feature-title">Feature Flags</p>
-                            <p class="home-feature-desc">
-                                Enable or disable features at runtime without redeployment.
-                                Per-feature routing guard and nav link control.
-                            </p>
-                        </div>
-                        <i class="fas fa-arrow-right home-feature-arrow"></i>
+                    <div class="home-feature-card">
+                        <div class="home-feature-icon"><i class="fas fa-shield-halved"></i></div>
+                        <h3>Authentication</h3>
+                        <p>Secure auth, roles, permissions.</p>
                     </div>
                 </div>
 
                 <div class="col-12 col-md-6 col-lg-4">
-                    <div class="home-feature-card" style="cursor: default;">
-                        <div class="home-feature-icon" style="background: rgba(13,202,240,0.08); color: var(--bs-info);">
-                            <i class="fas fa-layer-group"></i>
-                        </div>
-                        <div>
-                            <p class="home-feature-title">Vue 3 Components</p>
-                            <p class="home-feature-desc">
-                                Composition API, ES modules, DataTable, Pagination,
-                                LoadingBar and Toast — no build step required.
-                            </p>
-                        </div>
-                        <i class="fas fa-arrow-right home-feature-arrow"></i>
+                    <div class="home-feature-card">
+                        <div class="home-feature-icon"><i class="fas fa-code"></i></div>
+                        <h3>API First</h3>
+                        <p>REST API with Swagger.</p>
                     </div>
                 </div>
 
                 <div class="col-12 col-md-6 col-lg-4">
-                    <div class="home-feature-card" style="cursor: default;">
-                        <div class="home-feature-icon" style="background: rgba(255,193,7,0.10); color: var(--bs-warning);">
-                            <i class="fas fa-database"></i>
-                        </div>
-                        <div>
-                            <p class="home-feature-title">Alembic Migrations</p>
-                            <p class="home-feature-desc">
-                                SQLAlchemy + Alembic with a one-command workflow via
-                                <code style="font-size: 0.78rem;">./launch.sh</code>.
-                            </p>
-                        </div>
-                        <i class="fas fa-arrow-right home-feature-arrow"></i>
+                    <div class="home-feature-card">
+                        <div class="home-feature-icon"><i class="fas fa-bolt"></i></div>
+                        <h3>Feature Flags</h3>
+                        <p>Enable features without deploy.</p>
                     </div>
                 </div>
 
                 <div class="col-12 col-md-6 col-lg-4">
-                    <div class="home-feature-card" style="cursor: default;">
-                        <div class="home-feature-icon" style="background: rgba(220,53,69,0.08); color: var(--bs-danger);">
-                            <i class="fas fa-vial"></i>
-                        </div>
-                        <div>
-                            <p class="home-feature-title">Test Suite</p>
-                            <p class="home-feature-desc">
-                                Pytest with role-based fixtures. HTML, API, and security
-                                tests included. Run with <code style="font-size: 0.78rem;">./launch.sh --test</code>.
-                            </p>
-                        </div>
-                        <i class="fas fa-arrow-right home-feature-arrow"></i>
+                    <div class="home-feature-card">
+                        <div class="home-feature-icon"><i class="fas fa-gears"></i></div>
+                        <h3>Jobs</h3>
+                        <p>Async job tracking system.</p>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="home-feature-card">
+                        <div class="home-feature-icon"><i class="fas fa-palette"></i></div>
+                        <h3>Themes</h3>
+                        <p>Dark mode &amp; customization.</p>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="home-feature-card">
+                        <div class="home-feature-icon"><i class="fas fa-layer-group"></i></div>
+                        <h3>UI Kit</h3>
+                        <p>Reusable Vue components.</p>
                     </div>
                 </div>
 
             </div>
-        </div>
+        </section>
 
-        {# ── Stack info ── #}
-        <div>
-            <p class="home-section-title">Tech stack</p>
-            <div class="d-flex flex-wrap gap-2">
-                <div class="home-stack-item">
-                    <i class="fab fa-python"></i>
-                    Flask 3
-                </div>
-                <div class="home-stack-item">
-                    <i class="fas fa-database"></i>
-                    SQLAlchemy + Alembic
-                </div>
-                <div class="home-stack-item">
-                    <i class="fas fa-plug"></i>
-                    Flask-RESTX
-                </div>
-                <div class="home-stack-item">
-                    <i class="fab fa-bootstrap"></i>
-                    Bootstrap 5.3
-                </div>
-                <div class="home-stack-item">
-                    <i class="fas fa-v"></i>
-                    Vue 3
-                </div>
-                <div class="home-stack-item">
-                    <i class="fas fa-shield-halved"></i>
-                    Flask-WTF CSRF
-                </div>
-                <div class="home-stack-item">
-                    <i class="fas fa-key"></i>
-                    Flask-Login + Bcrypt
-                </div>
+        <!-- ARCHITECTURE -->
+        <section class="home-section">
+            <div class="home-section-title animate-on-scroll">Architecture</div>
+
+            <div class="home-flow">
+                <span>Flask</span>
+                <i class="fas fa-arrow-right"></i>
+                <span>SQLAlchemy</span>
+                <i class="fas fa-arrow-right"></i>
+                <span>REST API</span>
+                <i class="fas fa-arrow-right"></i>
+                <span>Vue 3</span>
             </div>
-        </div>
+        </section>
+
+        <!-- CTA -->
+        <section class="home-cta animate-on-scroll">
+            <h2>Build features, not boilerplate.</h2>
+            <p>A production-ready Flask foundation.</p>
+
+            <a href="https://github.com/ecrou-exact/flask-launchpad"
+               class="btn btn-primary btn-lg">
+                Get Started
+            </a>
+        </section>
 
     </div>
 </div>
@@ -219,51 +150,70 @@
 
 {% block script %}
 <script type="module">
-    const { createApp, ref, onMounted } = Vue
-    import { message_list, create_message } from '/static/js/toaster.js'
-    import LoadingBar from '/static/js/components/loading-bar.js'
+const { createApp, ref, onMounted } = Vue
+import { message_list } from '/static/js/toaster.js'
+import LoadingBar from '/static/js/components/loading-bar.js'
+import ChartViewer from '/static/js/components/chart-viewer.js'
 
-    createApp({
-        delimiters: ['[[', ']]'],
-        components: { LoadingBar },
-        setup() {
+createApp({
+    delimiters: ['[[', ']]'],
+    components: { LoadingBar, ChartViewer },
 
-            // ── Init ────────────────────────────────────────
-            const page_is_loading = ref(false)
+    setup() {
+        const page_is_loading = ref(false)
 
-            const stats = ref({
-                users:     '—',
-                roles:     '—',
-                endpoints: '—',
-                features:  '—',
+        const chart_data = ref({
+            title:      'Project Activity',
+            subtitle:   'Last 6 months',
+            categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+            series: [
+                { name: 'Users',     values: [12, 19, 15, 28, 34, 41] },
+                { name: 'API Calls', values: [340, 520, 410, 690, 780, 920] },
+                { name: 'Features',  values: [4, 5, 6, 7, 8, 9] },
+                { name: 'Roles',     values: [2, 2, 3, 3, 4, 4] },
+            ],
+            meta: {
+                x_label: 'Month',
+                y_label: 'Count',
+            },
+        })
+
+        async function init() {
+            await new Promise(r => setTimeout(r, 200))
+            page_is_loading.value = true
+            setTimeout(() => {
+                setupScrollAnimations()
+                setupCardGlow()
+            }, 100)
+        }
+
+        function setupScrollAnimations() {
+            const els = document.querySelectorAll(
+                '.home-feature-card, .home-cta, .home-section-title, .home-chart-section'
+            )
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(e => {
+                    if (e.isIntersecting) e.target.classList.add('is-visible')
+                })
+            }, { threshold: 0.12 })
+            els.forEach(el => observer.observe(el))
+        }
+
+        function setupCardGlow() {
+            const cards = document.querySelectorAll('.home-feature-card')
+            cards.forEach(card => {
+                card.addEventListener('mousemove', (e) => {
+                    const r = card.getBoundingClientRect()
+                    card.style.setProperty('--x', `${e.clientX - r.left}px`)
+                    card.style.setProperty('--y', `${e.clientY - r.top}px`)
+                })
             })
+        }
 
-            async function init() {
-                await Promise.all([
-                    fetchStats(),
-                ])
-                page_is_loading.value = true
-            }
+        onMounted(init)
 
-            async function fetchStats() {
-                // Replace with real API calls when endpoints exist
-                stats.value = {
-                    users:     1,
-                    roles:     3,
-                    endpoints: 4,
-                    features:  0,
-                }
-            }
-
-            onMounted(() => init())
-
-            // ── Return ──────────────────────────────────────
-            return {
-                message_list,
-                page_is_loading,
-                stats,
-            }
-        },
-    }).mount('#main-container')
+        return { message_list, page_is_loading, chart_data }
+    }
+}).mount('#main-container')
 </script>
 {% endblock %}

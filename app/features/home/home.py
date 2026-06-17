@@ -19,6 +19,6 @@ def docs():
 
 
 @home_blueprint.route("/lab/components")
-@require_permission('admin_only')
+@require_permission(None, public=True)
 def lab_components():
     return render_template("lab/components.html")

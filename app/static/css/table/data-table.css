@@ -4,6 +4,8 @@
   Prefix: dt-
 */
 
+@import url('/static/css/pagination/pagination.css');
+
 /*---DT_WRAPPER---*/
 
 .dt-wrapper {

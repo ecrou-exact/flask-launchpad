@@ -8,8 +8,21 @@ To add a new section to the nav + search bar:
 Permission values:
   None         → visible to all authenticated users
   'admin_only' → visible only if role.admin = True
+  'admin_any'  → visible if is_admin OR has any admin-related permission
+  'public'     → visible to everyone including anonymous users
   'key'        → visible if user has that permission key (or is admin)
 """
+
+# Permissions that grant access to at least one admin section
+_ADMIN_RELATED_PERMS = {
+    'users.view', 'users.edit', 'users.delete',
+    'admin.roles', 'admin.site_config',
+    'logs.view', 'logs.delete',
+    'jobs.manage',
+    'tags.view', 'tags.manage',
+    'template_studio.manage',
+    'connectors.view', 'connectors.manage',
+}
 
 NAV: list[dict] = [
 
@@ -36,91 +49,51 @@ NAV: list[dict] = [
         'permission': None,
     },
 
-    # ── Admin ─────────────────────────────────────────────────────────────
+    # ── Admin (single entry — only shown when user has at least one admin perm) ─
     {
         'group':      'Admin',
-        'label':      'Users',
-        'icon':       'fa-users',
-        'href':       '/admin/users',
-        'permission': 'users.view',
-    },
-    {
-        'group':      'Admin',
-        'label':      'Roles',
+        'label':      'Admin',
         'icon':       'fa-shield-halved',
-        'href':       '/admin/roles',
-        'permission': 'admin.roles',
-    },
-    {
-        'group':      'Admin',
-        'label':      'Logs',
-        'icon':       'fa-scroll',
-        'href':       '/admin/logs',
-        'permission': 'logs.view',
-    },
-    {
-        'group':      'Admin',
-        'label':      'Server Settings',
-        'icon':       'fa-server',
-        'href':       '/admin/settings',
-        'permission': 'admin_only',
-    },
-    {
-        'group':      'Admin',
-        'label':      'API Docs',
-        'icon':       'fa-code',
-        'href':       '/api/',
-        'permission': 'admin_only',
-        'external':   True,
+        'href':       '/admin/',
+        'permission': 'admin_any',
     },
 
-    {
-        'group':      'Admin',
-        'label':      'Jobs',
-        'icon':       'fa-gears',
-        'href':       '/jobs/',
-        'permission': 'jobs.manage',
-    },
-
-    {
-        'group':      'Admin',
-        'label':      'Template Studio',
-        'icon':       'fa-wand-magic-sparkles',
-        'href':       '/admin/template-studio/',
-        'permission': 'admin_only',
-    },
-
-    # ── Dev ───────────────────────────────────────────────────────────────────
-    {
-        'group':      'Dev',
-        'label':      'Component Lab',
-        'icon':       'fa-flask',
-        'href':       '/lab/components',
-        'permission': 'admin_only',
-    },
-
-    # ── Community ─────────────────────────────────────────────────────────────
+    # ── Community (public — accessible without login) ──────────────────────────
     {
         'group':      'Community',
         'label':      'Forum',
         'icon':       'fa-comments',
         'href':       '/comments/',
-        'permission': 'comments.view',
+        'permission': 'public',
+    },
+    {
+        'group':      'Community',
+        'label':      'Component Lab',
+        'icon':       'fa-flask',
+        'href':       '/lab/components',
+        'permission': 'public',
     },
 
 ]
 
 
-def get_nav_for_user(is_admin: bool, perms: list[str]) -> list[dict]:
+def get_nav_for_user(is_admin: bool, perms: list[str], is_authenticated: bool = True) -> list[dict]:
     """Return the nav items visible to a user with the given permissions."""
     result = []
     for item in NAV:
         p = item.get('permission')
-        visible = (
-            p is None
-            or is_admin
-            or (p != 'admin_only' and p in perms)
-        )
+        if p == 'public':
+            visible = True
+        elif not is_authenticated:
+            visible = False
+        elif p is None:
+            visible = True
+        elif p == 'admin_only':
+            visible = is_admin
+        elif p == 'admin_any':
+            visible = is_admin or bool(_ADMIN_RELATED_PERMS & set(perms))
+        else:
+            visible = is_admin or p in perms
         if visible:
             result.append(item)
     return result
